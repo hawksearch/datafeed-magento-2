@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<!--
+ Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ IN THE SOFTWARE.
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+  <system>
+    <tab id="hawksearch" translate="label" sortOrder="400">
+      <label>HawkSearch</label>
+    </tab>
+    <section id="hawksearch_datafeed" translate="label" type="text" sortOrder="300" showInDefault="1" showInWebsite="1" showInStore="1">
+      <class>separator-top</class>
+      <label>DataFeed Settings</label>
+      <tab>hawksearch</tab>
+      <resource>HawkSearch_Datafeed::config_hawksearchdatafeed</resource>
+      <group id="general" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>General</label>
+        <field id="enabled" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="5">
+          <label>Enabled</label>
+          <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        </field>
+        <field id="logging_enabled" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="10">
+          <label>Enable Logging</label>
+          <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        </field>
+        <field id="version" translate="label comment" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="15">
+          <label>Version</label>
+          <frontend_model>HawkSearch\Datafeed\Block\System\Config\Version</frontend_model>
+        </field>
+      </group>
+      <group id="feed" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>Feed Settings</label>
+        <field id="generate" translate="button_label"  sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
+          <label/>
+          <attribute type="api_key_id">ibnab_asterisk_control_apioptions_api_key</attribute>
+          <attribute type="load_config_url">
+            <![CDATA[asterisk/apicontrol/loadconfig]]>
+          </attribute>
+          <button_label>
+            <![CDATA[Check & load current settings]]>
+          </button_label>
+          <button_url>
+            <![CDATA[hawksearchdatafeed/hawkdatagenerate/runFeedGeneration]]>
+          </button_url>
+          <frontend_model>HawkSearch\Datafeed\Block\System\Config\Button</frontend_model>
+          <comment>
+            <![CDATA[Once you check you API access, please click Save Setting for begin use extension.]]>
+          </comment>
+        </field>
+        <field id="stores" translate="label comment" type="multiselect" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="10">
+          <label>Feed Stores</label>
+          <source_model>Magento\Config\Model\Config\Source\Store</source_model>
+        </field>
+        <field id="batch_limit" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="15">
+          <label>Batch Limit</label>
+        </field>
+        <field id="stockstatus" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="20">
+          <label>Allow Out of Stock Items</label>
+          <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        </field>
+        <field id="itemstatus" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="25">
+          <label>Allow Disabled Items</label>
+          <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        </field>
+        <field id="cron_enable" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
+          <label>Enable Datafeed Cron task</label>
+          <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        </field>
+        <field id="cron_string" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="35">
+          <label>Cron expression</label>
+          <comment>Max run interval is hourly, first value must be between 0 and 59</comment>
+          <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Cron</backend_model>
+          <depends>
+            <field id="cron_enable">1</field>
+          </depends>
+        </field>
+        <field id="cron_email" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="40">
+          <depends>
+            <field id="cron_enable">1</field>
+          </depends>
+          <label>Feed Cron Email</label>
+        </field>
+      </group>
+      <group id="imagecache" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>Image Cache</label>
+        <field id="generateimagecache" translate="button_label"  sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
+          <label/>
+          <button_label>
+            <![CDATA[Generate Image Cache]]>
+          </button_label>
+          <button_url>
+            <![CDATA[hawksearchdatafeed/hawkdatagenerate/runImageCacheGeneration]]>
+          </button_url>
+          <frontend_model>HawkSearch\Datafeed\Block\System\Config\Cachebutton</frontend_model>
+          <comment>
+            <![CDATA[Once you check you API access, please click Save Setting for begin use extension.]]>
+          </comment>
+        </field>
+        <field id="image_width" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="15">
+          <label>Image Width</label>
+          <comment>Set the width of the small image saved in the cache</comment>
+        </field>
+        <field id="image_height" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="20">
+          <label>Image Height</label>
+          <comment>Set the height of the small image saved in the cache</comment>
+        </field>
+        <field id="cron_enable" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="25">
+          <label>Enable Imagecache Cron task</label>
+          <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        </field>
+        <field id="cron_string" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
+          <label>Cron expression</label>
+          <comment>Max run interval is hourly, first value must be between 0 and 59</comment>
+          <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Cron</backend_model>
+          <depends>
+            <field id="cron_enable">1</field>
+          </depends>
+        </field>
+        <field id="cron_email" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="35">
+          <label>Feed Cron Email</label>
+          <depends>
+            <field id="cron_enable">1</field>
+          </depends>
+        </field>
+      </group>
+    </section>
+  </system>
+</config>
