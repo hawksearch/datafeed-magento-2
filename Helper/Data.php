@@ -142,7 +142,14 @@ class Data
             $relPath = self::DEFAULT_FEED_PATH;
         }
         $mediaRoot = $this->filesystem->getDirectoryWrite('media')->getAbsolutePath();
-        return implode(DIRECTORY_SEPARATOR, array($mediaRoot, $relPath));
+
+        $fullPath = implode(DIRECTORY_SEPARATOR, array($mediaRoot, $relPath));
+
+        if(!file_exists($fullPath)) {
+            mkdir($fullPath, 0777, true);
+        }
+
+        return $fullPath;
 
     }
 
@@ -219,7 +226,7 @@ class Data
         $root = BP;
 
         $f = fopen($tmpfile, 'w');
-        fwrite($f, '#!/bin/sh' . "\n");
+        //fwrite($f, '#!/bin/sh' . "\n");
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
         fwrite($f, "$phpbin $runfile -r $root -t $tmpfile\n");

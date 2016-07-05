@@ -39,9 +39,6 @@ class Datafeed extends AbstractModel{
         $this->helper = $helper;
              $this->stockHelper = $stockHelper; //$object_manager->get('Magento\CatalogInventory\Helper\Stock');
 
-//        if(!file_exists($this->helper->getFeedFilePath())) {
-//            mkdir($this->helper->getFeedFilePath(), 0777, true);
-//        }
 
 		$this->feedSummary = new \stdClass();
 		$this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
