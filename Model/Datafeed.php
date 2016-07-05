@@ -11,6 +11,7 @@
  * IN THE SOFTWARE.
  */
 namespace HawkSearch\Datafeed\Model;
+use HawkSearch\Datafeed\Helper\Data;
 use Magento\Framework\Model\AbstractModel;
 class Datafeed extends AbstractModel{
 
@@ -26,20 +27,21 @@ class Datafeed extends AbstractModel{
 	 	 public function __construct(
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
+         \HawkSearch\Datafeed\Helper\Data $helper,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
 		
-		$object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-		$helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');  
+//		$object_manager = \Magento\Framework\App\ObjectManager::getInstance();
+//		$helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');  
         $this->helper = $helper;
              $this->stockHelper = $stockHelper; //$object_manager->get('Magento\CatalogInventory\Helper\Stock');
 
-        if(!file_exists($this->helper->getFeedFilePath())) {
-            mkdir($this->helper->getFeedFilePath(), 0777, true);
-        }
+//        if(!file_exists($this->helper->getFeedFilePath())) {
+//            mkdir($this->helper->getFeedFilePath(), 0777, true);
+//        }
 
 		$this->feedSummary = new \stdClass();
 		$this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');

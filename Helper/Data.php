@@ -21,11 +21,13 @@ class Data
 
     protected $scopeConfig;
     protected $_storeManager;
+    private $filesystem;
 
 
+    const DEFAULT_FEED_PATH = 'hawksearch/feeds';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
     const CONFIG_SUMMARY_FILENAME = 'hawksearchFeedSummary.json';
-    const CONFIG_FEED_PATH = 'hawksearch/feeds';
+    const CONFIG_FEED_PATH = 'hawksearch_datafeed/feed/feed_path';
     const CONFIG_MODULE_ENABLED = 'hawksearch_datafeed/general/enabled';
     const CONFIG_LOGGING_ENABLED = 'hawksearch_datafeed/general/logging_enabled';
     const CONFIG_INCLUDE_OOS = 'hawksearch_datafeed/feed/stockstatus';
@@ -43,9 +45,13 @@ class Data
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
 
-    public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, StoreManagerInterface $storemanager) {
+    public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, 
+                                StoreManagerInterface $storemanager,
+    \Magento\Framework\Filesystem $filesystem
+) {
         $this->scopeConfig = $scopeConfig;
         $this->_storeManager = $storemanager;
+        $this->filesystem = $filesystem;
     }
 
 
@@ -131,9 +137,13 @@ class Data
     }
 
     public function getFeedFilePath() {
+        $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
+        if(!$relPath) {
+            $relPath = self::DEFAULT_FEED_PATH;
+        }
+        $mediaRoot = $this->filesystem->getDirectoryWrite('media')->getAbsolutePath();
+        return implode(DIRECTORY_SEPARATOR, array($mediaRoot, $relPath));
 
-
-        return BP . DIRECTORY_SEPARATOR . self::CONFIG_FEED_PATH;
     }
 
     public function getLockFilename() {
