@@ -53,12 +53,11 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
      */
     protected function _getElementHtml(\Magento\Framework\Data\Form\Element\AbstractElement $element)
     {
-        $originalData = $element->getOriginalData();
+        $config = $element->getFieldConfig();
         $this->addData(
             [            
-				'button_label' =>$originalData['button_label'],
-                'intern_url' => $this->getUrl($originalData['button_url']),
-                'load_config_url' => $this->getUrl($originalData['load_config_url']),
+				'button_label' =>$config['button_label'],
+                'generate_url' => $this->getUrl($config['button_url']),
                 'html_id' => $element->getHtmlId(),
             ]
         );

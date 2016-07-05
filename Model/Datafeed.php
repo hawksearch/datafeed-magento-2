@@ -17,6 +17,7 @@ class Datafeed extends AbstractModel{
 	private $feedSummary;
 	private $productAttributes;
     private $helper;
+    private $stockHelper;
 
 	/**
 	 * Constructor
@@ -24,7 +25,8 @@ class Datafeed extends AbstractModel{
 	 
 	 	 public function __construct(
         \Magento\Framework\Model\Context $context,
-        \Magento\Framework\Registry $registry,       
+        \Magento\Framework\Registry $registry,
+        \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
@@ -33,6 +35,7 @@ class Datafeed extends AbstractModel{
 		$object_manager = \Magento\Framework\App\ObjectManager::getInstance();
 		$helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');  
         $this->helper = $helper;
+             $this->stockHelper = $stockHelper; //$object_manager->get('Magento\CatalogInventory\Helper\Stock');
 
         if(!file_exists($this->helper->getFeedFilePath())) {
             mkdir($this->helper->getFeedFilePath(), 0777, true);
@@ -225,11 +228,13 @@ class Datafeed extends AbstractModel{
 
 		if (!$this->helper->includeOutOfStockItems()) {
 			$this->log('adding out of stock filter');
-			/** @var Magento\CatalogInventory\Model\Stock $stockfilter */
-			
-			$stockfilter =$objectManagerr->get('Magento\CatalogInventory\Model\Stock');
-			$stockfilter->addInStockFilterToCollection($products);
-		} 
+//			/** @var Magento\CatalogInventory\Model\Stock $stockfilter */
+//
+//			$stockfilter =$objectManagerr->get('Magento\CatalogInventory\Model\Stock');
+//			$stockfilter->addInStockFilterToCollection($products);
+            $this->stockHelper->addIsInStockFilterToCollection($products);
+
+        }
 
 
         $this->log(sprintf('going to open feed file %s', $filename));
@@ -310,11 +315,8 @@ class Datafeed extends AbstractModel{
 
 		if (!$this->helper->includeOutOfStockItems()) {
 			$this->log('adding out of stock filter');
-			/** @var Magento\CatalogInventory\Model\Stock $stockfilter */
-			
-			$stockfilter =$objectManagerr->get('Magento\CatalogInventory\Model\Stock');
-			$stockfilter->addInStockFilterToCollection($products);
-		} 
+            $this->stockHelper->addIsInStockFilterToCollection($products);
+		}
 
 		// taken from the product grid collection:
 		if ($objectManagerr->create('\Magento\Framework\Module\Manager')->isEnabled('Magento_CatalogInventory')) {
@@ -501,7 +503,7 @@ class Datafeed extends AbstractModel{
 				$appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
 
 			} catch (Exception $e) {
-				$this->log(sprintf("General Eception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
+				$this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
                 throw $e;
 			}
 

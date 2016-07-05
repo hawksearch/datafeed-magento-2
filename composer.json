@@ -1,5 +1,5 @@
 {
-  "name": "HawkSearch/datafeed",
+  "name": "hawksearch/datafeed",
   "type": "magento2-module",
   "description": "Hawksearch Datafeed module for Magento 2",
   "version": "2.0.0",

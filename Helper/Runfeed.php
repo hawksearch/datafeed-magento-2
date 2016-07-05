@@ -19,13 +19,13 @@ $bootstrap = \Magento\Framework\App\Bootstrap::create(BP, $_SERVER);
 $obj = $bootstrap->getObjectManager();
  
 $state = $obj->get('Magento\Framework\App\State');
-$state->setAreaCode('frontnend');
+$state->setAreaCode('frontend');
 
 $helper = $obj->get('HawkSearch\Datafeed\Helper\Data');  
 $datafeed = $obj->get('HawkSearch\Datafeed\Model\Datafeed');  
 
 if ($helper->isFeedLocked()) {
-	  throw new \Magento\Framework\Exception('One or more feeds are being generated. Generation temporarily locked.');	
+	  throw new \Exception('One or more feeds are being generated. Generation temporarily locked.');	
 }
 if ($helper->createFeedLocks()) {
 	if (isset($opts['i'])) {
