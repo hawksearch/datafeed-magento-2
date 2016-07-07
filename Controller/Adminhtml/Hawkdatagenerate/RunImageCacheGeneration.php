@@ -11,17 +11,19 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-namespace HawkSearch\Datafeed\Controller\Adminhtml\Hawkdatagenerate; 
+namespace HawkSearch\Datafeed\Controller\Adminhtml\Hawkdatagenerate;
+
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\View\Result\PageFactory;
 
-class RunImageCacheGeneration extends \Magento\Backend\App\Action
+class RunImageCacheGeneration
+    extends \Magento\Backend\App\Action
 {
     /**
      * @var PageFactory
      */
     protected $resultPageFactory;
- 
+
     /**
      * @param Context $context
      * @param PageFactory $resultPageFactory
@@ -33,45 +35,39 @@ class RunImageCacheGeneration extends \Magento\Backend\App\Action
         parent::__construct($context);
         $this->resultPageFactory = $resultPageFactory;
     }
- 
+
     /**
      *  RunImageCache execute
      *
      * @return void
      */
-    public function execute()
-    {
-			$object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-$helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');  
-$model = $object_manager->get('HawkSearch\Datafeed\Model\Datafeed');
-		$response = array('error' => false);
-		try { 
-			$disabledFuncs = explode(',', ini_get('disable_functions'));
-			$isShellDisabled = is_array($disabledFuncs) ? in_array('shell_exec', $disabledFuncs) : true;
+    public function execute() {
+        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
+        $helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');
+        $model = $object_manager->get('HawkSearch\Datafeed\Model\Datafeed');
+        $response = array('error' => false);
+        try {
+            $disabledFuncs = explode(',', ini_get('disable_functions'));
+            $isShellDisabled = is_array($disabledFuncs) ? in_array('shell_exec', $disabledFuncs) : true;
 
-			if($isShellDisabled) {
-				$response['error'] = 'This installation cannot run one off feed generation because the PHP function "shell_exec" has been disabled. Please use cron.';
-			} else {
-			
-			if(strtolower($this->getRequest()->getParam('force')) == 'true') {
-					$helper->removeFeedLocks();
-				}
-				$helper->refreshImageCache();
-				//$model->cronGenerateImagecache();
-			}
-		}
-		catch (Exception $e) {
-			//Mage::logException($e);
-			$response['error'] = $e;
-		}
-	echo json_encode($response);
-       
+            if ($isShellDisabled) {
+                $response['error'] = 'This installation cannot run one off feed generation because the PHP function "shell_exec" has been disabled. Please use cron.';
+            } else {
+
+                if (strtolower($this->getRequest()->getParam('force')) == 'true') {
+                    $helper->removeFeedLocks();
+                }
+                $helper->refreshImageCache();
+                //$model->cronGenerateImagecache();
+            }
+        } catch (Exception $e) {
+            //Mage::logException($e);
+            $response['error'] = $e;
+        }
+        echo json_encode($response);
+
         exit;
-		
-		
-		
-		
-		
-        
+
+
     }
 }

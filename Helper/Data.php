@@ -250,10 +250,10 @@ class Data
         array_pop($parts);
         $parts[] = 'Runfeed.php';
         $runfile = implode(DIRECTORY_SEPARATOR, $parts);
-        $root = getcwd();
+        $root = BP;
 
         $f = fopen($tmpfile, 'w');
-        fwrite($f, '#!/bin/sh' . "\n");
+//        fwrite($f, '#!/bin/sh' . "\n");
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
         fwrite($f, "$phpbin $runfile -i true -r $root -t $tmpfile\n");
