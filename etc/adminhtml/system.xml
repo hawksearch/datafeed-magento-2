@@ -41,17 +41,14 @@
                     <frontend_model>HawkSearch\Datafeed\Block\System\Config\Version</frontend_model>
                 </field>
             </group>
-            <group id="feed" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1"
-                   showInStore="1">
+            <group id="feed" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Feed Settings</label>
-                <field id="generate" translate="button_label" sortOrder="5" showInDefault="1" showInWebsite="1"
-                       showInStore="0">
+                <field id="generate" translate="button_label" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label/>
                     <!--<attribute type="api_key_id">ibnab_asterisk_control_apioptions_api_key</attribute>-->
                     <!--<attribute type="load_config_url">-->
                         <!--<![CDATA[asterisk/apicontrol/loadconfig]]>-->
                     <!--</attribute>-->
-                    <!--<attribute type="aardvark"><![CDATA[aardvarks in the winter]]></attribute>-->
                     <button_label>
                         <![CDATA[Generate Feed]]>
                     </button_label>
@@ -85,8 +82,7 @@
                     <label>Enable Datafeed Cron task</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="cron_string" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
-                       showInStore="1" sortOrder="35">
+                <field id="cron_string" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="35">
                     <label>Cron expression</label>
                     <comment>Max run interval is hourly, first value must be between 0 and 59</comment>
                     <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Cron</backend_model>

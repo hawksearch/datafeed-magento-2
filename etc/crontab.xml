@@ -11,15 +11,16 @@
  IN THE SOFTWARE.
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
-  <group id="hawksearch">
-    <job name="hawksearch_datafeedcheck" instance="HawkSearch\Datafeed\Controller\Cron\Index" method="execute">
-      <schedule>*/5 * * * *</schedule>
+  <group id="default">
+    <job name="hawksearch_datafeed"
+         instance="HawkSearch\Datafeed\Model\Datafeed"
+         method="cronGenerateDatafeed">
+      <schedule>0 * * * *</schedule>
     </job>
-    <job name="hawksearch_datafeed" instance="HawkSearch\Datafeed\Model\Datafeed" method="cronGenerateDatafeed">
-      <schedule>*/5 * * * *</schedule>
-    </job>
-    <job name="hawksearch_datafeed_imagecache" instance="HawkSearch\Datafeed\Model\Datafeed" method="cronGenerateImagecache">
-      <schedule>*/5 * * * *</schedule>
+    <job name="hawksearch_datafeed_imagecache"
+         instance="HawkSearch\Datafeed\Model\Datafeed"
+         method="cronGenerateImagecache">
+      <schedule>0 * * * *</schedule>
     </job>
   </group>
 </config>
