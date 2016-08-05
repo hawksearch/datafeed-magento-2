@@ -229,7 +229,7 @@ class Data
         //fwrite($f, '#!/bin/sh' . "\n");
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
-        fwrite($f, "$phpbin $runfile -r $root -t $tmpfile\n");
+        fwrite($f, "$phpbin -d memory_limit=6144M $runfile -r $root -t $tmpfile\n");
         fclose($f);
 
 
