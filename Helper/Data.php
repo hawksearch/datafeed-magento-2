@@ -256,7 +256,7 @@ class Data
 //        fwrite($f, '#!/bin/sh' . "\n");
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
-        fwrite($f, "$phpbin $runfile -i true -r $root -t $tmpfile\n");
+        fwrite($f, "$phpbin -d memory_limit=6144M $runfile -i true -r $root -t $tmpfile\n");
         fclose($f);
 
         $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
