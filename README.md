@@ -24,7 +24,6 @@
 2. Update the “require” section of your sites “composer.json” file to require the hawksearch modules:
 ```javascript
     "require": {
-        "magento/product-enterprise-edition": "2.0.7",
         [other requires…],
         "hawksearch/datafeed": "dev-master",
         "hawksearch/proxy": "dev-master"
