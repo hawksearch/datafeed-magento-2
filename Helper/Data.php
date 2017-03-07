@@ -143,7 +143,11 @@ class Data
         }
         $mediaRoot = $this->filesystem->getDirectoryWrite('media')->getAbsolutePath();
 
-        $fullPath = implode(DIRECTORY_SEPARATOR, array($mediaRoot, $relPath));
+        if(strpos(strrev($mediaRoot), '/') !== 0) {
+            $fullPath = implode(DIRECTORY_SEPARATOR, array($mediaRoot, $relPath));
+        } else {
+            $fullPath = $mediaRoot . $relPath;
+        }
 
         if(!file_exists($fullPath)) {
             mkdir($fullPath, 0777, true);
@@ -191,22 +195,33 @@ class Data
     }
 
     public function isFeedLocked() {
-        if (file_exists(implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename())))) {
+        $lockfile = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
+        if (file_exists($lockfile)) {
             return true;
         }
         return false;
     }
 
-    public function createFeedLocks() {
+    public function createFeedLocks($scriptName) {
         $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-        $this->removeFeedLocks();
-        return file_put_contents($lockfilename, date('Y-m-d H:i:s'));
+        return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
     }
 
     public function removeFeedLocks() {
         $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
 
         if (file_exists($lockfilename)) {
+            $data = json_decode(file_get_contents($lockfilename));
+            $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
+            if($procs) {
+                $procs = explode("\n", $procs);
+                foreach ($procs as $proc) {
+                    $pid = explode(' ', $proc, 2)[0];
+                    if(is_numeric($pid)){
+                        exec(sprintf('kill %s', $pid));
+                    }
+                }
+            }
             return unlink($lockfilename);
         }
         return false;
