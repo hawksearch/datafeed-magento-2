@@ -6,9 +6,66 @@
  * Time: 9:30 AM
  */
 ?>
+<?php
+    $locked = $block->isFeedLocked();
+?>
 <script>
-require(['prototype'], function(){
+    require(['prototype'], function() {
+        var locked = <?php echo $locked ? 'true' : 'false'; ?>;
+        var b = $('<?php echo $block->getHtmlId() ?>');
+        var cb = $('<?php echo $block->getHtmlId() ?>_feedforce');
+        if(locked) {
+            b.disable();
+            cb.enable();
+            cb.observe('click', function(event) {
+                if(this.checked) {
+                    b.enable();
+                } else {
+                    b.disable();
+                }
+            });
+        } else {
+            b.enable();
+            cb.disable();
+        }
+        b.observe('click', function(event) {
+            var isForce = cb.checked;
+            new Ajax.Request('<?php echo $block->getGenerateUrl(); ?>', {
+                parameters: {force: isForce},
+                onSuccess: function (transport) {
+                    var response = transport.responseText.evalJSON();
+                    var responseEl = $("hawk_datagenerate_result");
+                    if (response.error) {
+                        responseEl.innerHTML = response.error;
+                    } else {
+                        responseEl.innerHTML = "Feed generation started";
+                    }
+                    responseEl.removeClassName('hidden');
 
+                    b.disabled = true;
+                    b.addClassName("disabled");
+                    b.stopObserving('click');
+                },
+                onFailure: function (response, rHeader) {
+                    alert('There has been an error. The response is: ' + response);
+                    b.addClassName("disabled");
+                    b.stopObserving('click');
+
+                },
+                onException: function (request, exception) {
+                    alert('There has been an exception. The exceptions is: ' + exception);
+                    b.addClassName("disabled");
+                    b.stopObserving('click');
+
+                }
+            });
+
+        })
+
+    });
+
+
+require(['prototype'], function(){
 //<![CDATA[
     function hawkGenerateFeed() {
         new Ajax.Request('<?php echo $block->getGenerateUrl(); ?>', {
@@ -42,9 +99,9 @@ require(['prototype'], function(){
 
 <div class="actions actions-validate-vat">
     <div id="hawk_datagenerate_result" class="message-validation hidden"></div>
-    <button onclick="javascript:hawkGenerateFeed(); return false;"
-            type="button"
+    <button type="button"
             id="<?php echo $block->getHtmlId() ?>">
         <span><?php echo $block->escapeHtml($block->getButtonLabel()) ?></span>
     </button>
+    <input type="checkbox" value="feedforce" id="<?php echo $block->getHtmlId() ?>_feedforce" name="feedforce" /> force
 </div>

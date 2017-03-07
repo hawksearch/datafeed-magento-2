@@ -11,21 +11,19 @@
  * IN THE SOFTWARE.
  */
 namespace HawkSearch\Datafeed\Block\System\Config;
-use Magento\Framework\App\Config\ScopeConfigInterface;
+
 class Button extends \Magento\Config\Block\System\Config\Form\Field
 {
-    /**
-     * Path to block template
-     */
+    private $helper;
+    public function __construct(\Magento\Backend\Block\Template\Context $context,
+                                \HawkSearch\Datafeed\Helper\Data $helper,
+                                array $data = [])
+    {
+        $this->helper = $helper;
+        parent::__construct($context, $data);
+    }
 
-    /**
-     * Set template to itself
-     *
-     * @return $this
-     */
-	 
-
-	protected function _prepareLayout()
+    protected function _prepareLayout()
     {
         parent::_prepareLayout();
         if (!$this->getTemplate()) {
@@ -62,6 +60,9 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
             ]
         );
         return $this->_toHtml();
+    }
+    public function isFeedLocked() {
+        return $this->helper->isFeedLocked();
     }
 }
  

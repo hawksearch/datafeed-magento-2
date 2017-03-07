@@ -13,6 +13,7 @@
 
 namespace HawkSearch\Datafeed\Controller\Adminhtml\Hawkdatagenerate;
 
+use HawkSearch\Datafeed\Model\Datafeed;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\View\Result\PageFactory;
 
@@ -23,6 +24,7 @@ class RunFeedGeneration
      * @var PageFactory
      */
     protected $resultPageFactory;
+    private $helper;
 
     /**
      * @param Context $context
@@ -30,10 +32,12 @@ class RunFeedGeneration
      */
     public function __construct(
         Context $context,
-        PageFactory $resultPageFactory
+        PageFactory $resultPageFactory,
+        \HawkSearch\Datafeed\Helper\Data $helper
     ) {
         parent::__construct($context);
         $this->resultPageFactory = $resultPageFactory;
+        $this->helper = $helper;
     }
 
     /**
@@ -42,9 +46,6 @@ class RunFeedGeneration
      * @return void
      */
     public function execute() {
-        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-        $helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');
-        $model = $object_manager->get('HawkSearch\Datafeed\Model\Datafeed');
         $response = array('error' => false);
         try {
             $disabledFuncs = explode(',', ini_get('disable_functions'));
@@ -55,13 +56,11 @@ class RunFeedGeneration
             } else {
 
                 if (strtolower($this->getRequest()->getParam('force')) == 'true') {
-                    $helper->removeFeedLocks();
+                    $this->helper->removeFeedLocks();
                 }
-                //	$model->generateFeed();
-                $helper->runDatafeed();
+                $this->helper->runDatafeed();
             }
-        } catch (Exception $e) {
-            //Mage::logException($e);
+        } catch (\Exception $e) {
             $response['error'] = $e;
         }
         echo json_encode($response);

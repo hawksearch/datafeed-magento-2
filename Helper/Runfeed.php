@@ -27,7 +27,7 @@ $datafeed = $obj->get('HawkSearch\Datafeed\Model\Datafeed');
 if ($helper->isFeedLocked()) {
 	  throw new \Exception('One or more feeds are being generated. Generation temporarily locked.');	
 }
-if ($helper->createFeedLocks()) {
+if ($helper->createFeedLocks($opts['t'])) {
 	if (isset($opts['i'])) {
        $datafeed->refreshImageCache();
 	} else {
