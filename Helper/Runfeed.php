@@ -34,4 +34,5 @@ if ($helper->createFeedLocks($opts['t'])) {
         $datafeed->generateFeed();
 	}
 }
+
 unlink($opts['t']);

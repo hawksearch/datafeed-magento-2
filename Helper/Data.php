@@ -47,7 +47,7 @@ class Data
 
     public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, 
                                 StoreManagerInterface $storemanager,
-    \Magento\Framework\Filesystem $filesystem
+                                \Magento\Framework\Filesystem $filesystem
 ) {
         $this->scopeConfig = $scopeConfig;
         $this->_storeManager = $storemanager;
@@ -207,12 +207,12 @@ class Data
         return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
     }
 
-    public function removeFeedLocks() {
+    public function removeFeedLocks($kill = false) {
         $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
 
         if (file_exists($lockfilename)) {
             $data = json_decode(file_get_contents($lockfilename));
-            if(!empty($data) && isset($data->script)){
+            if(!empty($data) && isset($data->script) && $kill){
                 $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
                 if($procs) {
                     $procs = explode("\n", $procs);
@@ -232,7 +232,8 @@ class Data
     public function runDatafeed() {
 
 
-        $tmppath = sys_get_temp_dir();
+        //$tmppath = sys_get_temp_dir();
+        $tmppath = $mediaRoot = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
         $tmpfile = tempnam($tmppath, 'hawkfeed_');
 
         $parts = explode(DIRECTORY_SEPARATOR, __FILE__);
