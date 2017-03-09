@@ -9,6 +9,15 @@
 <?php
     $locked = $block->isFeedLocked();
 ?>
+<div>
+    <div id="hawk_datagenerate_result" class="message-validation hidden"></div>
+    <button type="button"
+            id="<?php echo $block->getHtmlId() ?>">
+        <span><?php echo $block->escapeHtml($block->getButtonLabel()) ?></span>
+    </button>
+    <input type="checkbox" value="feedforce" id="<?php echo $block->getHtmlId() ?>_feedforce" name="feedforce" /> force
+</div>
+
 <script>
     require(['prototype'], function() {
         var locked = <?php echo $locked ? 'true' : 'false'; ?>;
@@ -63,45 +72,5 @@
         })
 
     });
-
-
-require(['prototype'], function(){
-//<![CDATA[
-    function hawkGenerateFeed() {
-        new Ajax.Request('<?php echo $block->getGenerateUrl(); ?>', {
-            onSuccess: function (transport) {
-                var response = transport.responseText.evalJSON();
-                var responseEl = $("hawk_datagenerate_result");
-                if (response.error) {
-                    responseEl.innerHTML = response.error;
-                    responseEl.removeClassName('hidden');
-                    return;
-                }
-                responseEl.innerHTML = "Feed generation started";
-                var button = $("<?php echo $block->getHtmlId(); ?>");
-                button.disabled = true;
-                button.addClassName("disabled");
-            },
-            onFailure: function (response, rHeader) {
-                alert('There has been an error. The response is: ' + response);
-            },
-            onException: function (request, exception) {
-                alert('There has been an exception. The exceptions is: ' + exception);
-            }
-        });
-    }
-
-    window.hawkGenerateFeed = hawkGenerateFeed;
-//]]>
-
-});
 </script>
 
-<div class="actions actions-validate-vat">
-    <div id="hawk_datagenerate_result" class="message-validation hidden"></div>
-    <button type="button"
-            id="<?php echo $block->getHtmlId() ?>">
-        <span><?php echo $block->escapeHtml($block->getButtonLabel()) ?></span>
-    </button>
-    <input type="checkbox" value="feedforce" id="<?php echo $block->getHtmlId() ?>_feedforce" name="feedforce" /> force
-</div>
