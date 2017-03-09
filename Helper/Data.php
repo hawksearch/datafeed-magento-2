@@ -212,13 +212,15 @@ class Data
 
         if (file_exists($lockfilename)) {
             $data = json_decode(file_get_contents($lockfilename));
-            $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
-            if($procs) {
-                $procs = explode("\n", $procs);
-                foreach ($procs as $proc) {
-                    $pid = explode(' ', $proc, 2)[0];
-                    if(is_numeric($pid)){
-                        exec(sprintf('kill %s', $pid));
+            if(!empty($data) && isset($data->script)){
+                $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
+                if($procs) {
+                    $procs = explode("\n", $procs);
+                    foreach ($procs as $proc) {
+                        $pid = explode(' ', $proc, 2)[0];
+                        if(is_numeric($pid)){
+                            exec(sprintf('kill %s', $pid));
+                        }
                     }
                 }
             }
