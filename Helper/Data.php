@@ -202,7 +202,7 @@ class Data
         return false;
     }
 
-    public function createFeedLocks($scriptName) {
+    public function createFeedLocks($scriptName = '') {
         $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
         return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
     }
