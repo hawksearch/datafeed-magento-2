@@ -451,7 +451,7 @@ class Datafeed
                     $this->helper->createFeedLocks();
                     $this->generateFeed();
                     $message = "HawkSeach Datafeed Generated!";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     $message = sprintf('There has been an error: %s', $e->getMessage());
                     $this->helper->removeFeedLocks();
                 }
@@ -469,7 +469,7 @@ class Datafeed
 
 
         $selectedStores = $this->helper->getSelectedStores();
-        /** @var Magento\Store\Model\ResourceModel\Store\Collection $stores */
+        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
         $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
         $stores = $object_manager->get('Magento\Store\Model\ResourceModel\Store\Collection');
         $stores->addIdFilter($selectedStores);
@@ -502,7 +502,7 @@ class Datafeed
                 // end emulation
                 $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
 
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
                 throw $e;
             }
@@ -529,12 +529,12 @@ class Datafeed
                     $this->helper->createFeedLocks();
                     $this->refreshImageCache();
                     $message = "HawkSeach Imagecache Generated!";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     $message = sprintf('There has been an error: %s', $e->getMessage());
                     $this->helper->removeFeedLocks();
                 }
             }
-            /** @var HawkSearch\Datafeed\Model\Email $email */
+            /** @var \HawkSearch\Datafeed\Model\Email $email */
             $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
             $email = $objectManagerr->create('HawkSearch\Datafeed\Model\Email');
             $msg = array('message' => $message);
@@ -549,7 +549,7 @@ class Datafeed
         $this->log('starting refreshImageCache()');
 
         $selectedStores = $this->helper->getSelectedStores();
-        /** @var Magento\Store\Model\ResourceModel\Store\Collection $stores */
+        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
         $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
         $stores = $object_manager->get('Magento\Store\Model\ResourceModel\Store\Collection');
         $stores->addIdFilter($selectedStores);
