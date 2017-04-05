@@ -45,10 +45,6 @@
                 <label>Feed Settings</label>
                 <field id="generate" translate="button_label" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label/>
-                    <!--<attribute type="api_key_id">ibnab_asterisk_control_apioptions_api_key</attribute>-->
-                    <!--<attribute type="load_config_url">-->
-                        <!--<![CDATA[asterisk/apicontrol/loadconfig]]>-->
-                    <!--</attribute>-->
                     <button_label>
                         <![CDATA[Generate Feed]]>
                     </button_label>
@@ -56,7 +52,7 @@
                         <![CDATA[hawksearchdatafeed/hawkdatagenerate/runFeedGeneration]]>
                     </button_url>
                     <frontend_model>HawkSearch\Datafeed\Block\System\Config\Button</frontend_model>
-                    <comment><![CDATA[For Development purposes only, use cron job on live site]]></comment>
+                    <comment><![CDATA[For Development purposes only, use cron job on live site.]]></comment>
                 </field>
                 <field id="stores" translate="label comment" type="multiselect" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="10">
@@ -112,7 +108,7 @@
                     </button_url>
                     <frontend_model>HawkSearch\Datafeed\Block\System\Config\Cachebutton</frontend_model>
                     <comment>
-                        <![CDATA[Once you check you API access, please click Save Setting for begin use extension.]]>
+                        <![CDATA[For Development purposes only, use cron job on live site.]]>
                     </comment>
                 </field>
                 <field id="image_width" translate="label comment" type="text" showInDefault="1" showInWebsite="1"

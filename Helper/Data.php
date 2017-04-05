@@ -230,10 +230,7 @@ class Data
     }
 
     public function runDatafeed() {
-
-
-        //$tmppath = sys_get_temp_dir();
-        $tmppath = $mediaRoot = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
+        $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
         $tmpfile = tempnam($tmppath, 'hawkfeed_');
 
         $parts = explode(DIRECTORY_SEPARATOR, __FILE__);
@@ -244,7 +241,7 @@ class Data
         $root = BP;
 
         $f = fopen($tmpfile, 'w');
-        //fwrite($f, '#!/bin/sh' . "\n");
+
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
         fwrite($f, "$phpbin -d memory_limit=6144M $runfile -r $root -t $tmpfile\n");
@@ -259,10 +256,8 @@ class Data
     }
 
     public function refreshImageCache() {
-
-
-        $tmppath = sys_get_temp_dir();
-        $tmpfile = tempnam($tmppath, 'hawkfeed_');
+        $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
+        $tmpfile = tempnam($tmppath, 'hawkimage_');
 
         $parts = explode(DIRECTORY_SEPARATOR, __FILE__);
         array_pop($parts);
@@ -271,7 +266,7 @@ class Data
         $root = BP;
 
         $f = fopen($tmpfile, 'w');
-//        fwrite($f, '#!/bin/sh' . "\n");
+
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
         fwrite($f, "$phpbin -d memory_limit=6144M $runfile -i true -r $root -t $tmpfile\n");

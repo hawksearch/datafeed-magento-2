@@ -5,8 +5,6 @@
  * Date: 7/1/16
  * Time: 9:30 AM
  */
-?>
-<?php
     $locked = $block->isFeedLocked();
 ?>
 <div>
@@ -15,7 +13,11 @@
             id="<?php echo $block->getHtmlId() ?>">
         <span><?php echo $block->escapeHtml($block->getButtonLabel()) ?></span>
     </button>
-    <input type="checkbox" value="feedforce" id="<?php echo $block->getHtmlId() ?>_feedforce" name="feedforce" /> force
+    <input type="checkbox"
+           value="feedforce"
+           id="<?php echo $block->getHtmlId() ?>_feedforce"
+           name="feedforce"
+           title="force data generation" /> force
 </div>
 
 <script>
@@ -59,18 +61,14 @@
                     alert('There has been an error. The response is: ' + response);
                     b.addClassName("disabled");
                     b.stopObserving('click');
-
                 },
                 onException: function (request, exception) {
                     alert('There has been an exception. The exceptions is: ' + exception);
                     b.addClassName("disabled");
                     b.stopObserving('click');
-
                 }
             });
-
-        })
-
+        });
     });
 </script>
 

@@ -23,6 +23,7 @@ class Datafeed
     private $productAttributes;
     private $helper;
     private $stockHelper;
+    private $imageHelper;
 
     /**
      * Constructor
@@ -33,6 +34,7 @@ class Datafeed
         \Magento\Framework\Registry $registry,
         \HawkSearch\Datafeed\Helper\Data $helper,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
+        \Magento\Catalog\Helper\ImageFactory $imageHelperFactory,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
@@ -42,7 +44,7 @@ class Datafeed
 //		$helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');  
         $this->helper = $helper;
         $this->stockHelper = $stockHelper; //$object_manager->get('Magento\CatalogInventory\Helper\Stock');
-
+        $this->imageHelper = $imageHelperFactory;
 
         $this->feedSummary = new \stdClass();
         $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
@@ -561,7 +563,7 @@ class Datafeed
 
                 $appEmulation = $object_manager->get('Magento\Store\Model\App\Emulation');
                 $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
-
+                /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
                 $products = $object_manager->create('Magento\Catalog\Model\ResourceModel\Product\Collection')
                     ->addAttributeToSelect(array('small_image'))
                     ->addStoreFilter($store);
@@ -569,7 +571,7 @@ class Datafeed
                 $pages = $products->getLastPageNumber();
 
                 $currentPage = 1;
-
+                $imageHelper = $this->imageHelper->create();
                 do {
                     $this->log(sprintf('going to page %d of images', $currentPage));
                     $products->clear();
@@ -578,21 +580,12 @@ class Datafeed
 
                     foreach ($products as $product) {
                         if (empty($this->helper->getImageHeight())) {
-                            $object_manager
-                                ->get('Magento\Catalog\Helper\Image')
-                                ->init($product, 'hawksearch_autosuggest_image')
+                            $imageHelper->init($product, 'hawksearch_autosuggest_image')
                                 ->resize($this->helper->getImageWidth())
-                                ->save();
-//                            $ib = $object_manager->get('Magento\Catalog\Block\Product\ImageBuilder');
-//                            $image = $ib->setProduct($product)
-//                                ->setImageId('hawksearch_autosuggest_image')
-//                                ->create();
-//                            $image->getImageUrl();
+                                ->getUrl();
                             $this->log(sprintf('going to resize image for url: %s', $product->getName()));
                         } else {
-                            $object_manager
-                                ->get('Magento\Catalog\Helper\Image')
-                                ->init($product, 'small_image')
+                            $imageHelper->init($product, 'hawksearch_autosuggest_image')
                                 ->resize($this->helper->getImageWidth(), $this->helper->getImageHeight())
                                 ->getUrl();
                             $this->log(sprintf('going to resize image for url: %s', $product->getName()));
@@ -606,7 +599,7 @@ class Datafeed
                 // end emulation
                 $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
 
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
             }
 

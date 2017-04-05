@@ -23,6 +23,7 @@ class RunImageCacheGeneration
      * @var PageFactory
      */
     protected $resultPageFactory;
+    private $helper;
 
     /**
      * @param Context $context
@@ -30,10 +31,12 @@ class RunImageCacheGeneration
      */
     public function __construct(
         Context $context,
-        PageFactory $resultPageFactory
+        PageFactory $resultPageFactory,
+        \HawkSearch\Datafeed\Helper\Data $helper
     ) {
         parent::__construct($context);
         $this->resultPageFactory = $resultPageFactory;
+        $this->helper = $helper;
     }
 
     /**
@@ -42,9 +45,6 @@ class RunImageCacheGeneration
      * @return void
      */
     public function execute() {
-        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-        $helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');
-        $model = $object_manager->get('HawkSearch\Datafeed\Model\Datafeed');
         $response = array('error' => false);
         try {
             $disabledFuncs = explode(',', ini_get('disable_functions'));
@@ -55,19 +55,15 @@ class RunImageCacheGeneration
             } else {
 
                 if (strtolower($this->getRequest()->getParam('force')) == 'true') {
-                    $helper->removeFeedLocks();
+                    $this->helper->removeFeedLocks(true);
                 }
-                $helper->refreshImageCache();
-                //$model->cronGenerateImagecache();
+                $this->helper->refreshImageCache();
             }
-        } catch (Exception $e) {
-            //Mage::logException($e);
+        } catch (\Exception $e) {
             $response['error'] = $e;
         }
         echo json_encode($response);
 
         exit;
-
-
     }
 }
