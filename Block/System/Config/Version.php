@@ -12,12 +12,22 @@
  */
 namespace HawkSearch\Datafeed\Block\System\Config;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Backend\Block\Template;
+
 class Version extends \Magento\Config\Block\System\Config\Form\Field
 {
+    private $moduleList;
+
+    public function __construct(Template\Context $context,
+                                \Magento\Framework\Module\ModuleListInterface $moduleList,
+                                array $data = [])
+    {
+        $this->moduleList = $moduleList;
+        parent::__construct($context, $data);
+    }
 
 
-	 
-  /**
+    /**
      * Get the button and scripts contents
      *
      * @param \Magento\Framework\Data\Form\Element\AbstractElement $element
@@ -26,8 +36,7 @@ class Version extends \Magento\Config\Block\System\Config\Form\Field
 
     protected function _getElementHtml(\Magento\Framework\Data\Form\Element\AbstractElement $element)
     {
-  
-        return '2.0.0.0';
+        return $this->moduleList->getOne('HawkSearch_Datafeed')['setup_version'];
     }
 }
  
