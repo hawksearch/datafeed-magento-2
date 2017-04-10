@@ -501,6 +501,9 @@ class Datafeed
                 //exports CMS / Content Data
                 $this->getContentData($store);
 
+                // trigger reindex on hawksearch end
+                $this->helper->triggerReindex($store);
+
                 // end emulation
                 $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
 

@@ -356,4 +356,30 @@ class Data
         return true;
     }
 
+    public function triggerReindex(\Magento\Store\Model\Store $store) {
+        $mode = $this->getConfigurationData('hawksearch_proxy/proxy/mode');
+        if ($mode == '1') {
+            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_live');
+        } else {
+            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_staging');
+        }
+        $apiUrl = preg_replace('|^http://|', 'https://', $apiUrl);
+        if ('/' == substr($apiUrl, -1)) {
+            $apiUrl .= 'api/v3/index';
+        } else {
+            $apiUrl .= '/api/v3/index';
+        }
+
+        $client = new \Zend_Http_Client();
+        $client->setUri($apiUrl);
+        $client->setMethod(\Zend_Http_Client::POST);
+        $client->setHeaders('X-HawkSearch-ApiKey', $this->getConfigurationData('hawksearch_proxy/proxy/hawksearch_api_key'));
+        $client->setHeaders('Accept', 'application/json');
+
+        $response = $client->request();
+
+        return $response;
+
+    }
+
 }
