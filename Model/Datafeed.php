@@ -514,6 +514,7 @@ class Datafeed
 
         }
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
+        $this->feedSummary->complete = date(DATE_ATOM);
         file_put_contents($this->helper->getSummaryFilename(), json_encode($this->feedSummary));
         $this->log('done generating data feed files, going to remove lock files.');
         $this->helper->removeFeedLocks();
