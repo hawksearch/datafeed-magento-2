@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -10,57 +10,69 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+
 namespace HawkSearch\Datafeed\Block\System\Config;
+
+use HawkSearch\Datafeed\Helper\Data as Helper;
+use Magento\Backend\Block\Template\Context;
 
 class Button extends \Magento\Config\Block\System\Config\Form\Field
 {
-    private $helper;
-    public function __construct(\Magento\Backend\Block\Template\Context $context,
-                                \HawkSearch\Datafeed\Helper\Data $helper,
-                                array $data = [])
-    {
+    protected $helper;
+
+    /**
+     * Button constructor.
+     * @param Context $context
+     * @param Helper    $helper
+     * @param array   $data
+     */
+    public function __construct(
+        Context $context,
+        Helper $helper,
+        array $data = []
+    ) {
         $this->helper = $helper;
         parent::__construct($context, $data);
     }
 
-    protected function _prepareLayout()
-    {
+    protected function _prepareLayout() {
         parent::_prepareLayout();
         if (!$this->getTemplate()) {
-              $this->setTemplate('HawkSearch_Datafeed::system/config/button/feedgenerate.phtml');
+            $this->setTemplate('HawkSearch_Datafeed::system/config/button/feedgenerate.phtml');
         }
         return $this;
     }
-   /**
+
+    /**
      * Render button
      *
      * @param  \Magento\Framework\Data\Form\Element\AbstractElement $element
      * @return string
      */
-    public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element)
-    {
+    public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element) {
         // Remove scope label
         $element->unsScope()->unsCanUseWebsiteValue()->unsCanUseDefaultValue();
         return parent::render($element);
     }
+
     /**
      * Get the button and scripts contents
      *
      * @param \Magento\Framework\Data\Form\Element\AbstractElement $element
      * @return string
      */
-    protected function _getElementHtml(\Magento\Framework\Data\Form\Element\AbstractElement $element)
-    {
+    protected function _getElementHtml(\Magento\Framework\Data\Form\Element\AbstractElement $element) {
         $config = $element->getFieldConfig();
         $this->addData(
-            [            
-				'button_label' =>$config['button_label'],
+            [
+                'button_label' => $config['button_label'],
                 'generate_url' => $this->getUrl($config['button_url']),
                 'html_id' => $element->getHtmlId(),
             ]
         );
         return $this->_toHtml();
     }
+
     public function isFeedLocked() {
         return $this->helper->isFeedLocked();
     }
