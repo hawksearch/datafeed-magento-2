@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -13,16 +13,20 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
+use Magento\Cron\Model\Schedule;
+use Magento\Framework\App\Helper\AbstractHelper;
+use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Filesystem;
+use HawkSearch\Proxy\Helper\Data as ProxyHelper;
 use Magento\Store\Model\StoreManagerInterface;
 
-class Data
+class Data extends AbstractHelper
 {
-
-
-    protected $scopeConfig;
-    protected $_storeManager;
-    private $filesystem;
-
+    protected $filesystem;
+    /**
+     * @var Schedule
+     */
+    private $cronSchedule;
 
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
@@ -44,80 +48,83 @@ class Data
     const CONFIG_CRON_EMAIL = 'hawksearch_datafeed/feed/cron_email';
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
+    /**
+     * @var ProxyHelper
+     */
+    private $proxyHelper;
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
 
-    public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, 
-                                StoreManagerInterface $storemanager,
-                                \Magento\Framework\Filesystem $filesystem
-) {
-        $this->scopeConfig = $scopeConfig;
-        $this->_storeManager = $storemanager;
+    /**
+     * Data constructor.
+     * @param Context $context
+     * @param Filesystem $filesystem
+     * @param Schedule $cronSchedule
+     * @param StoreManagerInterface $storeManager
+     * @param ProxyHelper $proxyHelper
+     */
+    public function __construct(
+        Context $context,
+        Filesystem $filesystem,
+        Schedule $cronSchedule,
+        StoreManagerInterface $storeManager,
+        ProxyHelper $proxyHelper
+    ) {
+        parent::__construct($context);
         $this->filesystem = $filesystem;
+        $this->cronSchedule = $cronSchedule;
+        $this->proxyHelper = $proxyHelper;
+        $this->storeManager = $storeManager;
     }
-
 
     public function getConfigurationData($data) {
         $storeScope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
-        return $this->scopeConfig->getValue($data, $storeScope);
-
+        return $this->scopeConfig->getValue($data, $storeScope, $this->storeManager->getStore()->getCode());
     }
 
     public function moduleIsEnabled() {
-
         return $this->getConfigurationData(self::CONFIG_MODULE_ENABLED);
-
-
     }
 
     public function loggingIsEnabled() {
         return $this->getConfigurationData(self::CONFIG_LOGGING_ENABLED);
-
     }
 
     public function includeOutOfStockItems() {
         return $this->getConfigurationData(self::CONFIG_INCLUDE_OOS);
-
     }
 
     public function includeDisabledItems() {
         return $this->getConfigurationData(self::CONFIG_INCLUDE_DISABLED);
-
     }
 
     public function getBatchLimit() {
         return $this->getConfigurationData(self::CONFIG_BATCH_LIMIT);
-
     }
-
 
     public function getGenEmail() {
         return $this->getConfigurationData('trans_email/ident_general/email');
-
     }
 
     public function getGenName() {
         return $this->getConfigurationData('trans_email/ident_general/name');
-
     }
 
-
     public function getImageWidth() {
-
         return $this->getConfigurationData(self::CONFIG_IMAGE_WIDTH);
-
     }
 
     public function getImageHeight() {
         return $this->getConfigurationData(self::CONFIG_IMAGE_HEIGHT);
-
     }
 
     public function getCronEmail() {
         return $this->getConfigurationData(self::CONFIG_CRON_EMAIL);
-
     }
 
     public function getFieldDelimiter() {
-
         if (strtolower(self::CONFIG_FIELD_DELIMITER) == 'tab') {
             return "\t";
         } else {
@@ -126,71 +133,55 @@ class Data
     }
 
     public function getBufferSize() {
-
         $size = self::CONFIG_BUFFER_SIZE;
         return is_numeric($size) ? $size : null;
     }
 
     public function getOutputFileExtension() {
-
         return self::CONFIG_OUTPUT_EXTENSION;
     }
 
+    /**
+     * @return string
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
     public function getFeedFilePath() {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
         if(!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
-        $mediaRoot = $this->filesystem->getDirectoryWrite('media')->getAbsolutePath();
+        /** @var \Magento\Framework\Filesystem\Directory\Write $writer */
+        $mediaWriter = $this->filesystem->getDirectoryWrite('media');
+        $mediaWriter->create($relPath);
 
-        if(strpos(strrev($mediaRoot), '/') !== 0) {
-            $fullPath = implode(DIRECTORY_SEPARATOR, array($mediaRoot, $relPath));
-        } else {
-            $fullPath = $mediaRoot . $relPath;
-        }
-
-        if(!file_exists($fullPath)) {
-            mkdir($fullPath, 0777, true);
-        }
-
-        return $fullPath;
-
+        return $mediaWriter->getAbsolutePath($relPath);
     }
 
     public function getLockFilename() {
-
         return self::CONFIG_LOCK_FILENAME;
     }
 
     public function getSummaryFilename() {
-
         return $this->getFeedFilePath() . DIRECTORY_SEPARATOR . self::CONFIG_SUMMARY_FILENAME;
     }
 
     public function getSelectedStores() {
-
-
         return explode(',', $this->getConfigurationData(self::CONFIG_SELECTED_STORES));
     }
 
     public function getCronEnabled() {
-
         return $this->getConfigurationData(self::CONFIG_CRON_ENABLE);
     }
 
     public function getCronLogFilename() {
-
         return self::CONFIG_CRONLOG_FILENAME;
     }
 
     public function getCronImagecacheEnable() {
-
         return $this->getConfigurationData(self::CONFIG_CRON_IMAGECACHE_ENABLE);
     }
 
     public function getCronImagecacheEmail() {
-
-
         return $this->getConfigurationData(self::CONFIG_CRON_IMAGECACHE_EMAIL);
     }
 
@@ -244,17 +235,28 @@ class Data
 
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
-        fwrite($f, "$phpbin -d memory_limit=6144M $runfile -r $root -t $tmpfile\n");
+        fwrite($f, "$phpbin -d memory_limit=-1 $runfile -r $root -t $tmpfile\n");
         fclose($f);
-
 
         $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
 
-
         shell_exec("/bin/sh $tmpfile > $cronlog 2>&1 &");
-
     }
 
+    /**
+     * @param $summary
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function writeSummary($summary) {
+        $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
+        if(!$relPath) {
+            $relPath = self::DEFAULT_FEED_PATH;
+        }
+
+        $summaryFile = implode(DIRECTORY_SEPARATOR, [$relPath, self::CONFIG_SUMMARY_FILENAME]);
+        $writer = $this->filesystem->getDirectoryWrite('media');
+        $writer->writeFile($summaryFile, json_encode($summary, JSON_PRETTY_PRINT));
+    }
     public function refreshImageCache() {
         $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
         $tmpfile = tempnam($tmppath, 'hawkimage_');
@@ -269,117 +271,61 @@ class Data
 
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
-        fwrite($f, "$phpbin -d memory_limit=6144M $runfile -i true -r $root -t $tmpfile\n");
+        fwrite($f, "$phpbin -d memory_limit=-1 $runfile -i true -r $root -t $tmpfile\n");
         fclose($f);
 
         $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
         shell_exec("/bin/sh $tmpfile > $cronlog 2>&1 &");
-
     }
 
-    public function isValidCronString($str) {
-        $e = preg_split('#\s+#', $str, null, PREG_SPLIT_NO_EMPTY);
-        if (sizeof($e) < 5 || sizeof($e) > 6) {
-            return false;
+    /**
+     * @param $basename
+     * @return string
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function getPathForFile($basename) {
+        $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
+        if(!$relPath) {
+            $relPath = self::DEFAULT_FEED_PATH;
         }
-        $isValid = $this->testCronPartSimple(0, $e)
-            && $this->testCronPartSimple(1, $e)
-            && $this->testCronPartSimple(2, $e)
-            && $this->testCronPartSimple(3, $e)
-            && $this->testCronPartSimple(4, $e);
 
-        if (!$isValid) {
-            return false;
-        }
-        return true;
+        $dir = implode(DIRECTORY_SEPARATOR, [$relPath, $this->storeManager->getStore()->getCode()]);
 
+        $mediaWriter = $this->filesystem->getDirectoryWrite('media');
+        $mediaWriter->create($dir);
+
+        return sprintf('%s%s%s.%s', $mediaWriter->getAbsolutePath($dir), DIRECTORY_SEPARATOR, $basename, $this->getOutputFileExtension());
     }
 
-    private function testCronPartSimple($p, $e) {
-        if ($p === 0) {
-            // we only accept a single numeric value for the minute and it must be in range
-            if (!ctype_digit($e[$p])) {
-                return false;
-            }
-            if ($e[0] < 0 || $e[0] > 59) {
-                return false;
-            }
-            return true;
+    /**
+     * @param \Magento\Store\Model\Store $store
+     * @return \Zend_Http_Response
+     */
+    public function triggerReindex() {
+        // TODO: this is a cross module dependency. remove somehow (create a combined module or emit an event...)
+        $apiUrl = $this->proxyHelper->getApiUrl();
+        $apiKey = $this->proxyHelper->getApiKey();
+
+        $headers = [
+            'Accept:application/json',
+            'Cache-Control:no-cache',
+            'X-HawkSearch-ApiKey:'.$apiKey,
+            'Content-Length:0'
+        ];
+
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $apiUrl);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_NOBODY, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, []);
+            $result = curl_exec($ch);
+            $response = json_encode($result);
+        } catch (\Exception $e) {
+            $response = json_encode(['error' => $e->getMessage()]);
         }
-        return $this->testCronPart($p, $e);
-    }
-
-    private function testCronPart($p, $e) {
-
-        if ($e[$p] === '*') {
-            return true;
-        }
-
-        foreach (explode(',', $e[$p]) as $v) {
-            if (!$this->isValidCronRange($p, $v)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private function isValidCronRange($p, $v) {
-        static $range = array(array(0, 59), array(0, 23), array(1, 31), array(1, 12), array(0, 6));
-        //$n = Mage::getSingleton('cron/schedule')->getNumeric($v);
-
-        // steps can be used with ranges
-        if (strpos($v, '/') !== false) {
-            $ops = explode('/', $v);
-            if (count($ops) !== 2) {
-                return false;
-            }
-            // step must be digit
-            if (!ctype_digit($ops[1])) {
-                return false;
-            }
-            $v = $ops[0];
-        }
-        if (strpos($v, '-') !== false) {
-            $ops = explode('-', $v);
-            if (count($ops) !== 2) {
-                return false;
-            }
-            if ($ops[0] > $ops[1] || $ops[0] < $range[$p][0] || $ops[0] > $range[$p][1] || $ops[1] < $range[$p][0] || $ops[1] > $range[$p][1]) {
-                return false;
-            }
-        } else {
-            $a = Mage::getSingleton('cron/schedule')->getNumeric($v);
-            if ($a < $range[$p][0] || $a > $range[$p][1]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public function triggerReindex(\Magento\Store\Model\Store $store) {
-        $mode = $this->getConfigurationData('hawksearch_proxy/proxy/mode');
-        if ($mode == '1') {
-            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_live');
-        } else {
-            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_staging');
-        }
-        $apiUrl = preg_replace('|^http://|', 'https://', $apiUrl);
-        if ('/' == substr($apiUrl, -1)) {
-            $apiUrl .= 'api/v3/index';
-        } else {
-            $apiUrl .= '/api/v3/index';
-        }
-
-        $client = new \Zend_Http_Client();
-        $client->setUri($apiUrl);
-        $client->setMethod(\Zend_Http_Client::POST);
-        $client->setHeaders('X-HawkSearch-ApiKey', $this->getConfigurationData('hawksearch_proxy/proxy/hawksearch_api_key'));
-        $client->setHeaders('Accept', 'application/json');
-
-        $response = $client->request();
-
         return $response;
-
     }
-
 }

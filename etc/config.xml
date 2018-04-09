@@ -28,9 +28,13 @@
         <lock_filename>hawksearchFeedLock.lock</lock_filename>
         <summary_filename>hawksearchFeedSummary.json</summary_filename>
         <cronlog_filename>hawksearchCronLog.log</cronlog_filename>
+        <cron_enable>0</cron_enable>
+        <cron_string>0 0 * * *</cron_string>
       </feed>
       <imagecache>
         <image_width>135</image_width>
+        <cron_enable>0</cron_enable>
+        <cron_string>30 0 * * *</cron_string>
       </imagecache>
     </hawksearch_datafeed>
   </default>

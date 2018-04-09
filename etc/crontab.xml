@@ -15,12 +15,12 @@
     <job name="hawksearch_datafeed"
          instance="HawkSearch\Datafeed\Model\Datafeed"
          method="cronGenerateDatafeed">
-      <schedule>0 * * * *</schedule>
+      <schedule>0 0 * * *</schedule>
     </job>
     <job name="hawksearch_datafeed_imagecache"
          instance="HawkSearch\Datafeed\Model\Datafeed"
          method="cronGenerateImagecache">
-      <schedule>0 * * * *</schedule>
+      <schedule>30 0 * * *</schedule>
     </job>
   </group>
 </config>

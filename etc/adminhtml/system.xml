@@ -41,9 +41,11 @@
                     <frontend_model>HawkSearch\Datafeed\Block\System\Config\Version</frontend_model>
                 </field>
             </group>
-            <group id="feed" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="feed" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1"
+                   showInStore="1">
                 <label>Feed Settings</label>
-                <field id="generate" translate="button_label" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
+                <field id="generate" translate="button_label" sortOrder="5" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
                     <label/>
                     <button_label>
                         <![CDATA[Generate Feed]]>
@@ -63,6 +65,13 @@
                        showInStore="1" sortOrder="15">
                     <label>Batch Limit</label>
                 </field>
+                <field id="reindex" translate="label comment" type="select" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="20">
+                    <label>Run Index when Complete</label>
+                    <comment>Run an API index in the Hawksearch portal when the datafeed generation is complete.
+                    </comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
                 <field id="stockstatus" translate="label comment" type="select" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="20">
                     <label>Allow Out of Stock Items</label>
@@ -75,10 +84,11 @@
                 </field>
                 <field id="cron_enable" translate="label comment" type="select" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="30">
-                    <label>Enable Datafeed Cron task</label>
+                    <label>Enable Datafeed Cron Task</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="cron_string" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="35">
+                <field id="cron_string" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="35">
                     <label>Cron expression</label>
                     <comment>Max run interval is hourly, first value must be between 0 and 59</comment>
                     <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Cron</backend_model>
@@ -123,7 +133,7 @@
                 </field>
                 <field id="cron_enable" translate="label comment" type="select" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="25">
-                    <label>Enable Imagecache Cron task</label>
+                    <label>Enable Imagecache Cron Task</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="cron_string" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
