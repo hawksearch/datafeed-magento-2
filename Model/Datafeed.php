@@ -10,83 +10,153 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+
 namespace HawkSearch\Datafeed\Model;
 
-use HawkSearch\Datafeed\Helper\Data;
+use HawkSearch\Datafeed\Model\CsvWriterFactory;
 use Magento\Framework\Model\AbstractModel;
+use HawkSearch\Datafeed\Helper\Data as Helper;
+use Magento\Store\Model\ResourceModel\Store\Collection as StoreCollection;
+use Magento\Store\Model\App\Emulation;
+use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
+use Magento\Review\Model\Review;
+use HawkSearch\Datafeed\Model\Email;
+use Magento\Catalog\Helper\CategoryFactory;
+use Magento\ConfigurableProduct\Model\Product\Type\ConfigurableFactory;
+use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
+use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFactory;
 
-class Datafeed
-    extends AbstractModel
+class Datafeed extends AbstractModel
 {
-
     private $feedSummary;
     private $productAttributes;
     private $helper;
     private $stockHelper;
     private $imageHelper;
+    /**
+     * @var StoreCollection
+     */
+    private $storeCollection;
+    /**
+     * @var Emulation
+     */
+    private $emulation;
+    /**
+     * @var AttributeCollection
+     */
+    private $attributeCollection;
+    /**
+     * @var ProductCollection
+     */
+    private $productCollection;
+    /**
+     * @var Review
+     */
+    private $review;
+    /**
+     * @var \HawkSearch\Datafeed\Model\CsvWriter
+     */
+    private $csvWriter;
+    /**
+     * @var \Magento\Framework\Module\Manager
+     */
+    private $moduleManager;
+    /**
+     * @var \HawkSearch\Datafeed\Model\Email
+     */
+    private $email;
+    /**
+     * @var CategoryCollectionFactory
+     */
+    private $categoryCollectionFactory;
+    /**
+     * @var CategoryFactory
+     */
+    private $categoryHelperFactory;
+    /**
+     * @var ConfigurableFactory
+     */
+    private $configurableFactory;
+    /**
+     * @var PageCollectionFactory
+     */
+    private $pageCollectionFactory;
 
     /**
      * Constructor
+     * @param \Magento\Framework\Model\Context $context
+     * @param \Magento\Framework\Registry $registry
+     * @param Helper $helper
+     * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
+     * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
+     * @param StoreCollection $storeCollection
+     * @param Emulation $emulation
+     * @param AttributeCollection $attributeCollection
+     * @param ProductCollectionFactory $productCollection
+     * @param Review $review
+     * @param \HawkSearch\Datafeed\Model\CsvWriterFactory $csvWriter
+     * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
+     * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
+     * @param array $data
      */
-
     public function __construct(
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
-        \HawkSearch\Datafeed\Helper\Data $helper,
+        Helper $helper,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Catalog\Helper\ImageFactory $imageHelperFactory,
+        StoreCollection $storeCollection,
+        Emulation $emulation,
+        AttributeCollection $attributeCollection,
+        ProductCollection $productCollection,
+        Review $review,
+        CsvWriterFactory $csvWriter,
+        Email $email,
+        CategoryCollectionFactory $categoryCollectionFactory,
+        CategoryFactory $categoryHelperFactory,
+        ConfigurableFactory $configurableFactory,
+        PageCollectionFactory $pageCollectionFactory,
+        \Magento\Framework\Module\Manager $moduleManager,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
-    ) {
-
-//		$object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-//		$helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');  
+    )
+    {
         $this->helper = $helper;
-        $this->stockHelper = $stockHelper; //$object_manager->get('Magento\CatalogInventory\Helper\Stock');
+        $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
-
-        $this->feedSummary = new \stdClass();
         $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
-
+        $this->feedSummary = new \stdClass();
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
+        $this->storeCollection = $storeCollection;
+        $this->emulation = $emulation;
+        $this->attributeCollection = $attributeCollection;
+        $this->productCollection = $productCollection;
+        $this->review = $review;
+        $this->csvWriter = $csvWriter;
+        $this->moduleManager = $moduleManager;
+        $this->email = $email;
+        $this->categoryCollectionFactory = $categoryCollectionFactory;
+        $this->categoryHelperFactory = $categoryHelperFactory;
+        $this->configurableFactory = $configurableFactory;
+        $this->pageCollectionFactory = $pageCollectionFactory;
     }
-
 
     /**
      * Adds a log entry to the hawksearch proxy log. Logging must
      * be enabled for both the module and Magneto
      *
-     *
      * @param $message
      */
-    public function log($message) {
+    public function log($message)
+    {
         if ($this->helper->loggingIsEnabled()) {
-
             $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/hawksearch.log');
             $logger = new \Zend\Log\Logger();
             $logger->addWriter($writer);
             $logger->info("HAWKSEARCH: $message");
-
         }
-    }
-
-    public function crontest() {
-
-        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/crontest.log');
-        $logger = new \Zend\Log\Logger();
-        $logger->addWriter($writer);
-        $logger->info("HAWKSEARCH: checking Cron");
-
-    }
-
-    private function getPathForFile($basename) {
-        $dir = sprintf('%s/%s', $this->helper->getFeedFilePath(), end($this->feedSummary->stores));
-        $this->log(sprintf('checking for dir: %s', $dir));
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        return sprintf('%s/%s.%s', $dir, $basename, $this->helper->getOutputFileExtension());
     }
 
     /**
@@ -97,7 +167,8 @@ class Datafeed
      * @param $all
      * @param $tree
      */
-    private function r_find($pid, &$all, &$tree) {
+    private function r_find($pid, &$all, &$tree)
+    {
         foreach ($all as $item) {
             if ($item['pid'] == $pid) {
                 $tree[] = $item;
@@ -107,13 +178,12 @@ class Datafeed
     }
 
 
-    private function getCategoryData(\Magento\Store\Model\Store $store) {
+    private function getCategoryData(\Magento\Store\Model\Store $store)
+    {
         $this->log('starting _getCategoryData()');
-        $filename = $this->getPathForFile('hierarchy');
+        $filename = $this->helper->getPathForFile('hierarchy');
 
-        $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
-        $categoryFactory = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Category\CollectionFactory');
-        $collection = $categoryFactory->create();
+        $collection = $this->categoryCollectionFactory->create();
         $collection->addAttributeToSelect(array('name', 'is_active', 'parent_id', 'position', 'include_in_menu'));
         $collection->addAttributeToFilter('is_active', array('eq' => '1'));
         $collection->addAttributeToSort('entity_id')->addAttributeToSort('parent_id')->addAttributeToSort('position');
@@ -122,13 +192,15 @@ class Datafeed
         $currentPage = 1;
 
         $this->log(sprintf('going to open feed file %s', $filename));
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+
+        $output = $this->csvWriter->create()->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('file open, going to append header and root');
         $output->appendRow(array('category_id', 'category_name', 'parent_category_id', 'sort_order', 'is_active', 'category_url', 'include_in_menu'));
         $output->appendRow(array('1', 'Root', '0', '0', '1', '/', '1'));
         $this->log('header and root appended');
         $base = $store->getBaseUrl();
 
+        $categoryHelper = $this->categoryHelperFactory->create();
         $cats = array();
         do {
             //$this->log(sprintf('getting category page %d', $currentPage));
@@ -138,7 +210,7 @@ class Datafeed
             foreach ($collection as $cat) {
 
 
-                $fullUrl = $objectManagerr->create('\Magento\Catalog\Helper\Category')->getCategoryUrl($cat);
+                $fullUrl = $categoryHelper->getCategoryUrl($cat);
                 $category_url = substr($fullUrl, strlen($base));
                 if (substr($category_url, 0, 1) != '/') {
                     $category_url = '/' . $category_url;
@@ -184,26 +256,22 @@ class Datafeed
         return true;
     }
 
-    private function getAttributeData(\Magento\Store\Model\Store $store) {
-
-        $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
-
-
+    private function getAttributeData(\Magento\Store\Model\Store $store)
+    {
         $this->log('starting _getAttributeData');
-        $filename = $this->getPathForFile('attributes');
-        $labelFilename = $this->getPathForFile('labels');
+        $filename = $this->helper->getPathForFile('attributes');
+        $labelFilename = $this->helper->getPathForFile('labels');
 
         $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
         $start = time();
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
-        $pac = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection');
+        $pac = $this->attributeCollection->create();
         $pac->addSearchableAttributeFilter();
         $pac->addStoreLabel($store->getId());
         $attributes = array();
 
-        $labels = new \HawkSearch\Datafeed\Model\CsvWriter($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $labels = $this->csvWriter->create()->init($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $labels->appendRow(array('key', 'store_label'));
-        /** @var Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
+        /** @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
         foreach ($pac as $att) {
             $attributes[$att->getAttributeCode()] = $att;
             $labels->appendRow(array($att->getAttributeCode(), $att->getStoreLabel()));
@@ -211,8 +279,8 @@ class Datafeed
         $labels->closeOutput();
         $this->log(sprintf('Label export took %d seconds', time() - $start));
 
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-        $products = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Collection');
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
+        $products = $this->productCollection->create();
         $feedCodes = array_diff(array_keys($attributes), $this->productAttributes);
         if (!in_array('sku', $feedCodes)) {
             array_push($feedCodes, 'sku');
@@ -230,17 +298,12 @@ class Datafeed
 
         if (!$this->helper->includeOutOfStockItems()) {
             $this->log('adding out of stock filter');
-//			/** @var Magento\CatalogInventory\Model\Stock $stockfilter */
-//
-//			$stockfilter =$objectManagerr->get('Magento\CatalogInventory\Model\Stock');
-//			$stockfilter->addInStockFilterToCollection($products);
             $this->stockHelper->addIsInStockFilterToCollection($products);
-
         }
 
 
         $this->log(sprintf('going to open feed file %s', $filename));
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output = $this->csvWriter->create()->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('feed file open, appending header');
         $output->appendRow(array('unique_id', 'key', 'value'));
 
@@ -248,15 +311,12 @@ class Datafeed
         $pages = $products->getLastPageNumber();
         $currentPage = 1;
 
-        /** @var Magento\Review\Model\Review $review */
-        $review = $objectManagerr->get('Magento\Review\Model\Review');
-
         do {
             $this->log(sprintf('starting attribute export for page %d', $currentPage));
             $start = time();
             $products->setCurPage($currentPage);
             $products->clear();
-            $review->appendSummary($products);
+            $this->review->appendSummary($products);
             $products->load();
             foreach ($products as $product) {
                 foreach ($feedCodes as $attcode) {
@@ -302,11 +362,10 @@ class Datafeed
         } while ($currentPage <= $pages);
     }
 
-    private function getProductData(\Magento\Store\Model\Store $store) {
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-        $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
-
-        $products = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Collection');
+    private function getProductData(\Magento\Store\Model\Store $store)
+    {
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
+        $products = $this->productCollection->create();
         $products->addAttributeToSelect($this->productAttributes);
         $products->addMinimalPrice();
         $products->addStoreFilter($store);
@@ -322,7 +381,7 @@ class Datafeed
         }
 
         // taken from the product grid collection:
-        if ($objectManagerr->create('\Magento\Framework\Module\Manager')->isEnabled('Magento_CatalogInventory')) {
+        if ($this->moduleManager->isEnabled('Magento_CatalogInventory')) {
             $products->joinField(
                 'qty',
                 'cataloginventory_stock_item',
@@ -333,8 +392,9 @@ class Datafeed
             );
         }
 
-        $filename = $this->getPathForFile('items');
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $filename = $this->helper->getPathForFile('items');
+
+        $output = $this->csvWriter->create()->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array(
             'product_id',
             'unique_id',
@@ -364,7 +424,7 @@ class Datafeed
         $products->setPageSize($this->helper->getBatchLimit());
         $pages = $products->getLastPageNumber();
         $currentPage = 1;
-
+        $configurable = $this->configurableFactory->create();
         do {
             $this->log(sprintf('Starting product page %d', $currentPage));
             $products->setCurPage($currentPage);
@@ -374,7 +434,7 @@ class Datafeed
             $seconds = time() - $start;
             $this->log(sprintf('it took %d seconds to load product page %d', $seconds, $currentPage));
             $start = time();
-            /** @var Magento\Catalog\Model\Product $product */
+            /** @var \Magento\Catalog\Model\Product $product */
             foreach ($products as $product) {
                 $output->appendRow(array(
                     $product->getId(),
@@ -387,7 +447,7 @@ class Datafeed
                     $product->getSpecialPrice(),
                     $product->getSpecialFromDate(),
                     $product->getSpecialToDate(),
-                    $this->getGroupId($product),
+                    $this->getGroupId($product, $configurable),
                     $product->getShortDescription(),
                     $product->getDescription(),
                     '',
@@ -410,11 +470,10 @@ class Datafeed
         $this->log('done with _getProductData()');
     }
 
-    private function getGroupId(\Magento\Catalog\Model\Product $product) {
-        $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
+    private function getGroupId(\Magento\Catalog\Model\Product $product, $configurable)
+    {
         if ($product->getTypeId() == \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE) {
-            $vals = implode(",", $objectManagerr->create('Magento\ConfigurableProduct\Model\Product\Type\Configurable')
-                ->getParentIdsByChild($product->getId()));
+            $vals = implode(",", $configurable->getParentIdsByChild($product->getId()));
             if (!empty($vals)) {
                 return $vals;
             }
@@ -422,13 +481,16 @@ class Datafeed
         return $product->getId();
     }
 
-    private function getContentData(\Magento\Store\Model\Store $store) {
-        $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
+    private function getContentData(\Magento\Store\Model\Store $store)
+    {
         $this->log('starting getContentData()');
-        $collection = $objectManagerr->create('Magento\Cms\Model\ResourceModel\Page\Collection');
+        /** @var \Magento\Cms\Model\ResourceModel\Page\Collection $collection */
+        $collection = $this->pageCollectionFactory->create();
         $collection->addStoreFilter($store->getId());
+        $collection->addFieldToFilter('is_active', ['eq' => 1]);
 
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($this->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+
+        $output = $this->csvWriter->create()->init($this->helper->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array('unique_id', 'name', 'url_detail', 'description_short', 'created_date'));
 
         foreach ($collection as $page) {
@@ -443,60 +505,73 @@ class Datafeed
         $this->log('done with getting content data');
     }
 
-
-    public function cronGenerateDatafeed() {
-        if ($this->helper->getCronEnabled()) {
+    public function cronGenerateImagecache()
+    {
+        if ($this->helper->getCronImagecacheEnable()) {
+            $vars = [];
+            $vars['jobTitle'] = 'Imagecache';
             if ($this->helper->isFeedLocked()) {
-                $message = "Hawksearch Datafeed is currently locked, not generating feed at this time.";
+                $vars['message'] = "Hawksearch is currently locked, not generating the Imagecache at this time.";
+            } else {
+                try {
+                    $this->helper->createFeedLocks();
+                    $this->refreshImageCache();
+                    $vars['message'] = "HawkSeach Imagecache Generated!";
+                } catch (\Exception $e) {
+                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
+                    $this->helper->removeFeedLocks();
+                }
+            }
+            $this->email->sendEmail($vars);
+        }
+    }
+
+    public function cronGenerateDatafeed()
+    {
+        if ($this->helper->getCronEnabled()) {
+            $vars = [];
+            $vars['jobTitle'] = 'Datafeed';
+            if ($this->helper->isFeedLocked()) {
+                $vars['message'] = "Hawksearch is currently locked, not generating feed at this time.";
             } else {
                 try {
                     $this->helper->createFeedLocks();
                     $this->generateFeed();
-                    $message = "HawkSeach Datafeed Generated!";
+
+                    $vars['message'] = "HawkSeach Datafeed Generated!";
                 } catch (\Exception $e) {
-                    $message = sprintf('There has been an error: %s', $e->getMessage());
+                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
                     $this->helper->removeFeedLocks();
                 }
             }
-            $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
-            $email = $objectManagerr->create('HawkSearch\Datafeed\Model\Email');
-
-            $msg = array('message' => $message);
-            $email->sendEmail($msg);
+            $this->email->sendEmail($vars);
         }
-
     }
 
-    public function generateFeed() {
-
-
+    public function generateFeed()
+    {
         $selectedStores = $this->helper->getSelectedStores();
-        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
-        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-        $stores = $object_manager->get('Magento\Store\Model\ResourceModel\Store\Collection');
+        $stores = $this->storeCollection;
         $stores->addIdFilter($selectedStores);
 
         /** @var \Magento\Store\Model\Store $store */
         foreach ($stores as $store) {
             try {
-
-
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $appEmulation = $object_manager->get('Magento\Store\Model\App\Emulation');
-                $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId());
 
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
-                $this->setFeedFolder($store);
+                $this->feedSummary->stores[$store->getCode()] = ['start_time' => date(DATE_ATOM)];
 
                 //exports Category Data
-                $this->getCategoryData($store);
+                //$this->getCategoryData($store);
 
                 //exports Product Data
-                $this->getProductData($store);
+                //$this->getProductData($store);
 
                 //exports Attribute Data
-                $this->getAttributeData($store);
+                //$this->getAttributeData($store);
 
                 //exports CMS / Content Data
                 $this->getContentData($store);
@@ -504,9 +579,10 @@ class Datafeed
                 // trigger reindex on hawksearch end
                 $this->helper->triggerReindex($store);
 
-                // end emulation
-                $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+                $this->feedSummary->stores[$store->getCode()]['end_time'] = date(DATE_ATOM);
 
+                // end emulation
+                $this->emulation->stopEnvironmentEmulation();
             } catch (\Exception $e) {
                 $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
                 throw $e;
@@ -515,60 +591,30 @@ class Datafeed
         }
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
         $this->feedSummary->complete = date(DATE_ATOM);
-        file_put_contents($this->helper->getSummaryFilename(), json_encode($this->feedSummary));
+        $this->helper->writeSummary($this->feedSummary);
+
         $this->log('done generating data feed files, going to remove lock files.');
         $this->helper->removeFeedLocks();
         $this->log('all done, goodbye');
 
     }
 
-    public function setFeedFolder(\Magento\Store\Model\Store $store) {
-        $this->feedSummary->stores[] = $store->getCode();
-    }
 
-    public function cronGenerateImagecache() {
-        if ($this->helper->getCronEnabled()) {
-            if ($this->helper->isFeedLocked()) {
-                $message = "Hawksearch Datafeed is currently locked, not generating feed at this time.";
-            } else {
-                try {
-                    $this->helper->createFeedLocks();
-                    $this->refreshImageCache();
-                    $message = "HawkSeach Imagecache Generated!";
-                } catch (\Exception $e) {
-                    $message = sprintf('There has been an error: %s', $e->getMessage());
-                    $this->helper->removeFeedLocks();
-                }
-            }
-            /** @var \HawkSearch\Datafeed\Model\Email $email */
-            $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
-            $email = $objectManagerr->create('HawkSearch\Datafeed\Model\Email');
-            $msg = array('message' => $message);
-            $email->sendEmail($msg);
-
-        }
-
-
-    }
-
-    public function refreshImageCache() {
+    public function refreshImageCache()
+    {
         $this->log('starting refreshImageCache()');
 
         $selectedStores = $this->helper->getSelectedStores();
-        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
-        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-        $stores = $object_manager->get('Magento\Store\Model\ResourceModel\Store\Collection');
-        $stores->addIdFilter($selectedStores);
+        $this->storeCollection->addIdFilter($selectedStores);
 
         /** @var \Magento\Store\Model\Store $store */
-        foreach ($stores as $store) {
+        foreach ($this->storeCollection as $store) {
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $appEmulation = $object_manager->get('Magento\Store\Model\App\Emulation');
-                $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId());
                 /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-                $products = $object_manager->create('Magento\Catalog\Model\ResourceModel\Product\Collection')
+                $products = $this->productCollection->create()
                     ->addAttributeToSelect(array('small_image'))
                     ->addStoreFilter($store);
                 $products->setPageSize($this->helper->getBatchLimit());
@@ -586,13 +632,11 @@ class Datafeed
                         if (empty($this->helper->getImageHeight())) {
                             $imageHelper->init($product, 'hawksearch_autosuggest_image')
                                 ->resize($this->helper->getImageWidth())
-                                ->getUrl();
-                            $this->log(sprintf('going to resize image for url: %s', $product->getName()));
+                                ->save();
                         } else {
                             $imageHelper->init($product, 'hawksearch_autosuggest_image')
                                 ->resize($this->helper->getImageWidth(), $this->helper->getImageHeight())
-                                ->getUrl();
-                            $this->log(sprintf('going to resize image for url: %s', $product->getName()));
+                                ->save();
                         }
                     }
 
@@ -601,7 +645,7 @@ class Datafeed
                 } while ($currentPage <= $pages);
 
                 // end emulation
-                $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+                $this->emulation->stopEnvironmentEmulation();
 
             } catch (\Exception $e) {
                 $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
@@ -611,5 +655,4 @@ class Datafeed
         $this->helper->removeFeedLocks();
         $this->log('Done generating image cache for selected stores, goodbye');
     }
-
 }

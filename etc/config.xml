@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
- Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -19,6 +19,7 @@
       </general>
       <feed>
         <batch_limit>10000</batch_limit>
+        <reindex>0</reindex>
         <stockstatus>0</stockstatus>
         <itemstatus>0</itemstatus>
         <delimiter>tab</delimiter>
@@ -28,9 +29,13 @@
         <lock_filename>hawksearchFeedLock.lock</lock_filename>
         <summary_filename>hawksearchFeedSummary.json</summary_filename>
         <cronlog_filename>hawksearchCronLog.log</cronlog_filename>
+        <cron_enable>0</cron_enable>
+        <cron_string>0 0 * * *</cron_string>
       </feed>
       <imagecache>
         <image_width>135</image_width>
+        <cron_enable>0</cron_enable>
+        <cron_string>30 0 * * *</cron_string>
       </imagecache>
     </hawksearch_datafeed>
   </default>

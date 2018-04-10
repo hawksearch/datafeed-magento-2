@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -15,24 +15,24 @@ chdir($opts['r']);
 require 'app/bootstrap.php';
 
 $bootstrap = \Magento\Framework\App\Bootstrap::create(BP, $_SERVER);
- 
+
 $obj = $bootstrap->getObjectManager();
- 
+
 $state = $obj->get('Magento\Framework\App\State');
 $state->setAreaCode('frontend');
 
-$helper = $obj->get('HawkSearch\Datafeed\Helper\Data');  
-$datafeed = $obj->get('HawkSearch\Datafeed\Model\Datafeed');  
+$helper = $obj->get('HawkSearch\Datafeed\Helper\Data');
+$datafeed = $obj->get('HawkSearch\Datafeed\Model\Datafeed');
 
 if ($helper->isFeedLocked()) {
-	  throw new \Exception('One or more feeds are being generated. Generation temporarily locked.');	
+    throw new \Exception('One or more feeds are being generated. Generation temporarily locked.');
 }
 if ($helper->createFeedLocks($opts['t'])) {
-	if (isset($opts['i'])) {
-       $datafeed->refreshImageCache();
-	} else {
+    if (isset($opts['i'])) {
+        $datafeed->refreshImageCache();
+    } else {
         $datafeed->generateFeed();
-	}
+    }
 }
 
 unlink($opts['t']);
