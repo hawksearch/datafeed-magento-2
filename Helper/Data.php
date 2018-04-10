@@ -18,6 +18,7 @@ use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Filesystem;
 use HawkSearch\Proxy\Helper\Data as ProxyHelper;
+use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 class Data extends AbstractHelper
@@ -48,6 +49,7 @@ class Data extends AbstractHelper
     const CONFIG_CRON_EMAIL = 'hawksearch_datafeed/feed/cron_email';
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
+    const CONFIG_TRIGGER_REINDEX = 'hawksearch_datafeed/feed/reindex';
     /**
      * @var ProxyHelper
      */
@@ -80,8 +82,12 @@ class Data extends AbstractHelper
     }
 
     public function getConfigurationData($data) {
-        $storeScope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
+        $storeScope = ScopeInterface::SCOPE_STORE;
         return $this->scopeConfig->getValue($data, $storeScope, $this->storeManager->getStore()->getCode());
+    }
+
+    public function getTriggerReindex() {
+        return $this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $this->storeManager->getStore()->getCode());
     }
 
     public function moduleIsEnabled() {
@@ -298,34 +304,38 @@ class Data extends AbstractHelper
     }
 
     /**
-     * @param \Magento\Store\Model\Store $store
-     * @return \Zend_Http_Response
+     * @return string
      */
-    public function triggerReindex() {
+    public function triggerReindex()
+    {
         // TODO: this is a cross module dependency. remove somehow (create a combined module or emit an event...)
-        $apiUrl = $this->proxyHelper->getApiUrl();
-        $apiKey = $this->proxyHelper->getApiKey();
+        if ($this->getTriggerReindex()) {
+            $apiUrl = $this->proxyHelper->getApiUrl();
+            $apiKey = $this->proxyHelper->getApiKey();
 
-        $headers = [
-            'Accept:application/json',
-            'Cache-Control:no-cache',
-            'X-HawkSearch-ApiKey:'.$apiKey,
-            'Content-Length:0'
-        ];
+            $headers = [
+                'Accept:application/json',
+                'Cache-Control:no-cache',
+                'X-HawkSearch-ApiKey:' . $apiKey,
+                'Content-Length:0'
+            ];
 
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $apiUrl);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_NOBODY, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, []);
-            $result = curl_exec($ch);
-            $response = json_encode($result);
-        } catch (\Exception $e) {
-            $response = json_encode(['error' => $e->getMessage()]);
+            try {
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $apiUrl);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_NOBODY, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, []);
+                $result = curl_exec($ch);
+                $response = json_encode($result);
+            } catch (\Exception $e) {
+                $response = json_encode(['error' => $e->getMessage()]);
+            }
+            return $response;
+        } else {
+            return null;
         }
-        return $response;
     }
 }

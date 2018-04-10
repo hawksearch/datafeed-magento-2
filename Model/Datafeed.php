@@ -484,8 +484,11 @@ class Datafeed extends AbstractModel
     private function getContentData(\Magento\Store\Model\Store $store)
     {
         $this->log('starting getContentData()');
+        /** @var \Magento\Cms\Model\ResourceModel\Page\Collection $collection */
         $collection = $this->pageCollectionFactory->create();
         $collection->addStoreFilter($store->getId());
+        $collection->addFieldToFilter('is_active', ['eq' => 1]);
+
 
         $output = $this->csvWriter->create()->init($this->helper->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array('unique_id', 'name', 'url_detail', 'description_short', 'created_date'));
@@ -505,41 +508,43 @@ class Datafeed extends AbstractModel
     public function cronGenerateImagecache()
     {
         if ($this->helper->getCronImagecacheEnable()) {
+            $vars = [];
+            $vars['jobTitle'] = 'Imagecache';
             if ($this->helper->isFeedLocked()) {
-                $message = "Hawksearch Datafeed is currently locked, not generating feed at this time.";
+                $vars['message'] = "Hawksearch is currently locked, not generating the Imagecache at this time.";
             } else {
                 try {
                     $this->helper->createFeedLocks();
                     $this->refreshImageCache();
-                    $message = "HawkSeach Imagecache Generated!";
+                    $vars['message'] = "HawkSeach Imagecache Generated!";
                 } catch (\Exception $e) {
-                    $message = sprintf('There has been an error: %s', $e->getMessage());
+                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
                     $this->helper->removeFeedLocks();
                 }
             }
-            $msg = array('message' => $message);
-            $this->email->sendEmail($msg);
+            $this->email->sendEmail($vars);
         }
     }
 
     public function cronGenerateDatafeed()
     {
         if ($this->helper->getCronEnabled()) {
+            $vars = [];
+            $vars['jobTitle'] = 'Datafeed';
             if ($this->helper->isFeedLocked()) {
-                $message = "Hawksearch Datafeed is currently locked, not generating feed at this time.";
+                $vars['message'] = "Hawksearch is currently locked, not generating feed at this time.";
             } else {
                 try {
                     $this->helper->createFeedLocks();
                     $this->generateFeed();
-                    $message = "HawkSeach Datafeed Generated!";
+
+                    $vars['message'] = "HawkSeach Datafeed Generated!";
                 } catch (\Exception $e) {
-                    $message = sprintf('There has been an error: %s', $e->getMessage());
+                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
                     $this->helper->removeFeedLocks();
                 }
             }
-
-            $msg = array('message' => $message);
-            $this->email->sendEmail($msg);
+            $this->email->sendEmail($vars);
         }
     }
 
@@ -572,7 +577,7 @@ class Datafeed extends AbstractModel
                 $this->getContentData($store);
 
                 // trigger reindex on hawksearch end
-                //$this->helper->triggerReindex($store);
+                $this->helper->triggerReindex($store);
 
                 $this->feedSummary->stores[$store->getCode()]['end_time'] = date(DATE_ATOM);
 

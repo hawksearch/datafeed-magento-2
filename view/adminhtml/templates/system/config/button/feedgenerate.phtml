@@ -1,11 +1,16 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: mageuser
- * Date: 7/1/16
- * Time: 9:30 AM
+ * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
  */
-    $locked = $block->isFeedLocked();
+$locked = $block->isFeedLocked();
 ?>
 <div>
     <div id="hawk_datagenerate_result" class="message-validation hidden"></div>
@@ -17,19 +22,19 @@
            value="feedforce"
            id="<?php echo $block->getHtmlId() ?>_feedforce"
            name="feedforce"
-           title="force data generation" /> force
+           title="force data generation"/> force
 </div>
 
 <script>
-    require(['prototype'], function() {
+    require(['prototype'], function () {
         var locked = <?php echo $locked ? 'true' : 'false'; ?>;
         var b = $('<?php echo $block->getHtmlId() ?>');
         var cb = $('<?php echo $block->getHtmlId() ?>_feedforce');
-        if(locked) {
+        if (locked) {
             b.disable();
             cb.enable();
-            cb.observe('click', function(event) {
-                if(this.checked) {
+            cb.observe('click', function (event) {
+                if (this.checked) {
                     b.enable();
                 } else {
                     b.disable();
@@ -39,7 +44,7 @@
             b.enable();
             cb.disable();
         }
-        b.observe('click', function(event) {
+        b.observe('click', function (event) {
             var isForce = cb.checked;
             new Ajax.Request('<?php echo $block->getGenerateUrl(); ?>', {
                 parameters: {force: isForce},

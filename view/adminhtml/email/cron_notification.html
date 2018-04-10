@@ -1,6 +1,6 @@
 <!--
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -11,20 +11,18 @@
  * IN THE SOFTWARE.
  */
 -->
-<!--@subject Hawksearch Datafeed Cron notice  @-->
+<!--@subject Hawksearch {{var jobTitle|raw}} Cron Notice  @-->
 <!--@vars {
-"template config_path=\"design\/email\/footer_template\"":"Email Footer Template",
-"template config_path=\"design\/email\/header_template\"":"Email Header Template"
+"var message":"Message",
+"var jobTitle":"Job Title"
 } @-->
 
-
 {{template config_path="design/email/header_template"}}
-
 <div>
     <h1>Cron Notice</h1>
     <p>
-        The Hawksearch Datafeed cron job has completed with the following message:
-        {{var message}}
+        The Hawksearch {{var jobTitle|raw}} cron job has completed with the following message:
+        {{var message|raw}}
 
         Please check HawkSearch log files for more information (if an error is reported above)
 
