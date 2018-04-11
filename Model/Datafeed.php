@@ -565,16 +565,16 @@ class Datafeed extends AbstractModel
                 $this->feedSummary->stores[$store->getCode()] = ['start_time' => date(DATE_ATOM)];
 
                 //exports Category Data
-                //$this->getCategoryData($store);
+                $this->getCategoryData($store);
 
                 //exports Product Data
-                //$this->getProductData($store);
+                $this->getProductData($store);
 
                 //exports Attribute Data
-                //$this->getAttributeData($store);
+                $this->getAttributeData($store);
 
                 //exports CMS / Content Data
-                //$this->getContentData($store);
+                $this->getContentData($store);
 
                 // trigger reindex on hawksearch end
                 $this->helper->triggerReindex($store);
