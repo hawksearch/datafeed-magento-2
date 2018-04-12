@@ -15,6 +15,7 @@ namespace HawkSearch\Datafeed\Block\System\Config;
 
 use HawkSearch\Datafeed\Helper\Data as Helper;
 use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Data\Form\Element\AbstractElement;
 
 class Button extends \Magento\Config\Block\System\Config\Form\Field
 {
@@ -46,10 +47,11 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
     /**
      * Render button
      *
-     * @param  \Magento\Framework\Data\Form\Element\AbstractElement $element
+     * @param  AbstractElement $element
      * @return string
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element) {
+    public function render(AbstractElement $element) {
         // Remove scope label
         $element->unsScope()->unsCanUseWebsiteValue()->unsCanUseDefaultValue();
         return parent::render($element);
@@ -58,10 +60,11 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
     /**
      * Get the button and scripts contents
      *
-     * @param \Magento\Framework\Data\Form\Element\AbstractElement $element
+     * @param AbstractElement $element
      * @return string
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
-    protected function _getElementHtml(\Magento\Framework\Data\Form\Element\AbstractElement $element) {
+    protected function _getElementHtml(AbstractElement $element) {
         $config = $element->getFieldConfig();
         $this->addData(
             [
