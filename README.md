@@ -8,34 +8,27 @@
     "repositories": {
         "0": {
             "type": "composer",
-            "url": https://repo.magento.com/
+            "url": "https://repo.magento.com/""
         },
         "hawksearch-datafeed": {
             "type": "git",
-            "url": https://gitlab.idevdesign.net/magento2-modules/hawksearch-datafeed-2.git
-        },
-        "hawksearch-proxy": {
-            "type": "git",
-            "url": https://gitlab.idevdesign.net/magento2-modules/hawksearch-proxy-2.git
+            "url": "https://cl-git-1vus02.idevdesign.net/magento2-modules/hawksearch-datafeed-2.git"
         }
+    }
+```
 
-    }
+OR by using composer commands directly:
 ```
-2. Update the “require” section of your sites “composer.json” file to require the hawksearch modules:
-```javascript
-    "require": {
-        [other requires…],
-        "hawksearch/datafeed": "dev-master",
-        "hawksearch/proxy": "dev-master"
-    }
+composer config repositories.hawksearch-datafeed git https://cl-git-1vus02.idevdesign.net/magento2-modules/hawksearch-datafeed-2.git
 ```
-3. While logged in as the Magento filesystem owner, run the following commands in a command shell from your Magento 2 root installation directory (see http://devdocs.magento.com/guides/v2.1/install-gde/install-quick-ref.html for reference):
+
+2. Use composer to install the module:
 ```
-composer update
-bin/magento module:enable –clear-static-content HawkSearch_Datafeed HawkSearch_Proxy
-bin/magento setup:upgrade
-bin/magento cache:clean
+composer require hawksearch/datafeed
 ```
+
+3. Complete your deployment process as usual (minimally "bin/magento setup:upgrade", see http://devdocs.magento.com/guides/v2.1/install-gde/install-quick-ref.html for reference).
+
 4. Login to your Magento Dashboard and configure the modules with instructions provided by your Hawksearch account manager.
 
 
