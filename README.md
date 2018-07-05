@@ -8,7 +8,7 @@
     "repositories": {
         "0": {
             "type": "composer",
-            "url": "https://repo.magento.com/""
+            "url": "https://repo.magento.com/"
         },
         "hawksearch-datafeed": {
             "type": "git",
@@ -16,7 +16,6 @@
         }
     }
 ```
-
 OR by using composer commands directly:
 ```
 composer config repositories.hawksearch-datafeed git https://cl-git-1vus02.idevdesign.net/magento2-modules/hawksearch-datafeed-2.git
