@@ -61,6 +61,11 @@
                     <label>Feed Stores</label>
                     <source_model>Magento\Config\Model\Config\Source\Store</source_model>
                 </field>
+                <field id="attributes" type="multiselect" showInDefault="1" showInStore="0" showInWebsite="0">
+                    <label>Feed Attributes</label>
+                    <source_model>HawkSearch\Datafeed\Model\Config\Source\Attributes</source_model>
+                    <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Attributes</backend_model>
+                </field>
                 <field id="batch_limit" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="15">
                     <label>Batch Limit</label>
