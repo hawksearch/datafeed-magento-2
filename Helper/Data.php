@@ -86,8 +86,8 @@ class Data extends AbstractHelper
         return $this->scopeConfig->getValue($data, $storeScope, $this->storeManager->getStore()->getCode());
     }
 
-    public function getTriggerReindex() {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $this->storeManager->getStore()->getCode());
+    public function getTriggerReindex($store) {
+        return $this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $store->getCode());
     }
 
     public function moduleIsEnabled() {
@@ -306,10 +306,10 @@ class Data extends AbstractHelper
     /**
      * @return string
      */
-    public function triggerReindex()
+    public function triggerReindex($store)
     {
         // TODO: this is a cross module dependency. remove somehow (create a combined module or emit an event...)
-        if ($this->getTriggerReindex()) {
+        if ($this->getTriggerReindex($store)) {
             $apiUrl = $this->proxyHelper->getApiUrl();
             $apiKey = $this->proxyHelper->getApiKey();
 
