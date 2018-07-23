@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -11,15 +11,17 @@
  * IN THE SOFTWARE.
  */
 namespace HawkSearch\Datafeed\Block\System\Config;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Backend\Block\Template;
+
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Data\Form\Element\AbstractElement;
+use Magento\Framework\Module\ModuleListInterface;
 
 class Version extends \Magento\Config\Block\System\Config\Form\Field
 {
     private $moduleList;
 
-    public function __construct(Template\Context $context,
-                                \Magento\Framework\Module\ModuleListInterface $moduleList,
+    public function __construct(Context $context,
+                                ModuleListInterface $moduleList,
                                 array $data = [])
     {
         $this->moduleList = $moduleList;
@@ -30,11 +32,11 @@ class Version extends \Magento\Config\Block\System\Config\Form\Field
     /**
      * Get the button and scripts contents
      *
-     * @param \Magento\Framework\Data\Form\Element\AbstractElement $element
+     * @param AbstractElement $element
      * @return string
      */
 
-    protected function _getElementHtml(\Magento\Framework\Data\Form\Element\AbstractElement $element)
+    protected function _getElementHtml(AbstractElement $element)
     {
         return $this->moduleList->getOne('HawkSearch_Datafeed')['setup_version'];
     }
