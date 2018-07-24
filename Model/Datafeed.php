@@ -14,6 +14,7 @@
 namespace HawkSearch\Datafeed\Model;
 
 use HawkSearch\Datafeed\Model\CsvWriterFactory;
+use Magento\Framework\Event\Manager as EventManager;
 use Magento\Framework\Model\AbstractModel;
 use HawkSearch\Datafeed\Helper\Data as Helper;
 use Magento\Store\Model\ResourceModel\Store\Collection as StoreCollection;
@@ -82,6 +83,10 @@ class Datafeed extends AbstractModel
      * @var PageCollectionFactory
      */
     private $pageCollectionFactory;
+    /**
+     * @var Manager
+     */
+    private $eventManager;
 
     /**
      * Constructor
@@ -93,11 +98,18 @@ class Datafeed extends AbstractModel
      * @param StoreCollection $storeCollection
      * @param Emulation $emulation
      * @param AttributeCollection $attributeCollection
-     * @param ProductCollectionFactory $productCollection
+     * @param ProductCollection $productCollection
      * @param Review $review
      * @param \HawkSearch\Datafeed\Model\CsvWriterFactory $csvWriter
+     * @param \HawkSearch\Datafeed\Model\Email $email
+     * @param CategoryCollectionFactory $categoryCollectionFactory
+     * @param CategoryFactory $categoryHelperFactory
+     * @param ConfigurableFactory $configurableFactory
+     * @param PageCollectionFactory $pageCollectionFactory
+     * @param \Magento\Framework\Module\Manager $moduleManager
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
      * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
+     * @param EventManager $eventManager
      * @param array $data
      */
     public function __construct(
@@ -118,6 +130,7 @@ class Datafeed extends AbstractModel
         ConfigurableFactory $configurableFactory,
         PageCollectionFactory $pageCollectionFactory,
         \Magento\Framework\Module\Manager $moduleManager,
+        EventManager $eventManager,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
@@ -141,6 +154,7 @@ class Datafeed extends AbstractModel
         $this->categoryHelperFactory = $categoryHelperFactory;
         $this->configurableFactory = $configurableFactory;
         $this->pageCollectionFactory = $pageCollectionFactory;
+        $this->eventManager = $eventManager;
     }
 
     /**
@@ -281,7 +295,7 @@ class Datafeed extends AbstractModel
 
         /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $products = $this->productCollection->create();
-        $feedCodes = array_diff(array_keys($attributes), $this->productAttributes);
+        $feedCodes = array_diff(array_keys($attributes), $this->productAttributes, ['category_ids', 'category_id']);
         if (!in_array('sku', $feedCodes)) {
             array_push($feedCodes, 'sku');
         }
@@ -575,6 +589,11 @@ class Datafeed extends AbstractModel
 
                 //exports CMS / Content Data
                 $this->getContentData($store);
+
+                // emit events to allow extended feeds
+                $this->eventManager->dispatch(
+                    'hawksearch_datafeed_generate_custom_feeds',
+                    ['model' => $this, 'store' => $store]);
 
                 // trigger reindex on hawksearch end
                 $this->helper->triggerReindex($store);
