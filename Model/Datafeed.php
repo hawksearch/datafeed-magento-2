@@ -278,6 +278,7 @@ class Datafeed extends AbstractModel
 
         $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
         $start = time();
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
         $pac = $this->attributeCollection->create();
         $pac->addSearchableAttributeFilter();
         $pac->addStoreLabel($store->getId());
@@ -285,6 +286,7 @@ class Datafeed extends AbstractModel
 
         $labels = $this->csvWriter->create()->init($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $labels->appendRow(array('key', 'store_label'));
+        $this->log($pac->getSelect()->__toString());
         /** @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
         foreach ($pac as $att) {
             $attributes[$att->getAttributeCode()] = $att;
@@ -336,6 +338,17 @@ class Datafeed extends AbstractModel
                 foreach ($feedCodes as $attcode) {
                     if ($product->getData($attcode) === null) {
                         continue;
+                    }
+                    if($attcode == 'sku') {
+                        $output->appendRow(array(
+                            $product->getSku(),
+                            $attcode,
+                            $product->getData($attcode)
+                        ));
+                        continue;
+                    }
+                    if(!isset($attributes[$attcode])){
+                        throw new \Exception(sprintf("WARNING: attribute code '%s' not in attributes array!", $attcode));
                     }
                     $source = $attributes[$attcode]->getSource();
                     if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
