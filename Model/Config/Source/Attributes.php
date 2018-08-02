@@ -9,6 +9,7 @@
 namespace HawkSearch\Datafeed\Model\Config\Source;
 
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
+use Magento\Eav\Model\Entity\Attribute\Config;
 
 class Attributes implements \Magento\Framework\Option\ArrayInterface
 {
@@ -16,10 +17,20 @@ class Attributes implements \Magento\Framework\Option\ArrayInterface
      * @var AttributeCollection
      */
     private $attributeCollectionFactory;
+    /**
+     * @var Config
+     */
+    private $attributeConfig;
 
-    public function __construct(AttributeCollection $collectionFactory)
+    /**
+     * Attributes constructor.
+     * @param AttributeCollection $collectionFactory
+     * @param Config $attributeConfig
+     */
+    public function __construct(AttributeCollection $collectionFactory, Config $attributeConfig)
     {
         $this->attributeCollectionFactory = $collectionFactory;
+        $this->attributeConfig = $attributeConfig;
     }
 
     /**
@@ -32,6 +43,10 @@ class Attributes implements \Magento\Framework\Option\ArrayInterface
         $pac = $this->attributeCollectionFactory->create();
         $ret = [];
         foreach ($pac->getItems() as $item) {
+            $locked = $this->attributeConfig->getLockedFields($item);
+            if(isset($locked['is_searchable'])) {
+                continue;
+            }
             $ret[] = ['value' => $item->getAttributeCode(), 'label' => $item->getFrontendLabel()];
         }
         return $ret;
