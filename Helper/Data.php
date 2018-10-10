@@ -13,6 +13,8 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Filesystem;
 use Magento\Store\Model\StoreManagerInterface;
 
 class Data
@@ -45,12 +47,20 @@ class Data
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
 
-    public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, 
-                                StoreManagerInterface $storemanager,
-                                \Magento\Framework\Filesystem $filesystem
-) {
+    /**
+     * Data constructor.
+     * @param ScopeConfigInterface $scopeConfig
+     * @param StoreManagerInterface $storeManager
+     * @param Filesystem $filesystem
+     */
+    public function __construct(
+        ScopeConfigInterface $scopeConfig,
+        StoreManagerInterface $storeManager,
+        Filesystem $filesystem
+    )
+    {
         $this->scopeConfig = $scopeConfig;
-        $this->_storeManager = $storemanager;
+        $this->_storeManager = $storeManager;
         $this->filesystem = $filesystem;
     }
 
@@ -357,29 +367,25 @@ class Data
     }
 
     public function triggerReindex(\Magento\Store\Model\Store $store) {
-        $mode = $this->getConfigurationData('hawksearch_proxy/proxy/mode');
-        if ($mode == '1') {
-            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_live');
-        } else {
-            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_staging');
-        }
-        $apiUrl = preg_replace('|^http://|', 'https://', $apiUrl);
-        if ('/' == substr($apiUrl, -1)) {
-            $apiUrl .= 'api/v3/index';
-        } else {
-            $apiUrl .= '/api/v3/index';
-        }
-
+        $apiUrl = $this->getTriggerReindexUrl();
         $client = new \Zend_Http_Client();
         $client->setUri($apiUrl);
         $client->setMethod(\Zend_Http_Client::POST);
         $client->setHeaders('X-HawkSearch-ApiKey', $this->getConfigurationData('hawksearch_proxy/proxy/hawksearch_api_key'));
         $client->setHeaders('Accept', 'application/json');
 
-        $response = $client->request();
+        //$response = $client->request();
 
-        return $response;
+        return isset($response) ? true : false;
 
     }
-
+    private function getTriggerReindexUrl() {
+        $trackingUrl = $this->getTrackingUrl();
+        return $trackingUrl . 'api/v3/index';
+    }
+    public function getTrackingUrl() {
+        $mode = $this->getConfigurationData(\HawkSearch\Proxy\Helper\Data::CONFIG_PROXY_MODE);
+        $trackingUrl = $this->getConfigurationData($mode ? 'hawksearch_proxy/proxy/tracking_url_live' : 'hawksearch_proxy/proxy/tracking_url_staging');
+        return rtrim($trackingUrl, "/") . '/';
+    }
 }

@@ -91,5 +91,3 @@ $this->_escaper = $escaper;
   }  
   
 }
- 
-?>

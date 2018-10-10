@@ -13,74 +13,78 @@
 namespace HawkSearch\Datafeed\Model;
 
 use HawkSearch\Datafeed\Helper\Data;
+use HawkSearch\Datafeed\Model\EmailFactory;
 use Magento\Framework\Model\AbstractModel;
 
 class Datafeed
     extends AbstractModel
 {
 
-    private $feedSummary;
-    private $productAttributes;
-    private $helper;
-    private $stockHelper;
-    private $imageHelper;
+    protected $feedSummary;
+    protected $productAttributes;
+    protected $helper;
+    protected $stockHelper;
+    protected $imageHelper;
+    /**
+     * @var Logger
+     */
+    protected $logger;
+    /**
+     * @var \HawkSearch\Datafeed\Model\EmailFactory
+     */
+    protected $emailFactory;
 
     /**
-     * Constructor
+     * Datafeed constructor.
+     * @param Data $helper
+     * @param Logger $logger
+     * @param \HawkSearch\Datafeed\Model\EmailFactory $emailFactory
+     * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
+     * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
+     * @param \Magento\Framework\Model\Context $context
+     * @param \Magento\Framework\Registry $registry
+     * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
+     * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
+     * @param array $data
      */
-
     public function __construct(
-        \Magento\Framework\Model\Context $context,
-        \Magento\Framework\Registry $registry,
-        \HawkSearch\Datafeed\Helper\Data $helper,
+        Data $helper,
+        Logger $logger,
+        EmailFactory $emailFactory,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Catalog\Helper\ImageFactory $imageHelperFactory,
+        \Magento\Framework\Model\Context $context,
+        \Magento\Framework\Registry $registry,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
-
-//		$object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-//		$helper = $object_manager->get('HawkSearch\Datafeed\Helper\Data');  
+        parent::__construct($context, $registry, $resource, $resourceCollection, $data);
         $this->helper = $helper;
-        $this->stockHelper = $stockHelper; //$object_manager->get('Magento\CatalogInventory\Helper\Stock');
+        $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
+        $this->logger = $logger;
+        $this->emailFactory = $emailFactory;
+    }
 
+    protected function _construct()
+    {
         $this->feedSummary = new \stdClass();
         $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
 
-        parent::__construct($context, $registry, $resource, $resourceCollection, $data);
+        parent::_construct();
     }
 
-
     /**
-     * Adds a log entry to the hawksearch proxy log. Logging must
-     * be enabled for both the module and Magneto
-     *
-     *
      * @param $message
      */
     public function log($message) {
         if ($this->helper->loggingIsEnabled()) {
-
-            $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/hawksearch.log');
-            $logger = new \Zend\Log\Logger();
-            $logger->addWriter($writer);
-            $logger->info("HAWKSEARCH: $message");
-
+            $this->logger->addDebug($message);
         }
     }
 
-    public function crontest() {
-
-        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/crontest.log');
-        $logger = new \Zend\Log\Logger();
-        $logger->addWriter($writer);
-        $logger->info("HAWKSEARCH: checking Cron");
-
-    }
-
-    private function getPathForFile($basename) {
+    public function getPathForFile($basename) {
         $dir = sprintf('%s/%s', $this->helper->getFeedFilePath(), end($this->feedSummary->stores));
         $this->log(sprintf('checking for dir: %s', $dir));
         if (!is_dir($dir)) {
@@ -97,7 +101,7 @@ class Datafeed
      * @param $all
      * @param $tree
      */
-    private function r_find($pid, &$all, &$tree) {
+    public function r_find($pid, &$all, &$tree) {
         foreach ($all as $item) {
             if ($item['pid'] == $pid) {
                 $tree[] = $item;
@@ -106,8 +110,7 @@ class Datafeed
         }
     }
 
-
-    private function getCategoryData(\Magento\Store\Model\Store $store) {
+    public function getCategoryData(\Magento\Store\Model\Store $store) {
         $this->log('starting _getCategoryData()');
         $filename = $this->getPathForFile('hierarchy');
 
@@ -184,7 +187,7 @@ class Datafeed
         return true;
     }
 
-    private function getAttributeData(\Magento\Store\Model\Store $store) {
+    protected function getAttributeData(\Magento\Store\Model\Store $store) {
 
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
 
@@ -302,7 +305,7 @@ class Datafeed
         } while ($currentPage <= $pages);
     }
 
-    private function getProductData(\Magento\Store\Model\Store $store) {
+    protected function getProductData(\Magento\Store\Model\Store $store) {
         /** @var Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
 
@@ -410,7 +413,7 @@ class Datafeed
         $this->log('done with _getProductData()');
     }
 
-    private function getGroupId(\Magento\Catalog\Model\Product $product) {
+    public function getGroupId(\Magento\Catalog\Model\Product $product) {
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
         if ($product->getTypeId() == \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE) {
             $vals = implode(",", $objectManagerr->create('Magento\ConfigurableProduct\Model\Product\Type\Configurable')
@@ -422,7 +425,7 @@ class Datafeed
         return $product->getId();
     }
 
-    private function getContentData(\Magento\Store\Model\Store $store) {
+    public function getContentData(\Magento\Store\Model\Store $store) {
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
         $this->log('starting getContentData()');
         $collection = $objectManagerr->create('Magento\Cms\Model\ResourceModel\Page\Collection');
@@ -443,7 +446,6 @@ class Datafeed
         $this->log('done with getting content data');
     }
 
-
     public function cronGenerateDatafeed() {
         if ($this->helper->getCronEnabled()) {
             if ($this->helper->isFeedLocked()) {
@@ -458,8 +460,7 @@ class Datafeed
                     $this->helper->removeFeedLocks();
                 }
             }
-            $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
-            $email = $objectManagerr->create('HawkSearch\Datafeed\Model\Email');
+            $email = $this->emailFactory->create();
 
             $msg = array('message' => $message);
             $email->sendEmail($msg);
@@ -468,7 +469,6 @@ class Datafeed
     }
 
     public function generateFeed() {
-
 
         $selectedStores = $this->helper->getSelectedStores();
         /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
@@ -479,8 +479,6 @@ class Datafeed
         /** @var \Magento\Store\Model\Store $store */
         foreach ($stores as $store) {
             try {
-
-
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
                 $appEmulation = $object_manager->get('Magento\Store\Model\App\Emulation');
@@ -527,7 +525,7 @@ class Datafeed
     }
 
     public function cronGenerateImagecache() {
-        if ($this->helper->getCronEnabled()) {
+        if ($this->helper->getCronImagecacheEnable()) {
             if ($this->helper->isFeedLocked()) {
                 $message = "Hawksearch Datafeed is currently locked, not generating feed at this time.";
             } else {
@@ -547,8 +545,6 @@ class Datafeed
             $email->sendEmail($msg);
 
         }
-
-
     }
 
     public function refreshImageCache() {
