@@ -13,14 +13,16 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
+use HawkSearch\Datafeed\Model\Logger;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Filesystem;
+use Magento\Framework\HTTP\ZendClient;
 use Magento\Store\Model\StoreManagerInterface;
 
-class Data
+class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
-
-
     protected $scopeConfig;
-    protected $_storeManager;
     private $filesystem;
 
 
@@ -45,15 +47,27 @@ class Data
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
 
-    public function __construct(\Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, 
-                                StoreManagerInterface $storemanager,
-                                \Magento\Framework\Filesystem $filesystem
-) {
-        $this->scopeConfig = $scopeConfig;
-        $this->_storeManager = $storemanager;
-        $this->filesystem = $filesystem;
-    }
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+    /**
+     * @var ZendClient
+     */
+    private $zendClient;
 
+    public function __construct(
+        StoreManagerInterface $storeManager,
+        Filesystem $filesystem,
+        ZendClient $zendClient,
+        Context $context
+    )
+    {
+        parent::__construct($context);
+        $this->storeManager = $storeManager;
+        $this->filesystem = $filesystem;
+        $this->zendClient = $zendClient;
+    }
 
     public function getConfigurationData($data) {
         $storeScope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
@@ -357,29 +371,44 @@ class Data
     }
 
     public function triggerReindex(\Magento\Store\Model\Store $store) {
-        $mode = $this->getConfigurationData('hawksearch_proxy/proxy/mode');
-        if ($mode == '1') {
-            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_live');
-        } else {
-            $apiUrl = $this->getConfigurationData('hawksearch_proxy/proxy/tracking_url_staging');
+        $this->log('triggerReindex called');
+        $apiUrl = $this->getTriggerReindexUrl();
+        $this->log(sprintf('using reindex url "%s"', $apiUrl));
+
+        $this->zendClient->resetParameters(true);
+        $this->zendClient->setUri($apiUrl);
+        $this->log('setUri called on zendClient');
+        $this->zendClient->setMethod(ZendClient::POST);
+        $this->log('setMethod called on zendClient');
+
+        /** @var \Magento\Framework\App\Config $scopeConfig */
+        $scopeConfig = $this->scopeConfig;
+
+        $apiKey = $scopeConfig->getValue('hawksearch_proxy/proxy/hawksearch_api_key', 'stores', $store);
+        $this->log(sprintf('setting hawk Api key to "%s"', $apiKey));
+
+        $this->zendClient->setHeaders('X-HawkSearch-ApiKey', $apiKey);
+        $this->zendClient->setHeaders('Accept', 'application/json');
+
+        $this->log('making request...');
+        $response = $this->zendClient->request();
+        $this->log(sprintf("request made, resopnse is:\n%s\n\n%s", $response->getBody(), $response->getHeadersAsString()));
+        return isset($response) ? true : false;
+    }
+    private function getTriggerReindexUrl() {
+        $trackingUrl = $this->getTrackingUrl();
+        return $trackingUrl . 'api/v3/index';
+    }
+    public function getTrackingUrl() {
+        $mode = $this->getConfigurationData(\HawkSearch\Proxy\Helper\Data::CONFIG_PROXY_MODE);
+        $trackingUrl = $this->getConfigurationData($mode ? 'hawksearch_proxy/proxy/tracking_url_live' : 'hawksearch_proxy/proxy/tracking_url_staging');
+        return rtrim($trackingUrl, "/") . '/';
+    }
+
+    public function log($message) {
+        if ($this->loggingIsEnabled()) {
+            $this->_logger->addDebug($message);
         }
-        $apiUrl = preg_replace('|^http://|', 'https://', $apiUrl);
-        if ('/' == substr($apiUrl, -1)) {
-            $apiUrl .= 'api/v3/index';
-        } else {
-            $apiUrl .= '/api/v3/index';
-        }
-
-        $client = new \Zend_Http_Client();
-        $client->setUri($apiUrl);
-        $client->setMethod(\Zend_Http_Client::POST);
-        $client->setHeaders('X-HawkSearch-ApiKey', $this->getConfigurationData('hawksearch_proxy/proxy/hawksearch_api_key'));
-        $client->setHeaders('Accept', 'application/json');
-
-        $response = $client->request();
-
-        return $response;
-
     }
 
 }
