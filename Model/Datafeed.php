@@ -25,10 +25,7 @@ class Datafeed
     protected $helper;
     protected $stockHelper;
     protected $imageHelper;
-    /**
-     * @var Logger
-     */
-    protected $logger;
+
     /**
      * @var \HawkSearch\Datafeed\Model\EmailFactory
      */
@@ -37,7 +34,6 @@ class Datafeed
     /**
      * Datafeed constructor.
      * @param Data $helper
-     * @param Logger $logger
      * @param \HawkSearch\Datafeed\Model\EmailFactory $emailFactory
      * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
      * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
@@ -49,7 +45,6 @@ class Datafeed
      */
     public function __construct(
         Data $helper,
-        Logger $logger,
         EmailFactory $emailFactory,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Catalog\Helper\ImageFactory $imageHelperFactory,
@@ -63,7 +58,6 @@ class Datafeed
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
-        $this->logger = $logger;
         $this->emailFactory = $emailFactory;
     }
 
@@ -79,9 +73,7 @@ class Datafeed
      * @param $message
      */
     public function log($message) {
-        if ($this->helper->loggingIsEnabled()) {
-            $this->logger->addDebug($message);
-        }
+        $this->helper->log($message);
     }
 
     public function getPathForFile($basename) {

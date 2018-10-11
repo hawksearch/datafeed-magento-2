@@ -14,4 +14,14 @@
             </argument>
         </arguments>
     </type>
+    <virtualType name="hawkSearchVirtualContext" type="Magento\Framework\App\Helper\Context">
+        <arguments>
+            <argument name="logger" xsi:type="object">HawkSearch\Datafeed\Model\Logger</argument>
+        </arguments>
+    </virtualType>
+    <type name="HawkSearch\Datafeed\Helper\Data">
+        <arguments>
+            <argument name="context" xsi:type="object">hawkSearchVirtualContext</argument>
+        </arguments>
+    </type>
 </config>
