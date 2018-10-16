@@ -19,17 +19,19 @@ use Magento\Framework\Model\AbstractModel;
 class Datafeed
     extends AbstractModel
 {
-
-    protected $feedSummary;
-    protected $productAttributes;
+    /**
+     * @var Data
+     */
     protected $helper;
-    protected $stockHelper;
-    protected $imageHelper;
-
     /**
      * @var \HawkSearch\Datafeed\Model\EmailFactory
      */
     protected $emailFactory;
+    protected $stockHelper;
+    protected $feedSummary;
+    protected $imageHelper;
+    protected $productAttributes;
+
 
     /**
      * Datafeed constructor.
@@ -54,11 +56,11 @@ class Datafeed
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
-        parent::__construct($context, $registry, $resource, $resourceCollection, $data);
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
         $this->emailFactory = $emailFactory;
+        parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
     protected function _construct()
@@ -417,7 +419,7 @@ class Datafeed
         return $product->getId();
     }
 
-    public function getContentData(\Magento\Store\Model\Store $store) {
+    protected function getContentData(\Magento\Store\Model\Store $store) {
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
         $this->log('starting getContentData()');
         $collection = $objectManagerr->create('Magento\Cms\Model\ResourceModel\Page\Collection');
