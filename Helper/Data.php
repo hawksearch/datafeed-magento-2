@@ -13,21 +13,15 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
-use Magento\Cron\Model\Schedule;
+use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Filesystem;
-use HawkSearch\Proxy\Helper\Data as ProxyHelper;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 class Data extends AbstractHelper
 {
-    protected $filesystem;
-    /**
-     * @var Schedule
-     */
-    private $cronSchedule;
 
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
@@ -50,35 +44,34 @@ class Data extends AbstractHelper
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
     const CONFIG_TRIGGER_REINDEX = 'hawksearch_datafeed/feed/reindex';
-    /**
-     * @var ProxyHelper
-     */
-    private $proxyHelper;
+
     /**
      * @var StoreManagerInterface
      */
     private $storeManager;
+    /**
+     * @var ZendClient
+     */
+    private $zendClient;
+    protected $filesystem;
 
     /**
      * Data constructor.
-     * @param Context $context
-     * @param Filesystem $filesystem
-     * @param Schedule $cronSchedule
      * @param StoreManagerInterface $storeManager
-     * @param ProxyHelper $proxyHelper
+     * @param Filesystem $filesystem
+     * @param ZendClient $zendClient
+     * @param Context $context
      */
     public function __construct(
-        Context $context,
-        Filesystem $filesystem,
-        Schedule $cronSchedule,
         StoreManagerInterface $storeManager,
-        ProxyHelper $proxyHelper
+        Filesystem $filesystem,
+        ZendClient $zendClient,
+        Context $context
     ) {
         parent::__construct($context);
-        $this->filesystem = $filesystem;
-        $this->cronSchedule = $cronSchedule;
-        $this->proxyHelper = $proxyHelper;
         $this->storeManager = $storeManager;
+        $this->filesystem = $filesystem;
+        $this->zendClient = $zendClient;
     }
 
     public function getConfigurationData($data) {
@@ -194,6 +187,7 @@ class Data extends AbstractHelper
     public function isFeedLocked() {
         $lockfile = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
         if (file_exists($lockfile)) {
+            $this->log('FEED IS LOCKED!');
             return true;
         }
         return false;
@@ -304,38 +298,59 @@ class Data extends AbstractHelper
     }
 
     /**
-     * @return string
+     * @param \Magento\Store\Model\Store $store
+     * @return int
+     * @throws \Zend_Http_Client_Exception
      */
-    public function triggerReindex($store)
-    {
-        // TODO: this is a cross module dependency. remove somehow (create a combined module or emit an event...)
-        if ($this->getTriggerReindex($store)) {
-            $apiUrl = $this->proxyHelper->getApiUrl();
-            $apiKey = $this->proxyHelper->getApiKey();
+    public function triggerReindex(\Magento\Store\Model\Store $store) {
+        $this->log('triggerReindex called');
+        $apiUrl = $this->getTriggerReindexUrl();
+        $this->log(sprintf('using reindex url "%s"', $apiUrl));
 
-            $headers = [
-                'Accept:application/json',
-                'Cache-Control:no-cache',
-                'X-HawkSearch-ApiKey:' . $apiKey,
-                'Content-Length:0'
-            ];
+        $this->zendClient->resetParameters(true);
+        $this->zendClient->setUri($apiUrl);
+        $this->log('setUri called on zendClient');
+        $this->zendClient->setMethod(ZendClient::POST);
+        $this->log('setMethod called on zendClient');
 
-            try {
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $apiUrl . 'index');
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_NOBODY, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, []);
-                $result = curl_exec($ch);
-                $response = json_encode($result);
-            } catch (\Exception $e) {
-                $response = json_encode(['error' => $e->getMessage()]);
-            }
-            return $response;
-        } else {
-            return null;
+        /** @var \Magento\Framework\App\Config $scopeConfig */
+        $scopeConfig = $this->scopeConfig;
+
+        $apiKey = $scopeConfig->getValue('hawksearch_proxy/proxy/hawksearch_api_key', 'stores', $store);
+        $this->log(sprintf('setting hawk Api key to "%s"', $apiKey));
+
+        $this->zendClient->setHeaders('X-HawkSearch-ApiKey', $apiKey);
+        $this->zendClient->setHeaders('Accept', 'application/json');
+
+        $this->log('making request...');
+        try {
+            $response = $this->zendClient->request();
+            $this->log(sprintf('Request made, HEADERS:\n%s', $response->getHeadersAsString()));
+            $this->log(sprintf("\nRESPONSE BODY:\n%s\n", $response->getBody()));
+            $status = $response->getStatus();
+            return $status;
+        } catch (\Exception $e) {
+            $this->log(sprintf("\nEXCEPTION OCCURED:\n%s\n", $e->getMessage()));
+        }
+        return 0;
+    }
+
+    private function getTriggerReindexUrl() {
+        $trackingUrl = $this->getTrackingUrl();
+        return $trackingUrl . 'api/v3/index';
+    }
+
+    public function getTrackingUrl() {
+        $mode = $this->getConfigurationData(\HawkSearch\Proxy\Helper\Data::CONFIG_PROXY_MODE);
+
+        $trackingUrl = $this->getConfigurationData(sprintf('hawksearch_proxy/proxy/tracking_url_%s', $mode));
+        $trackingUrl = preg_replace('|^http://|', 'https://', $trackingUrl);
+        return rtrim($trackingUrl, "/") . '/';
+    }
+
+    public function log($message) {
+        if ($this->loggingIsEnabled()) {
+            $this->_logger->addDebug($message);
         }
     }
 }

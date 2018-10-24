@@ -107,6 +107,7 @@
                         <field id="cron_enable">1</field>
                     </depends>
                     <label>Feed Cron Email</label>
+                    <validate>required-entry validate-email</validate>
                 </field>
             </group>
             <group id="imagecache" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1"
@@ -156,6 +157,7 @@
                     <depends>
                         <field id="cron_enable">1</field>
                     </depends>
+                    <validate>required-entry validate-email</validate>
                 </field>
             </group>
         </section>
