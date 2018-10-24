@@ -62,6 +62,7 @@ class DataFeed
                     $vars['message'] = "HawkSeach Datafeed Generated!";
                 } catch (\Exception $e) {
                     $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
+                } finally {
                     $this->helper->removeFeedLocks();
                 }
             }
