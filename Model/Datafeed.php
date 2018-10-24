@@ -30,6 +30,7 @@ use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFact
 
 class Datafeed extends AbstractModel
 {
+    const SCRIPT_NAME = 'Datafeed';
     private $feedSummary;
     private $productAttributes;
     private $helper;
@@ -139,9 +140,6 @@ class Datafeed extends AbstractModel
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
-        $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
-        $this->feedSummary = new \stdClass();
-        parent::__construct($context, $registry, $resource, $resourceCollection, $data);
         $this->storeCollection = $storeCollection;
         $this->emulation = $emulation;
         $this->attributeCollection = $attributeCollection;
@@ -155,24 +153,16 @@ class Datafeed extends AbstractModel
         $this->configurableFactory = $configurableFactory;
         $this->pageCollectionFactory = $pageCollectionFactory;
         $this->eventManager = $eventManager;
+        parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
-    /**
-     * Adds a log entry to the hawksearch proxy log. Logging must
-     * be enabled for both the module and Magneto
-     *
-     * @param $message
-     */
-    public function log($message)
+    protected function _construct()
     {
-        if ($this->helper->loggingIsEnabled()) {
-            $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/hawksearch.log');
-            $logger = new \Zend\Log\Logger();
-            $logger->addWriter($writer);
-            $logger->info("HAWKSEARCH: $message");
-        }
+        parent::_construct();
+        $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
+        $this->feedSummary = new \stdClass();
     }
-
+    
     /**
      * Recursively sets up the category tree without introducing
      * duplicate data.
@@ -190,7 +180,6 @@ class Datafeed extends AbstractModel
             }
         }
     }
-
 
     private function getCategoryData(\Magento\Store\Model\Store $store)
     {
@@ -352,7 +341,6 @@ class Datafeed extends AbstractModel
                     }
                     $source = $attributes[$attcode]->getSource();
                     if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
-//						TODO: These table based items need to be broken into separate line items
                         $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
@@ -532,49 +520,9 @@ class Datafeed extends AbstractModel
         $this->log('done with getting content data');
     }
 
-    public function cronGenerateImagecache()
-    {
-        if ($this->helper->getCronImagecacheEnable()) {
-            $vars = [];
-            $vars['jobTitle'] = 'Imagecache';
-            if ($this->helper->isFeedLocked()) {
-                $vars['message'] = "Hawksearch is currently locked, not generating the Imagecache at this time.";
-            } else {
-                try {
-                    $this->helper->createFeedLocks();
-                    $this->refreshImageCache();
-                    $vars['message'] = "HawkSeach Imagecache Generated!";
-                } catch (\Exception $e) {
-                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
-                    $this->helper->removeFeedLocks();
-                }
-            }
-            $this->email->sendEmail($vars);
-        }
-    }
-
-    public function cronGenerateDatafeed()
-    {
-        if ($this->helper->getCronEnabled()) {
-            $vars = [];
-            $vars['jobTitle'] = 'Datafeed';
-            if ($this->helper->isFeedLocked()) {
-                $vars['message'] = "Hawksearch is currently locked, not generating feed at this time.";
-            } else {
-                try {
-                    $this->helper->createFeedLocks();
-                    $this->generateFeed();
-
-                    $vars['message'] = "HawkSeach Datafeed Generated!";
-                } catch (\Exception $e) {
-                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
-                    $this->helper->removeFeedLocks();
-                }
-            }
-            $this->email->sendEmail($vars);
-        }
-    }
-
+    /**
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
     public function generateFeed()
     {
         $selectedStores = $this->helper->getSelectedStores();
@@ -592,24 +540,24 @@ class Datafeed extends AbstractModel
                 $this->feedSummary->stores[$store->getCode()] = ['start_time' => date(DATE_ATOM)];
 
                 //exports Category Data
-                $this->getCategoryData($store);
-
-                //exports Product Data
-                $this->getProductData($store);
-
-                //exports Attribute Data
+//                $this->getCategoryData($store);
+//
+//                //exports Product Data
+//                $this->getProductData($store);
+//
+//                //exports Attribute Data
                 $this->getAttributeData($store);
-
-                //exports CMS / Content Data
-                $this->getContentData($store);
-
-                // emit events to allow extended feeds
-                $this->eventManager->dispatch(
-                    'hawksearch_datafeed_generate_custom_feeds',
-                    ['model' => $this, 'store' => $store]);
-
+//
+//                //exports CMS / Content Data
+//                $this->getContentData($store);
+//
+//                // emit events to allow extended feeds
+//                $this->eventManager->dispatch(
+//                    'hawksearch_datafeed_generate_custom_feeds',
+//                    ['model' => $this, 'store' => $store]);
+//
                 // trigger reindex on hawksearch end
-                $this->helper->triggerReindex($store);
+//                $this->helper->triggerReindex($store);
 
                 $this->feedSummary->stores[$store->getCode()]['end_time'] = date(DATE_ATOM);
 
@@ -625,13 +573,12 @@ class Datafeed extends AbstractModel
         $this->feedSummary->complete = date(DATE_ATOM);
         $this->helper->writeSummary($this->feedSummary);
 
-        $this->log('done generating data feed files, going to remove lock files.');
-        $this->helper->removeFeedLocks();
         $this->log('all done, goodbye');
-
     }
 
-
+    /**
+     *
+     */
     public function refreshImageCache()
     {
         $this->log('starting refreshImageCache()');
@@ -684,7 +631,10 @@ class Datafeed extends AbstractModel
             }
 
         }
-        $this->helper->removeFeedLocks();
         $this->log('Done generating image cache for selected stores, goodbye');
+    }
+    
+    public function log($message) {
+        $this->helper->log($message);
     }
 }
