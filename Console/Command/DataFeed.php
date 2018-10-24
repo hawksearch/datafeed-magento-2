@@ -74,7 +74,7 @@ class DataFeed extends Command
         if ($input->getOption(self::FORCE_MODE) === self::FORCE_MODE) {
             $this->helper->removeFeedLocks(true);
         }
-        if ($this->helper->createFeedLocks('datafeed')) {
+        if ($this->helper->createFeedLocks(DatafeedTask::SCRIPT_NAME)) {
             $this->task->generateFeed();
         } else {
             $output->writeln("Unable to create feed lock file, feed not generating");
