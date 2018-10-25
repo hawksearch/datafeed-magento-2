@@ -192,7 +192,7 @@ class Datafeed
 
         $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
         $start = time();
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
         $pac = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection');
         $pac->addSearchableAttributeFilter();
         $pac->addStoreLabel($store->getId());
@@ -200,7 +200,7 @@ class Datafeed
 
         $labels = new \HawkSearch\Datafeed\Model\CsvWriter($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $labels->appendRow(array('key', 'store_label'));
-        /** @var Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
+        /** @var /Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
         foreach ($pac as $att) {
             $attributes[$att->getAttributeCode()] = $att;
             $labels->appendRow(array($att->getAttributeCode(), $att->getStoreLabel()));
@@ -208,7 +208,7 @@ class Datafeed
         $labels->closeOutput();
         $this->log(sprintf('Label export took %d seconds', time() - $start));
 
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Collection $products */
+        /** @var /Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $products = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Collection');
         $feedCodes = array_diff(array_keys($attributes), $this->productAttributes);
         if (!in_array('sku', $feedCodes)) {
@@ -227,14 +227,8 @@ class Datafeed
 
         if (!$this->helper->includeOutOfStockItems()) {
             $this->log('adding out of stock filter');
-//			/** @var Magento\CatalogInventory\Model\Stock $stockfilter */
-//
-//			$stockfilter =$objectManagerr->get('Magento\CatalogInventory\Model\Stock');
-//			$stockfilter->addInStockFilterToCollection($products);
             $this->stockHelper->addIsInStockFilterToCollection($products);
-
         }
-
 
         $this->log(sprintf('going to open feed file %s', $filename));
         $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
@@ -245,7 +239,7 @@ class Datafeed
         $pages = $products->getLastPageNumber();
         $currentPage = 1;
 
-        /** @var Magento\Review\Model\Review $review */
+        /** @var \Magento\Review\Model\Review $review */
         $review = $objectManagerr->get('Magento\Review\Model\Review');
 
         do {
@@ -262,7 +256,6 @@ class Datafeed
                     }
                     $source = $attributes[$attcode]->getSource();
                     if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
-//						TODO: These table based items need to be broken into separate line items
                         $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
@@ -300,7 +293,7 @@ class Datafeed
     }
 
     protected function getProductData(\Magento\Store\Model\Store $store) {
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Collection $products */
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
 
         $products = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Collection');
@@ -371,7 +364,7 @@ class Datafeed
             $seconds = time() - $start;
             $this->log(sprintf('it took %d seconds to load product page %d', $seconds, $currentPage));
             $start = time();
-            /** @var Magento\Catalog\Model\Product $product */
+            /** @var \Magento\Catalog\Model\Product $product */
             foreach ($products as $product) {
                 $output->appendRow(array(
                     $product->getId(),

@@ -13,8 +13,7 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
-use HawkSearch\Datafeed\Model\Logger;
-use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Filesystem;
 use Magento\Framework\HTTP\ZendClient;
@@ -22,8 +21,8 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
-    protected $scopeConfig;
     private $filesystem;
+    private $selectedStores;
 
 
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
@@ -55,11 +54,24 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @var ZendClient
      */
     private $zendClient;
+    /**
+     * @var \Magento\Store\Model\ResourceModel\Store\CollectionFactory
+     */
+    private $storeCollectionFactory;
 
+    /**
+     * Data constructor.
+     * @param StoreManagerInterface $storeManager
+     * @param Filesystem $filesystem
+     * @param ZendClient $zendClient
+     * @param \Magento\Store\Model\ResourceModel\Store\CollectionFactory $storeCollectionFactory
+     * @param Context $context
+     */
     public function __construct(
         StoreManagerInterface $storeManager,
         Filesystem $filesystem,
         ZendClient $zendClient,
+        \Magento\Store\Model\ResourceModel\Store\CollectionFactory $storeCollectionFactory,
         Context $context
     )
     {
@@ -67,6 +79,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->storeManager = $storeManager;
         $this->filesystem = $filesystem;
         $this->zendClient = $zendClient;
+        $this->storeCollectionFactory = $storeCollectionFactory;
     }
 
     public function getConfigurationData($data) {
@@ -182,9 +195,12 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     public function getSelectedStores() {
-
-
-        return explode(',', $this->getConfigurationData(self::CONFIG_SELECTED_STORES));
+        if(!isset($this->selectedStores)){
+            $this->selectedStores = $this->storeCollectionFactory->create();
+            $ids = explode(',', $this->scopeConfig->getValue(self::CONFIG_SELECTED_STORES));
+            $this->selectedStores->addIdFilter($ids);
+        }
+        return $this->selectedStores;
     }
 
     public function getCronEnabled() {
@@ -370,9 +386,18 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return true;
     }
 
+    /**
+     * @param \Magento\Store\Model\Store $store
+     * @return bool
+     * @throws \Zend_Http_Client_Exception
+     */
     public function triggerReindex(\Magento\Store\Model\Store $store) {
         $this->log('triggerReindex called');
-        $apiUrl = $this->getTriggerReindexUrl();
+        if(!$this->scopeConfig->isSetFlag('hawksearch_datafeed/hawksearch_api/enable_hawksearch_index_rebuild', ScopeInterface::SCOPE_STORE, $store)) {
+            $this->log('HawkSearch reindex disabled, not triggering reindex');
+            return false;
+        }
+        $apiUrl = $this->getTriggerReindexUrl($store);
         $this->log(sprintf('using reindex url "%s"', $apiUrl));
 
         $this->zendClient->resetParameters(true);
@@ -381,10 +406,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->zendClient->setMethod(ZendClient::POST);
         $this->log('setMethod called on zendClient');
 
-        /** @var \Magento\Framework\App\Config $scopeConfig */
-        $scopeConfig = $this->scopeConfig;
-
-        $apiKey = $scopeConfig->getValue('hawksearch_proxy/proxy/hawksearch_api_key', 'stores', $store);
+        $apiKey = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_key', ScopeInterface::SCOPE_STORE, $store);
         $this->log(sprintf('setting hawk Api key to "%s"', $apiKey));
 
         $this->zendClient->setHeaders('X-HawkSearch-ApiKey', $apiKey);
@@ -392,17 +414,19 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
         $this->log('making request...');
         $response = $this->zendClient->request();
-        $this->log(sprintf("request made, resopnse is:\n%s\n\n%s", $response->getBody(), $response->getHeadersAsString()));
+        $this->log(sprintf("request made, response is:\n%s\n\n%s", $response->getHeadersAsString(), $response->getBody()));
         return isset($response) ? true : false;
     }
-    private function getTriggerReindexUrl() {
-        $trackingUrl = $this->getTrackingUrl();
-        return $trackingUrl . 'api/v3/index';
-    }
-    public function getTrackingUrl() {
-        $mode = $this->getConfigurationData(\HawkSearch\Proxy\Helper\Data::CONFIG_PROXY_MODE);
-        $trackingUrl = $this->getConfigurationData($mode ? 'hawksearch_proxy/proxy/tracking_url_live' : 'hawksearch_proxy/proxy/tracking_url_staging');
-        return rtrim($trackingUrl, "/") . '/';
+
+    private function getTriggerReindexUrl(\Magento\Store\Model\Store $store) {
+        $mode = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_mode', ScopeInterface::SCOPE_STORE, $store);
+
+        $apiUrl = $this->scopeConfig->getValue(sprintf('hawksearch_datafeed/hawksearch_api/api_url_%s', $mode), ScopeInterface::SCOPE_STORE, $store);
+        $apiUrl = rtrim($apiUrl, '/');
+
+        $apiVersion = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_ver', ScopeInterface::SCOPE_STORE, $store);
+
+        return sprintf('%s/api/%s/index', $apiUrl, $apiVersion);
     }
 
     public function log($message) {
