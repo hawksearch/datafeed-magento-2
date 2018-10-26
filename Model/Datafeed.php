@@ -17,12 +17,10 @@ use HawkSearch\Datafeed\Model\CsvWriterFactory;
 use Magento\Framework\Event\Manager as EventManager;
 use Magento\Framework\Model\AbstractModel;
 use HawkSearch\Datafeed\Helper\Data as Helper;
-use Magento\Store\Model\ResourceModel\Store\Collection as StoreCollection;
 use Magento\Store\Model\App\Emulation;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
 use Magento\Review\Model\Review;
-use HawkSearch\Datafeed\Model\Email;
 use Magento\Catalog\Helper\CategoryFactory;
 use Magento\ConfigurableProduct\Model\Product\Type\ConfigurableFactory;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
@@ -36,10 +34,6 @@ class Datafeed extends AbstractModel
     private $helper;
     private $stockHelper;
     private $imageHelper;
-    /**
-     * @var StoreCollection
-     */
-    private $storeCollection;
     /**
      * @var Emulation
      */
@@ -65,10 +59,6 @@ class Datafeed extends AbstractModel
      */
     private $moduleManager;
     /**
-     * @var \HawkSearch\Datafeed\Model\Email
-     */
-    private $email;
-    /**
      * @var CategoryCollectionFactory
      */
     private $categoryCollectionFactory;
@@ -88,50 +78,52 @@ class Datafeed extends AbstractModel
      * @var Manager
      */
     private $eventManager;
+    /**
+     * @var EmailFactory
+     */
+    private $emailFactory;
 
     /**
      * Constructor
-     * @param \Magento\Framework\Model\Context $context
-     * @param \Magento\Framework\Registry $registry
-     * @param Helper $helper
-     * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
-     * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
-     * @param StoreCollection $storeCollection
-     * @param Emulation $emulation
      * @param AttributeCollection $attributeCollection
      * @param ProductCollection $productCollection
      * @param Review $review
      * @param \HawkSearch\Datafeed\Model\CsvWriterFactory $csvWriter
-     * @param \HawkSearch\Datafeed\Model\Email $email
      * @param CategoryCollectionFactory $categoryCollectionFactory
      * @param CategoryFactory $categoryHelperFactory
      * @param ConfigurableFactory $configurableFactory
      * @param PageCollectionFactory $pageCollectionFactory
      * @param \Magento\Framework\Module\Manager $moduleManager
+     * @param EventManager $eventManager
+     * @param Emulation $emulation
+     * @param Helper $helper
+     * @param EmailFactory $emailFactory
+     * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
+     * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
+     * @param \Magento\Framework\Model\Context $context
+     * @param \Magento\Framework\Registry $registry
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
      * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
-     * @param EventManager $eventManager
      * @param array $data
      */
     public function __construct(
-        \Magento\Framework\Model\Context $context,
-        \Magento\Framework\Registry $registry,
-        Helper $helper,
-        \Magento\CatalogInventory\Helper\Stock $stockHelper,
-        \Magento\Catalog\Helper\ImageFactory $imageHelperFactory,
-        StoreCollection $storeCollection,
-        Emulation $emulation,
         AttributeCollection $attributeCollection,
         ProductCollection $productCollection,
         Review $review,
         CsvWriterFactory $csvWriter,
-        Email $email,
         CategoryCollectionFactory $categoryCollectionFactory,
         CategoryFactory $categoryHelperFactory,
         ConfigurableFactory $configurableFactory,
         PageCollectionFactory $pageCollectionFactory,
         \Magento\Framework\Module\Manager $moduleManager,
         EventManager $eventManager,
+        Emulation $emulation,
+        Helper $helper,
+        EmailFactory $emailFactory,
+        \Magento\CatalogInventory\Helper\Stock $stockHelper,
+        \Magento\Catalog\Helper\ImageFactory $imageHelperFactory,
+        \Magento\Framework\Model\Context $context,
+        \Magento\Framework\Registry $registry,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
@@ -140,19 +132,18 @@ class Datafeed extends AbstractModel
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
-        $this->storeCollection = $storeCollection;
         $this->emulation = $emulation;
         $this->attributeCollection = $attributeCollection;
         $this->productCollection = $productCollection;
         $this->review = $review;
         $this->csvWriter = $csvWriter;
         $this->moduleManager = $moduleManager;
-        $this->email = $email;
         $this->categoryCollectionFactory = $categoryCollectionFactory;
         $this->categoryHelperFactory = $categoryHelperFactory;
         $this->configurableFactory = $configurableFactory;
         $this->pageCollectionFactory = $pageCollectionFactory;
         $this->eventManager = $eventManager;
+        $this->emailFactory = $emailFactory;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
@@ -525,9 +516,8 @@ class Datafeed extends AbstractModel
      */
     public function generateFeed()
     {
-        $selectedStores = $this->helper->getSelectedStores();
-        $stores = $this->storeCollection;
-        $stores->addIdFilter($selectedStores);
+        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
+        $stores = $this->helper->getSelectedStores();
 
         /** @var \Magento\Store\Model\Store $store */
         foreach ($stores as $store) {
@@ -540,24 +530,24 @@ class Datafeed extends AbstractModel
                 $this->feedSummary->stores[$store->getCode()] = ['start_time' => date(DATE_ATOM)];
 
                 //exports Category Data
-//                $this->getCategoryData($store);
-//
-//                //exports Product Data
-//                $this->getProductData($store);
-//
-//                //exports Attribute Data
+                $this->getCategoryData($store);
+
+                // exports Product Data
+                $this->getProductData($store);
+
+                //exports Attribute Data
                 $this->getAttributeData($store);
-//
-//                //exports CMS / Content Data
-//                $this->getContentData($store);
-//
-//                // emit events to allow extended feeds
-//                $this->eventManager->dispatch(
-//                    'hawksearch_datafeed_generate_custom_feeds',
-//                    ['model' => $this, 'store' => $store]);
-//
+
+                //exports CMS / Content Data
+                $this->getContentData($store);
+
+                // emit events to allow extended feeds
+                $this->eventManager->dispatch(
+                    'hawksearch_datafeed_generate_custom_feeds',
+                    ['model' => $this, 'store' => $store]);
+
                 // trigger reindex on hawksearch end
-//                $this->helper->triggerReindex($store);
+                $this->helper->triggerReindex($store);
 
                 $this->feedSummary->stores[$store->getCode()]['end_time'] = date(DATE_ATOM);
 
@@ -576,18 +566,15 @@ class Datafeed extends AbstractModel
         $this->log('all done, goodbye');
     }
 
-    /**
-     *
-     */
     public function refreshImageCache()
     {
         $this->log('starting refreshImageCache()');
 
-        $selectedStores = $this->helper->getSelectedStores();
-        $this->storeCollection->addIdFilter($selectedStores);
+        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
+        $stores = $this->helper->getSelectedStores();
 
         /** @var \Magento\Store\Model\Store $store */
-        foreach ($this->storeCollection as $store) {
+        foreach ($stores as $store) {
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 

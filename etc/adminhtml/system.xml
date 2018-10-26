@@ -110,7 +110,37 @@
                     <validate>required-entry validate-email</validate>
                 </field>
             </group>
-            <group id="imagecache" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1"
+            <group id="hawksearch_api" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Hawksearch Api Settings</label>
+                <field id="api_url_develop" translate="label comment" type="text" showInStore="1" showInWebsite="1" showInDefault="1" sortOrder="1">
+                    <label>API Access URL (Develop)</label>
+                    <comment>Example: https://dev.hawksearch.net/api/</comment>
+                </field>
+                <field id="api_url_staging" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="2">
+                    <label>API Access URL (Staging)</label>
+                    <comment>Example: https://test.hawksearch.net/api/</comment>
+                </field>
+                <field id="api_url_production" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="3">
+                    <label>API Access URL (Production)</label>
+                    <comment>Example: https://manage.hawksearch.com/api/</comment>
+                </field>
+                <field id="api_ver" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="4">
+                    <label>API version</label>
+                    <comment>Example: v4</comment>
+                </field>
+                <field id="api_key" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="5">
+                    <label>API key</label>
+                </field>
+                <field id="api_mode" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="6">
+                    <label>API Mode</label>
+                    <source_model>HawkSearch\Datafeed\Model\System\Config\Source\Mode</source_model>
+                </field>
+            </group>
+            <group id="imagecache" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1"
                    showInStore="1">
                 <label>Image Cache</label>
                 <field id="generateimagecache" translate="button_label" sortOrder="5" showInDefault="1"
