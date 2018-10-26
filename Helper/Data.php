@@ -174,7 +174,12 @@ class Data extends AbstractHelper
     }
 
     public function getSelectedStores() {
-        return explode(',', $this->getConfigurationData(self::CONFIG_SELECTED_STORES));
+        if(!isset($this->selectedStores)){
+            $this->selectedStores = $this->storeCollectionFactory->create();
+            $ids = explode(',', $this->scopeConfig->getValue(self::CONFIG_SELECTED_STORES));
+            $this->selectedStores->addIdFilter($ids);
+        }
+        return $this->selectedStores;
     }
 
     public function getCronEnabled() {
@@ -313,7 +318,7 @@ class Data extends AbstractHelper
      */
     public function triggerReindex(\Magento\Store\Model\Store $store) {
         $this->log('triggerReindex called');
-        if(!$this->scopeConfig->isSetFlag('hawksearch_datafeed/hawksearch_api/enable_hawksearch_index_rebuild', ScopeInterface::SCOPE_STORE, $store)) {
+        if(!$this->scopeConfig->isSetFlag('hawksearch_datafeed/feed/reindex', ScopeInterface::SCOPE_STORE, $store)) {
             $this->log('HawkSearch reindex disabled, not triggering reindex');
             return false;
         }
