@@ -17,6 +17,7 @@ use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Filesystem;
+use Magento\Store\Model\ResourceModel\Store\CollectionFactory;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
@@ -54,24 +55,32 @@ class Data extends AbstractHelper
      */
     private $zendClient;
     protected $filesystem;
+    private $selectedStores;
+    /**
+     * @var CollectionFactory
+     */
+    private $storeCollectionFactory;
 
     /**
      * Data constructor.
      * @param StoreManagerInterface $storeManager
      * @param Filesystem $filesystem
      * @param ZendClient $zendClient
+     * @param CollectionFactory $storeCollectionFactory
      * @param Context $context
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         Filesystem $filesystem,
         ZendClient $zendClient,
+        CollectionFactory $storeCollectionFactory,
         Context $context
     ) {
         parent::__construct($context);
         $this->storeManager = $storeManager;
         $this->filesystem = $filesystem;
         $this->zendClient = $zendClient;
+        $this->storeCollectionFactory = $storeCollectionFactory;
     }
 
     public function getConfigurationData($data) {
@@ -165,7 +174,12 @@ class Data extends AbstractHelper
     }
 
     public function getSelectedStores() {
-        return explode(',', $this->getConfigurationData(self::CONFIG_SELECTED_STORES));
+        if(!isset($this->selectedStores)){
+            $this->selectedStores = $this->storeCollectionFactory->create();
+            $ids = explode(',', $this->scopeConfig->getValue(self::CONFIG_SELECTED_STORES));
+            $this->selectedStores->addIdFilter($ids);
+        }
+        return $this->selectedStores;
     }
 
     public function getCronEnabled() {
@@ -198,7 +212,7 @@ class Data extends AbstractHelper
         return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
     }
 
-    public function removeFeedLocks($kill = false) {
+    public function removeFeedLocks($scriptName = '', $kill = false) {
         $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
 
         if (file_exists($lockfilename)) {
@@ -304,7 +318,11 @@ class Data extends AbstractHelper
      */
     public function triggerReindex(\Magento\Store\Model\Store $store) {
         $this->log('triggerReindex called');
-        $apiUrl = $this->getTriggerReindexUrl();
+        if(!$this->scopeConfig->isSetFlag('hawksearch_datafeed/feed/reindex', ScopeInterface::SCOPE_STORE, $store)) {
+            $this->log('HawkSearch reindex disabled, not triggering reindex');
+            return false;
+        }
+        $apiUrl = $this->getTriggerReindexUrl($store);
         $this->log(sprintf('using reindex url "%s"', $apiUrl));
 
         $this->zendClient->resetParameters(true);
@@ -313,39 +331,27 @@ class Data extends AbstractHelper
         $this->zendClient->setMethod(ZendClient::POST);
         $this->log('setMethod called on zendClient');
 
-        /** @var \Magento\Framework\App\Config $scopeConfig */
-        $scopeConfig = $this->scopeConfig;
-
-        $apiKey = $scopeConfig->getValue('hawksearch_proxy/proxy/hawksearch_api_key', 'stores', $store);
+        $apiKey = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_key', ScopeInterface::SCOPE_STORE, $store);
         $this->log(sprintf('setting hawk Api key to "%s"', $apiKey));
 
         $this->zendClient->setHeaders('X-HawkSearch-ApiKey', $apiKey);
         $this->zendClient->setHeaders('Accept', 'application/json');
 
         $this->log('making request...');
-        try {
-            $response = $this->zendClient->request();
-            $this->log(sprintf('Request made, HEADERS:\n%s', $response->getHeadersAsString()));
-            $this->log(sprintf("\nRESPONSE BODY:\n%s\n", $response->getBody()));
-            $status = $response->getStatus();
-            return $status;
-        } catch (\Exception $e) {
-            $this->log(sprintf("\nEXCEPTION OCCURED:\n%s\n", $e->getMessage()));
-        }
-        return 0;
+        $response = $this->zendClient->request();
+        $this->log(sprintf("request made, response is:\n%s\n\n%s", $response->getHeadersAsString(), $response->getBody()));
+        return isset($response) ? true : false;
     }
 
-    private function getTriggerReindexUrl() {
-        $trackingUrl = $this->getTrackingUrl();
-        return $trackingUrl . 'api/v3/index';
-    }
+    private function getTriggerReindexUrl(\Magento\Store\Model\Store $store) {
+        $mode = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_mode', ScopeInterface::SCOPE_STORE, $store);
 
-    public function getTrackingUrl() {
-        $mode = $this->getConfigurationData(\HawkSearch\Proxy\Helper\Data::CONFIG_PROXY_MODE);
+        $apiUrl = $this->scopeConfig->getValue(sprintf('hawksearch_datafeed/hawksearch_api/api_url_%s', $mode), ScopeInterface::SCOPE_STORE, $store);
+        $apiUrl = rtrim($apiUrl, '/');
 
-        $trackingUrl = $this->getConfigurationData(sprintf('hawksearch_proxy/proxy/tracking_url_%s', $mode));
-        $trackingUrl = preg_replace('|^http://|', 'https://', $trackingUrl);
-        return rtrim($trackingUrl, "/") . '/';
+        $apiVersion = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_ver', ScopeInterface::SCOPE_STORE, $store);
+
+        return sprintf('%s/api/%s/index', $apiUrl, $apiVersion);
     }
 
     public function log($message) {

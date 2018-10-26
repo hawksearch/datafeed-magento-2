@@ -10,7 +10,7 @@ namespace HawkSearch\Datafeed\Cron;
 
 use HawkSearch\Datafeed\Helper\Data as Helper;
 use HawkSearch\Datafeed\Model\Datafeed as Task;
-use HawkSearch\Datafeed\Model\Email;
+use HawkSearch\Datafeed\Model\EmailFactory;
 use Magento\Framework\Filesystem\DirectoryList;
 
 class DataFeed
@@ -28,23 +28,23 @@ class DataFeed
      */
     private $dir;
     /**
-     * @var Email
+     * @var EmailFactory
      */
-    private $email;
+    private $emailFactory;
 
     /**
      * DataFeed constructor.
      * @param Task $task
      * @param Helper $helper
      * @param DirectoryList $dir
-     * @param Email $email
+     * @param EmailFactory $emailFactory
      */
-    public function __construct(Task $task, Helper $helper, DirectoryList $dir, Email $email)
+    public function __construct(Task $task, Helper $helper, DirectoryList $dir, EmailFactory $emailFactory)
     {
         $this->task = $task;
         $this->helper = $helper;
         $this->dir = $dir;
-        $this->email = $email;
+        $this->emailFactory = $emailFactory;
     }
 
     public function execute() {
@@ -56,17 +56,18 @@ class DataFeed
                 $vars['message'] = "Hawksearch is currently locked, not generating feed at this time.";
             } else {
                 try {
-                    $this->helper->createFeedLocks(Task::SCRIPT_NAME);
-                    $this->task->generateFeed();
-
-                    $vars['message'] = "HawkSeach Datafeed Generated!";
+                    if($this->helper->createFeedLocks(Task::SCRIPT_NAME)) {
+                        $this->task->generateFeed();
+                        $this->helper->removeFeedLocks(Task::SCRIPT_NAME);
+                        $vars['message'] = "HawkSeach Datafeed Generated!";
+                    } else {
+                        $vars['message'] = 'Unable to create the lock file. feed not generated';
+                    }
                 } catch (\Exception $e) {
                     $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
-                } finally {
-                    $this->helper->removeFeedLocks();
                 }
             }
-            $this->email->sendEmail($vars);
+            $this->emailFactory->create()->sendEmail($vars);
         }
     }
 }
