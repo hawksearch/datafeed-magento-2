@@ -237,7 +237,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
     }
 
-    public function removeFeedLocks($kill = false) {
+    public function removeFeedLocks($scriptName = '', $kill = false) {
         $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
 
         if (file_exists($lockfilename)) {

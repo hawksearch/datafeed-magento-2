@@ -19,6 +19,8 @@ use Magento\Framework\Model\AbstractModel;
 class Datafeed
     extends AbstractModel
 {
+    const SCRIPT_NAME = 'Datafeed';
+
     /**
      * @var Data
      */
@@ -31,10 +33,15 @@ class Datafeed
     protected $feedSummary;
     protected $imageHelper;
     protected $productAttributes;
+    /**
+     * @var \Magento\Store\Model\App\Emulation
+     */
+    private $emulation;
 
 
     /**
      * Datafeed constructor.
+     * @param \Magento\Store\Model\App\Emulation $emulation
      * @param Data $helper
      * @param \HawkSearch\Datafeed\Model\EmailFactory $emailFactory
      * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
@@ -46,6 +53,7 @@ class Datafeed
      * @param array $data
      */
     public function __construct(
+        \Magento\Store\Model\App\Emulation $emulation,
         Data $helper,
         EmailFactory $emailFactory,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
@@ -56,6 +64,7 @@ class Datafeed
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
+        $this->emulation = $emulation;
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
@@ -456,20 +465,15 @@ class Datafeed
     }
 
     public function generateFeed() {
-
-        $selectedStores = $this->helper->getSelectedStores();
         /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
-        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-        $stores = $object_manager->get('Magento\Store\Model\ResourceModel\Store\Collection');
-        $stores->addIdFilter($selectedStores);
+        $stores = $this->helper->getSelectedStores();
 
         /** @var \Magento\Store\Model\Store $store */
         foreach ($stores as $store) {
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $appEmulation = $object_manager->get('Magento\Store\Model\App\Emulation');
-                $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId());
 
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
                 $this->setFeedFolder($store);
@@ -490,7 +494,7 @@ class Datafeed
                 $this->helper->triggerReindex($store);
 
                 // end emulation
-                $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+                $this->emulation->startEnvironmentEmulation($store->getId());
 
             } catch (\Exception $e) {
                 $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
@@ -501,10 +505,7 @@ class Datafeed
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
         $this->feedSummary->complete = date(DATE_ATOM);
         file_put_contents($this->helper->getSummaryFilename(), json_encode($this->feedSummary));
-        $this->log('done generating data feed files, going to remove lock files.');
-        $this->helper->removeFeedLocks();
         $this->log('all done, goodbye');
-
     }
 
     public function setFeedFolder(\Magento\Store\Model\Store $store) {

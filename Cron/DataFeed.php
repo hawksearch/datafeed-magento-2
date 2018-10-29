@@ -26,18 +26,40 @@ class DataFeed
      * @var DirectoryList
      */
     private $dir;
+    /**
+     * @var EmailFactory
+     */
+    private $emailFactory;
 
-    public function __construct(Task $task, Helper $helper, DirectoryList $dir)
+    public function __construct(Task $task, Helper $helper, DirectoryList $dir, EmailFactory $emailFactory)
     {
         $this->task = $task;
         $this->helper = $helper;
         $this->dir = $dir;
+        $this->emailFactory = $emailFactory;
     }
 
     public function execute() {
         chdir($this->dir->getRoot());
         if($this->helper->getCronEnabled()) {
-            $this->task->generateFeed();
+            $vars = [];
+            $vars['jobTitle'] = Task::SCRIPT_NAME;
+            if ($this->helper->isFeedLocked()) {
+                $vars['message'] = "HawkSearch feed is currently locked, not generating feed at this time.";
+            } else {
+                try {
+                    if($this->helper->createFeedLocks(Task::SCRIPT_NAME)) {
+                        $this->task->generateFeed();
+                        $this->helper->removeFeedLocks(Task::SCRIPT_NAME);
+                        $vars['message'] = "HawkSeach Datafeed Generated!";
+                    } else {
+                        $vars['message'] = 'Unable to create the lock file. feed not generated';
+                    }
+                } catch (\Exception $e) {
+                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
+                }
+            }
+            $this->emailFactory->create()->sendEmail($vars);
         }
     }
 }
