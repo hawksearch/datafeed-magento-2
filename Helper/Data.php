@@ -82,9 +82,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->storeCollectionFactory = $storeCollectionFactory;
     }
 
-    public function getConfigurationData($data) {
+    public function getConfigurationData($data, $store = null) {
         $storeScope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
-        return $this->scopeConfig->getValue($data, $storeScope);
+        return $this->scopeConfig->getValue($data, $storeScope, $store);
 
     }
 

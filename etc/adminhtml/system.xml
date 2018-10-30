@@ -147,17 +147,15 @@
                 <label>Hawksearch Api Settings</label>
                 <field id="api_url_develop" translate="label comment" type="text" showInStore="1" showInWebsite="1" showInDefault="1" sortOrder="1">
                     <label>API Access URL (Develop)</label>
-                    <comment>Example: https://test.hawksearch.net/api/</comment>
+                    <comment>Example: https://test.hawksearch.net/</comment>
                 </field>
                 <field id="api_url_staging" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="2">
                     <label>API Access URL (Staging)</label>
-                    <comment>Example: https://test.hawksearch.net/api/</comment>
                 </field>
                 <field id="api_url_production" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="3">
                     <label>API Access URL (Production)</label>
-                    <comment>Example: https://api.hawksearch.info/api/</comment>
                 </field>
                 <field id="api_ver" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="4">

@@ -10,6 +10,7 @@ namespace HawkSearch\Datafeed\Cron;
 
 use HawkSearch\Datafeed\Helper\Data as Helper;
 use HawkSearch\Datafeed\Model\Datafeed as Task;
+use HawkSearch\Datafeed\Model\EmailFactory;
 use Magento\Framework\Filesystem\DirectoryList;
 
 class DataFeed
