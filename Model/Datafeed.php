@@ -19,6 +19,8 @@ use Magento\Framework\Model\AbstractModel;
 class Datafeed
     extends AbstractModel
 {
+    const SCRIPT_NAME = 'Datafeed';
+
     /**
      * @var Data
      */
@@ -31,10 +33,15 @@ class Datafeed
     protected $feedSummary;
     protected $imageHelper;
     protected $productAttributes;
+    /**
+     * @var \Magento\Store\Model\App\Emulation
+     */
+    private $emulation;
 
 
     /**
      * Datafeed constructor.
+     * @param \Magento\Store\Model\App\Emulation $emulation
      * @param Data $helper
      * @param \HawkSearch\Datafeed\Model\EmailFactory $emailFactory
      * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
@@ -46,6 +53,7 @@ class Datafeed
      * @param array $data
      */
     public function __construct(
+        \Magento\Store\Model\App\Emulation $emulation,
         Data $helper,
         EmailFactory $emailFactory,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
@@ -56,6 +64,7 @@ class Datafeed
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
+        $this->emulation = $emulation;
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
@@ -192,7 +201,7 @@ class Datafeed
 
         $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
         $start = time();
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
         $pac = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection');
         $pac->addSearchableAttributeFilter();
         $pac->addStoreLabel($store->getId());
@@ -200,7 +209,7 @@ class Datafeed
 
         $labels = new \HawkSearch\Datafeed\Model\CsvWriter($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $labels->appendRow(array('key', 'store_label'));
-        /** @var Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
+        /** @var /Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
         foreach ($pac as $att) {
             $attributes[$att->getAttributeCode()] = $att;
             $labels->appendRow(array($att->getAttributeCode(), $att->getStoreLabel()));
@@ -208,7 +217,7 @@ class Datafeed
         $labels->closeOutput();
         $this->log(sprintf('Label export took %d seconds', time() - $start));
 
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Collection $products */
+        /** @var /Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $products = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Collection');
         $feedCodes = array_diff(array_keys($attributes), $this->productAttributes);
         if (!in_array('sku', $feedCodes)) {
@@ -227,14 +236,8 @@ class Datafeed
 
         if (!$this->helper->includeOutOfStockItems()) {
             $this->log('adding out of stock filter');
-//			/** @var Magento\CatalogInventory\Model\Stock $stockfilter */
-//
-//			$stockfilter =$objectManagerr->get('Magento\CatalogInventory\Model\Stock');
-//			$stockfilter->addInStockFilterToCollection($products);
             $this->stockHelper->addIsInStockFilterToCollection($products);
-
         }
-
 
         $this->log(sprintf('going to open feed file %s', $filename));
         $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
@@ -245,7 +248,7 @@ class Datafeed
         $pages = $products->getLastPageNumber();
         $currentPage = 1;
 
-        /** @var Magento\Review\Model\Review $review */
+        /** @var \Magento\Review\Model\Review $review */
         $review = $objectManagerr->get('Magento\Review\Model\Review');
 
         do {
@@ -262,7 +265,6 @@ class Datafeed
                     }
                     $source = $attributes[$attcode]->getSource();
                     if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
-//						TODO: These table based items need to be broken into separate line items
                         $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
@@ -300,7 +302,7 @@ class Datafeed
     }
 
     protected function getProductData(\Magento\Store\Model\Store $store) {
-        /** @var Magento\Catalog\Model\ResourceModel\Product\Collection $products */
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
 
         $products = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Product\Collection');
@@ -371,7 +373,7 @@ class Datafeed
             $seconds = time() - $start;
             $this->log(sprintf('it took %d seconds to load product page %d', $seconds, $currentPage));
             $start = time();
-            /** @var Magento\Catalog\Model\Product $product */
+            /** @var \Magento\Catalog\Model\Product $product */
             foreach ($products as $product) {
                 $output->appendRow(array(
                     $product->getId(),
@@ -463,20 +465,15 @@ class Datafeed
     }
 
     public function generateFeed() {
-
-        $selectedStores = $this->helper->getSelectedStores();
         /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
-        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-        $stores = $object_manager->get('Magento\Store\Model\ResourceModel\Store\Collection');
-        $stores->addIdFilter($selectedStores);
+        $stores = $this->helper->getSelectedStores();
 
         /** @var \Magento\Store\Model\Store $store */
         foreach ($stores as $store) {
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $appEmulation = $object_manager->get('Magento\Store\Model\App\Emulation');
-                $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId());
 
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
                 $this->setFeedFolder($store);
@@ -497,7 +494,7 @@ class Datafeed
                 $this->helper->triggerReindex($store);
 
                 // end emulation
-                $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+                $this->emulation->startEnvironmentEmulation($store->getId());
 
             } catch (\Exception $e) {
                 $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
@@ -508,10 +505,7 @@ class Datafeed
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
         $this->feedSummary->complete = date(DATE_ATOM);
         file_put_contents($this->helper->getSummaryFilename(), json_encode($this->feedSummary));
-        $this->log('done generating data feed files, going to remove lock files.');
-        $this->helper->removeFeedLocks();
         $this->log('all done, goodbye');
-
     }
 
     public function setFeedFolder(\Magento\Store\Model\Store $store) {
