@@ -33,6 +33,7 @@ if ($helper->createFeedLocks($opts['t'])) {
 	} else {
         $datafeed->generateFeed();
 	}
+	$helper->removeFeedLocks($opts['t']);
 }
 
 unlink($opts['t']);
