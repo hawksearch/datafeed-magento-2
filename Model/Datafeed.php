@@ -33,7 +33,6 @@ class Datafeed extends AbstractModel
     private $productAttributes;
     private $helper;
     private $stockHelper;
-    private $imageHelper;
     /**
      * @var Emulation
      */
@@ -99,7 +98,6 @@ class Datafeed extends AbstractModel
      * @param Helper $helper
      * @param EmailFactory $emailFactory
      * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
-     * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
@@ -121,7 +119,6 @@ class Datafeed extends AbstractModel
         Helper $helper,
         EmailFactory $emailFactory,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
-        \Magento\Catalog\Helper\ImageFactory $imageHelperFactory,
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
@@ -131,7 +128,6 @@ class Datafeed extends AbstractModel
     {
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
-        $this->imageHelper = $imageHelperFactory;
         $this->emulation = $emulation;
         $this->attributeCollection = $attributeCollection;
         $this->productCollection = $productCollection;
@@ -566,61 +562,6 @@ class Datafeed extends AbstractModel
         $this->log('all done, goodbye');
     }
 
-    public function refreshImageCache()
-    {
-        $this->log('starting refreshImageCache()');
-
-        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
-        $stores = $this->helper->getSelectedStores();
-
-        /** @var \Magento\Store\Model\Store $store */
-        foreach ($stores as $store) {
-            try {
-                $this->log(sprintf('Starting environment for store %s', $store->getName()));
-
-                $this->emulation->startEnvironmentEmulation($store->getId());
-                /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-                $products = $this->productCollection->create()
-                    ->addAttributeToSelect(array('small_image'))
-                    ->addStoreFilter($store);
-                $products->setPageSize($this->helper->getBatchLimit());
-                $pages = $products->getLastPageNumber();
-
-                $currentPage = 1;
-                $imageHelper = $this->imageHelper->create();
-                do {
-                    $this->log(sprintf('going to page %d of images', $currentPage));
-                    $products->clear();
-                    $products->setCurPage($currentPage);
-                    $products->load();
-
-                    foreach ($products as $product) {
-                        if (empty($this->helper->getImageHeight())) {
-                            $imageHelper->init($product, 'hawksearch_autosuggest_image')
-                                ->resize($this->helper->getImageWidth())
-                                ->save();
-                        } else {
-                            $imageHelper->init($product, 'hawksearch_autosuggest_image')
-                                ->resize($this->helper->getImageWidth(), $this->helper->getImageHeight())
-                                ->save();
-                        }
-                    }
-
-                    $currentPage++;
-
-                } while ($currentPage <= $pages);
-
-                // end emulation
-                $this->emulation->stopEnvironmentEmulation();
-
-            } catch (\Exception $e) {
-                $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
-            }
-
-        }
-        $this->log('Done generating image cache for selected stores, goodbye');
-    }
-    
     public function log($message) {
         $this->helper->log($message);
     }

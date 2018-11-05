@@ -26,6 +26,7 @@
         <buffer_size>65536</buffer_size>
         <output_file_ext>txt</output_file_ext>
         <feed_path>hawksearch/feeds</feed_path>
+        <image_cache_lock_path>hawksearch/locks</image_cache_lock_path>
         <lock_filename>hawksearchFeedLock.lock</lock_filename>
         <summary_filename>hawksearchFeedSummary.json</summary_filename>
         <cronlog_filename>hawksearchCronLog.log</cronlog_filename>
