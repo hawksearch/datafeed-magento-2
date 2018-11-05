@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2018 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -21,19 +21,27 @@ $obj = $bootstrap->getObjectManager();
 $state = $obj->get('Magento\Framework\App\State');
 $state->setAreaCode('frontend');
 
+/** @var \HawkSearch\Datafeed\Helper\Data $helper */
 $helper = $obj->get('HawkSearch\Datafeed\Helper\Data');
-$datafeed = $obj->get('HawkSearch\Datafeed\Model\Datafeed');
 
-if ($helper->isFeedLocked()) {
-    throw new \Exception('One or more feeds are being generated. Generation temporarily locked.');
-}
-if ($helper->createFeedLocks($opts['t'])) {
-    if (isset($opts['i'])) {
-        $datafeed->refreshImageCache();
-    } else {
-        $datafeed->generateFeed();
+if (isset($opts['i'])) {
+    if($helper->isImageCacheLocked()) {
+        throw new \Exception('Image Cache currently locked. Image Cache not regenerating.');
     }
-    $helper->removeFeedLocks($opts['t']);
+    if($helper->createImageCacheLocks($opts['t'])) {
+        $ic = $obj->get('HawkSearch\Datafeed\Model\ImageCache');
+        $ic->refreshImageCache();
+        $helper->removeImageCacheLocks($opts['t']);
+    }
+} else {
+    if ($helper->isFeedLocked()) {
+        throw new \Exception('One or more feeds are being generated. Generation temporarily locked.');
+    }
+    if ($helper->createFeedLocks($opts['t'])) {
+        $datafeed = $obj->get('HawkSearch\Datafeed\Model\Datafeed');
+        $datafeed->generateFeed();
+        $helper->removeFeedLocks($opts['t']);
+    }
 }
 
 unlink($opts['t']);

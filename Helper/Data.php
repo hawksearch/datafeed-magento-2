@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2018 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -25,6 +25,7 @@ class Data extends AbstractHelper
 {
 
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
+    const IMAGECACHE_LOCK_FILENAME = 'hawksearchImageCache.lock';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
     const CONFIG_SUMMARY_FILENAME = 'hawksearchFeedSummary.json';
     const CONFIG_FEED_PATH = 'hawksearch_datafeed/feed/feed_path';
@@ -45,6 +46,7 @@ class Data extends AbstractHelper
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
     const CONFIG_TRIGGER_REINDEX = 'hawksearch_datafeed/feed/reindex';
+    const CONFIG_IMAGECACHE_LOCK_PATH = 'hawksearch_datafeed/feed/image_cache_lock_path';
 
     /**
      * @var StoreManagerInterface
@@ -83,9 +85,12 @@ class Data extends AbstractHelper
         $this->storeCollectionFactory = $storeCollectionFactory;
     }
 
-    public function getConfigurationData($data) {
+    public function getConfigurationData($data, $store = null) {
         $storeScope = ScopeInterface::SCOPE_STORE;
-        return $this->scopeConfig->getValue($data, $storeScope, $this->storeManager->getStore()->getCode());
+        if(empty($store)) {
+            $store = $this->storeManager->getStore();
+        }
+        return $this->scopeConfig->getValue($data, $storeScope, $store);
     }
 
     public function getTriggerReindex($store) {
@@ -271,6 +276,7 @@ class Data extends AbstractHelper
         $writer = $this->filesystem->getDirectoryWrite('media');
         $writer->writeFile($summaryFile, json_encode($summary, JSON_PRETTY_PRINT));
     }
+
     public function refreshImageCache() {
         $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
         $tmpfile = tempnam($tmppath, 'hawkimage_');
@@ -357,6 +363,44 @@ class Data extends AbstractHelper
     public function log($message) {
         if ($this->loggingIsEnabled()) {
             $this->_logger->addDebug($message);
+        }
+    }
+
+    public function isImageCacheLocked()
+    {
+        $lockfile = $this->getImageCacheLockFile();
+        return $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA)->isExist($lockfile);
+    }
+
+    private function getImageCacheLockFile()
+    {
+        $relPath = $this->scopeConfig->getValue(self::CONFIG_IMAGECACHE_LOCK_PATH);
+        return implode(DIRECTORY_SEPARATOR, [$relPath, self::IMAGECACHE_LOCK_FILENAME]);
+    }
+
+    public function createImageCacheLocks($scriptName = '')
+    {
+        $lockFile = $this->getImageCacheLockFile();
+        $content = json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]);
+        try{
+            $writer = $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA);
+            return $writer->writeFile($lockFile, $content);
+        } catch (\Exception $exception) {
+            $this->log('failed to create Image cache lock file: ' . $exception->getMessage());
+            throw $exception;
+        }
+    }
+
+    public function removeImageCacheLocks($SCRIPT_NAME)
+    {
+        $lockFile = $this->getImageCacheLockFile();
+        $writer = $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA);
+        try
+        {
+            return $writer->delete($lockFile);
+        } catch (\Exception $exception) {
+            $this->log('Failed to remove Image Cache lock file: ' . $exception->getMessage());
+            throw $exception;
         }
     }
 }
