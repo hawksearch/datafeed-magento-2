@@ -52,6 +52,7 @@ class ImageCache
 
     public function execute()
     {
+        chdir($this->dir->getRoot());
         if ($this->helper->getCronImagecacheEnable()) {
             $vars = [];
             $vars['jobTitle'] = Task::SCRIPT_NAME;
