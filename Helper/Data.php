@@ -33,6 +33,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     const CONFIG_LOGGING_ENABLED = 'hawksearch_datafeed/general/logging_enabled';
     const CONFIG_INCLUDE_OOS = 'hawksearch_datafeed/feed/stockstatus';
     const CONFIG_BATCH_LIMIT = 'hawksearch_datafeed/feed/batch_limit';
+
+    const CONFIG_IMAGE_ROLE = 'hawksearch_datafeed/imagecache/image_role';
     const CONFIG_IMAGE_WIDTH = 'hawksearch_datafeed/imagecache/image_width';
     const CONFIG_IMAGE_HEIGHT = 'hawksearch_datafeed/imagecache/image_height';
     const CONFIG_INCLUDE_DISABLED = 'hawksearch_datafeed/feed/itemstatus';
@@ -433,6 +435,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         if ($this->loggingIsEnabled()) {
             $this->_logger->addDebug($message);
         }
+    }
+
+    public function getImageRole()
+    {
+        return $this->getConfigurationData(self::CONFIG_IMAGE_ROLE);
     }
 
 }

@@ -537,28 +537,26 @@ class Datafeed
 
     public function refreshImageCache() {
         $this->log('starting refreshImageCache()');
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
 
+        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $selectedStores */
         $selectedStores = $this->helper->getSelectedStores();
-        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
-        $object_manager = \Magento\Framework\App\ObjectManager::getInstance();
-        $stores = $object_manager->get('Magento\Store\Model\ResourceModel\Store\Collection');
-        $stores->addIdFilter($selectedStores);
 
         /** @var \Magento\Store\Model\Store $store */
-        foreach ($stores as $store) {
+        foreach ($selectedStores as $store) {
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $appEmulation = $object_manager->get('Magento\Store\Model\App\Emulation');
-                $initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId());
                 /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-                $products = $object_manager->create('Magento\Catalog\Model\ResourceModel\Product\Collection')
-                    ->addAttributeToSelect(array('small_image'))
+                $products = $objectManager->create('Magento\Catalog\Model\ResourceModel\Product\Collection')
+                    ->addAttributeToSelect($this->helper->getImageRole())
                     ->addStoreFilter($store);
                 $products->setPageSize($this->helper->getBatchLimit());
                 $pages = $products->getLastPageNumber();
 
                 $currentPage = 1;
+                /** @var \Magento\Catalog\Helper\Image $imageHelper */
                 $imageHelper = $this->imageHelper->create();
                 do {
                     $this->log(sprintf('going to page %d of images', $currentPage));
@@ -568,12 +566,12 @@ class Datafeed
 
                     foreach ($products as $product) {
                         if (empty($this->helper->getImageHeight())) {
-                            $imageHelper->init($product, 'hawksearch_autosuggest_image')
+                            $imageHelper->init($product, 'hawksearch_autosuggest_image', ['type' => $this->helper->getImageRole()])
                                 ->resize($this->helper->getImageWidth())
                                 ->getUrl();
                             $this->log(sprintf('going to resize image for url: %s', $product->getName()));
                         } else {
-                            $imageHelper->init($product, 'hawksearch_autosuggest_image')
+                            $imageHelper->init($product, 'hawksearch_autosuggest_image', ['type' => $this->helper->getImageRole()])
                                 ->resize($this->helper->getImageWidth(), $this->helper->getImageHeight())
                                 ->getUrl();
                             $this->log(sprintf('going to resize image for url: %s', $product->getName()));
@@ -585,15 +583,12 @@ class Datafeed
                 } while ($currentPage <= $pages);
 
                 // end emulation
-                $appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
+                $this->emulation->stopEnvironmentEmulation();
 
             } catch (\Exception $e) {
                 $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
             }
-
         }
-        $this->helper->removeFeedLocks();
         $this->log('Done generating image cache for selected stores, goodbye');
     }
-
 }

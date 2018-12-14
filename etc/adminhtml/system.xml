@@ -111,6 +111,11 @@
                         <![CDATA[For Development purposes only, use cron job on live site.]]>
                     </comment>
                 </field>
+                <field id="image_role" translate="label comment" type="select" showInDefault="1" showInWebsite="0" showInStore="1" sortOrder="14">
+                    <label>Image Role</label>
+                    <source_model>HawkSearch\Datafeed\Model\System\Config\Source\ImageRole</source_model>
+                    <comment>The "image role" to be used for hawksearch autosuggest thumbnails</comment>
+                </field>
                 <field id="image_width" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="15">
                     <label>Image Width</label>

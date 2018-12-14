@@ -31,6 +31,7 @@
       </feed>
       <imagecache>
         <image_width>135</image_width>
+        <image_role>small_image</image_role>
       </imagecache>
     </hawksearch_datafeed>
   </default>

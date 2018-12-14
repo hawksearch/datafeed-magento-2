@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
- Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ Copyright (c) 2018 Hawksearch (www.hawksearch.com) - All Rights Reserved
 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -11,5 +11,5 @@
  IN THE SOFTWARE.
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
-  <module name="HawkSearch_Datafeed" setup_version="2.1.0.5"></module>
+  <module name="HawkSearch_Datafeed" setup_version="2.1.0.6"></module>
 </config>
