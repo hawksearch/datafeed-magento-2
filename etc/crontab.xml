@@ -18,9 +18,9 @@
       <schedule>0 * * * *</schedule>
     </job>
     <job name="hawksearch_datafeed_imagecache"
-         instance="HawkSearch\Datafeed\Model\Datafeed"
-         method="cronGenerateImagecache">
-      <schedule>0 * * * *</schedule>
+         instance="HawkSearch\Datafeed\Cron\ImageCache"
+         method="execute">
+      <schedule>30 * * * *</schedule>
     </job>
   </group>
 </config>
