@@ -75,8 +75,8 @@ class Datafeed
     protected function _construct()
     {
         $this->feedSummary = new \stdClass();
-        $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
-
+        $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
+        $this->productAttributes[] = $this->helper->getImageRole();
         parent::_construct();
     }
 
@@ -380,7 +380,7 @@ class Datafeed
                     $product->getSku(),
                     $product->getName(),
                     substr($product->getProductUrl(1), strlen($store->getBaseUrl())),
-                    $product->getSmallImage(),
+                    $this->getAutoSuggestImage($product),
                     $product->getMsrp(),
                     $product->getPrice(),
                     $product->getSpecialPrice(),
@@ -590,5 +590,14 @@ class Datafeed
             }
         }
         $this->log('Done generating image cache for selected stores, goodbye');
+    }
+
+    public function getAutoSuggestImage($product)
+    {
+        $image = $product->getData($this->helper->getImageRole());
+        if($image != 'no_selection') {
+            return $image;
+        }
+        return '';
     }
 }
