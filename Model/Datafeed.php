@@ -490,6 +490,7 @@ class Datafeed extends AbstractModel
         $collection = $this->pageCollectionFactory->create();
         $collection->addStoreFilter($store->getId());
         $collection->addFieldToFilter('is_active', ['eq' => 1]);
+        $collection->addFieldToFilter('hawk_exclude', ['neq' => 1]);
 
 
         $output = $this->csvWriter->create()->init($this->helper->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
@@ -526,13 +527,13 @@ class Datafeed extends AbstractModel
                 $this->feedSummary->stores[$store->getCode()] = ['start_time' => date(DATE_ATOM)];
 
                 //exports Category Data
-                $this->getCategoryData($store);
+                //$this->getCategoryData($store);
 
                 // exports Product Data
-                $this->getProductData($store);
+                //$this->getProductData($store);
 
                 //exports Attribute Data
-                $this->getAttributeData($store);
+                //$this->getAttributeData($store);
 
                 //exports CMS / Content Data
                 $this->getContentData($store);
