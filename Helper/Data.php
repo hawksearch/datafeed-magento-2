@@ -47,6 +47,7 @@ class Data extends AbstractHelper
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
     const CONFIG_TRIGGER_REINDEX = 'hawksearch_datafeed/feed/reindex';
     const CONFIG_IMAGECACHE_LOCK_PATH = 'hawksearch_datafeed/feed/image_cache_lock_path';
+    const CONFIG_COMBINE_MULTISELECT_ATTS = 'hawksearch_datafeed/feed/combine_multiselect';
 
     /**
      * @var StoreManagerInterface
@@ -402,5 +403,10 @@ class Data extends AbstractHelper
             $this->log('Failed to remove Image Cache lock file: ' . $exception->getMessage());
             throw $exception;
         }
+    }
+
+    public function getCombineMultiselectAttributes()
+    {
+        return $this->getConfigurationData(self::CONFIG_COMBINE_MULTISELECT_ATTS);
     }
 }

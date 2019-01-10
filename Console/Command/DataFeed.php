@@ -76,6 +76,7 @@ class DataFeed extends Command
         }
         if ($this->helper->createFeedLocks(DatafeedTask::SCRIPT_NAME)) {
             $this->task->generateFeed();
+            $this->helper->removeFeedLocks();
         } else {
             $output->writeln("Unable to create feed lock file, feed not generating");
         }
