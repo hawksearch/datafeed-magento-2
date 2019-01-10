@@ -109,6 +109,11 @@
                     <label>Feed Cron Email</label>
                     <validate>required-entry validate-email</validate>
                 </field>
+                <field id="combine_multiselect" translate="label" type="select" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="45">
+                    <label>Combine Multiselect Values</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
             <group id="hawksearch_api" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Hawksearch Api Settings</label>

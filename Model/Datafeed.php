@@ -328,11 +328,20 @@ class Datafeed extends AbstractModel
                     }
                     $source = $attributes[$attcode]->getSource();
                     if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
-                        $output->appendRow(array(
-                            $product->getSku(),
-                            $attcode,
-                            $product->getResource()->getAttribute($attcode)->getFrontend()->getValue($product)
-                        ));
+                        $options = $product->getResource()->getAttribute($attcode)->getFrontend()->getOption($product->getData($attcode));
+                        if(!is_array($options)){
+                            $options = array($options);
+                        }
+                        if($this->helper->getCombineMultiselectAttributes()) {
+                            $options = array(implode(',', $options));
+                        }
+                        foreach ($options as $option) {
+                            $output->appendRow(array(
+                                $product->getSku(),
+                                $attcode,
+                                $option
+                            ));
+                        }
                     } elseif ($source instanceof \Magento\Catalog\Model\Product\Visibility
                         || $source instanceof \Magento\Tax\Model\TaxClass\Source\Product
                         || $source instanceof \Magento\Catalog\Model\Product\Attribute\Source\Status
