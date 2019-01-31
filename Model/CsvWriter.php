@@ -18,16 +18,17 @@ namespace HawkSearch\Datafeed\Model;
 	private $delimiter;
 	private $bufferSize;
 
-	public function __construct($destFile, $delim, $buffSize = null) {
-		$this->finalDestinationPath = $destFile;
-		if (file_exists($this->finalDestinationPath)) {
-			if (false === unlink($this->finalDestinationPath)) {
-				throw new Exception("CsvWriteBuffer: unable to remove old file '$this->finalDestinationPath'");
-			}
-		}
-		$this->delimiter = $delim;
-		$this->bufferSize = $buffSize;
-	}
+	public function init($destFile, $delim, $buffSize = null) {
+        $this->finalDestinationPath = $destFile;
+        if (file_exists($this->finalDestinationPath)) {
+            if (false === unlink($this->finalDestinationPath)) {
+                throw new Exception("CsvWriteBuffer: unable to remove old file '$this->finalDestinationPath'");
+            }
+        }
+        $this->delimiter = $delim;
+        $this->bufferSize = $buffSize;
+        return $this;
+    }
 
 	public function __destruct() {
 		$this->closeOutput();
