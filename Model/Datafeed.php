@@ -37,7 +37,10 @@ class Datafeed
      * @var \Magento\Store\Model\App\Emulation
      */
     private $emulation;
-
+    /**
+     * @var array
+     */
+    protected $generators;
 
     /**
      * Datafeed constructor.
@@ -48,6 +51,7 @@ class Datafeed
      * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
+     * @param array $generators
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
      * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
      * @param array $data
@@ -62,6 +66,7 @@ class Datafeed
         \Magento\Framework\Registry $registry,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
+        array $generators = [],
         array $data = []
     ) {
         $this->emulation = $emulation;
@@ -69,6 +74,7 @@ class Datafeed
         $this->stockHelper = $stockHelper;
         $this->imageHelper = $imageHelperFactory;
         $this->emailFactory = $emailFactory;
+        $this->generators = $generators;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
@@ -128,7 +134,8 @@ class Datafeed
         $currentPage = 1;
 
         $this->log(sprintf('going to open feed file %s', $filename));
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $output->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('file open, going to append header and root');
         $output->appendRow(array('category_id', 'category_name', 'parent_category_id', 'sort_order', 'is_active', 'category_url', 'include_in_menu'));
         $output->appendRow(array('1', 'Root', '0', '0', '1', '/', '1'));
@@ -207,7 +214,8 @@ class Datafeed
         $pac->addStoreLabel($store->getId());
         $attributes = array();
 
-        $labels = new \HawkSearch\Datafeed\Model\CsvWriter($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $labels = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $labels->init($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $labels->appendRow(array('key', 'store_label'));
         /** @var /Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
         foreach ($pac as $att) {
@@ -240,7 +248,8 @@ class Datafeed
         }
 
         $this->log(sprintf('going to open feed file %s', $filename));
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $output->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('feed file open, appending header');
         $output->appendRow(array('unique_id', 'key', 'value'));
 
@@ -333,7 +342,8 @@ class Datafeed
         }
 
         $filename = $this->getPathForFile('items');
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $output->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array(
             'product_id',
             'unique_id',
@@ -427,7 +437,8 @@ class Datafeed
         $collection = $objectManagerr->create('Magento\Cms\Model\ResourceModel\Page\Collection');
         $collection->addStoreFilter($store->getId());
 
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter($this->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $output->init($this->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array('unique_id', 'name', 'url_detail', 'description_short', 'created_date'));
 
         foreach ($collection as $page) {
@@ -478,6 +489,9 @@ class Datafeed
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
                 $this->setFeedFolder($store);
 
+                foreach ($this->generators as $generator) {
+                    $generator->execute($store);
+                }
                 //exports Category Data
                 $this->getCategoryData($store);
 
