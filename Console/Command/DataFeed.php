@@ -8,7 +8,7 @@
 
 namespace HawkSearch\Datafeed\Console\Command;
 
-use HawkSearch\Datafeed\Model\Datafeed as DatafeedTask;
+use HawkSearch\Datafeed\Model\DatafeedFactory as DatafeedTaskFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,9 +22,9 @@ class DataFeed extends Command
 {
     const FORCE_MODE = 'force';
     /**
-     * @var Task
+     * @var DatafeedTaskFactory
      */
-    private $task;
+    private $taskFactory;
     /**
      * @var State
      */
@@ -50,13 +50,13 @@ class DataFeed extends Command
     }
 
     public function __construct(
-        DatafeedTask $task,
+        DatafeedTaskFactory $taskFactory,
         State $state,
         Helper $helper,
         $name = null)
     {
         parent::__construct($name);
-        $this->task = $task;
+        $this->taskFactory = $taskFactory;
         $this->state = $state;
         $this->helper = $helper;
     }
@@ -65,7 +65,6 @@ class DataFeed extends Command
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return int|null|void
-     * @throws \Magento\Framework\Exception\FileSystemException
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -75,7 +74,8 @@ class DataFeed extends Command
             $this->helper->removeFeedLocks(true);
         }
         if ($this->helper->createFeedLocks(DatafeedTask::SCRIPT_NAME)) {
-            $this->task->generateFeed();
+            $task = $this->taskFactory->create();
+            $task->generateFeed();
             $this->helper->removeFeedLocks();
         } else {
             $output->writeln("Unable to create feed lock file, feed not generating");

@@ -10,7 +10,7 @@
     </type>
     <virtualType name="hawkSearchVirtualLogHandler" type="Magento\Framework\Logger\Handler\Base">
         <arguments>
-            <argument name="fileName" xsi:type="string">var/log/hawksearch_datafeed.log</argument>
+            <argument name="filePath" xsi:type="string">var/log/hawksearch_datafeed.log</argument>
         </arguments>
     </virtualType>
     <virtualType name="hawkSearchVirtualLogger" type="Magento\Framework\Logger\Monolog">

@@ -312,14 +312,15 @@ class Datafeed extends AbstractModel
             $products->load();
             foreach ($products as $product) {
                 foreach ($feedCodes as $attcode) {
-                    if ($product->getData($attcode) === null) {
+                    $value = $product->getData($attcode);
+                    if (empty($value)) {
                         continue;
                     }
                     if($attcode == 'sku') {
                         $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
-                            $product->getData($attcode)
+                            $value
                         ));
                         continue;
                     }
@@ -328,12 +329,21 @@ class Datafeed extends AbstractModel
                     }
                     $source = $attributes[$attcode]->getSource();
                     if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
-                        $options = $product->getResource()->getAttribute($attcode)->getFrontend()->getOption($product->getData($attcode));
-                        if(!is_array($options)){
-                            $options = array($options);
+                        $frontend = $product->getResource()->getAttribute($attcode)->getFrontend();
+                        $options = [];
+                        if(is_array($value)) {
+                            foreach ($value as $item) {
+                                $options[] = $frontend->getOption($item);
+                            }
+                        } else {
+                            $options = $frontend->getOption($value);
                         }
+
                         if($this->helper->getCombineMultiselectAttributes()) {
                             $options = array(implode(',', $options));
+                        }
+                        if(!is_array($options)) {
+                            $options = array($options);
                         }
                         foreach ($options as $option) {
                             $output->appendRow(array(
@@ -349,13 +359,13 @@ class Datafeed extends AbstractModel
                         $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
-                            $source->getOptionText($product->getData($attcode))
+                            $source->getOptionText($value)
                         ));
                     } else {
                         $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
-                            $product->getData($attcode)
+                            $value
                         ));
                     }
                 }
