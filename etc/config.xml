@@ -34,9 +34,9 @@
         <cron_string>0 0 * * *</cron_string>
       </feed>
       <hawksearch_api>
-        <api_url_develop>https://dev.hawksearch.net/api/</api_url_develop>
-        <api_url_staging>https://test.hawksearch.net/api/</api_url_staging>
-        <api_url_production>https://manage.hawksearch.com/api/</api_url_production>
+        <api_url_develop>https://dev.hawksearch.net/</api_url_develop>
+        <api_url_staging>https://test.hawksearch.net/</api_url_staging>
+        <api_url_production>https://manage.hawksearch.com/</api_url_production>
         <api_ver>v4</api_ver>
       </hawksearch_api>
       <imagecache>
