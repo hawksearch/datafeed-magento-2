@@ -93,14 +93,6 @@ class Datafeed
         $this->helper->log($message);
     }
 
-    public function getPathForFile($basename) {
-        $dir = sprintf('%s/%s', $this->helper->getFeedFilePath(), end($this->feedSummary->stores));
-        $this->log(sprintf('checking for dir: %s', $dir));
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        return sprintf('%s/%s.%s', $dir, $basename, $this->helper->getOutputFileExtension());
-    }
 
     /**
      * Recursively sets up the category tree without introducing
@@ -121,7 +113,7 @@ class Datafeed
 
     public function getCategoryData(\Magento\Store\Model\Store $store) {
         $this->log('starting _getCategoryData()');
-        $filename = $this->getPathForFile('hierarchy');
+        $filename = $this->helper->getPathForFile($store,'hierarchy');
 
         $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
         $categoryFactory = $objectManagerr->create('Magento\Catalog\Model\ResourceModel\Category\CollectionFactory');
@@ -203,8 +195,8 @@ class Datafeed
 
 
         $this->log('starting _getAttributeData');
-        $filename = $this->getPathForFile('attributes');
-        $labelFilename = $this->getPathForFile('labels');
+        $filename = $this->helper->getPathForFile($store,'attributes');
+        $labelFilename = $this->helper->getPathForFile($store, 'labels');
 
         $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
         $start = time();
@@ -341,7 +333,7 @@ class Datafeed
             );
         }
 
-        $filename = $this->getPathForFile('items');
+        $filename = $this->helper->getPathForFile($store, 'items');
         $output = new \HawkSearch\Datafeed\Model\CsvWriter();
         $output->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array(
@@ -438,7 +430,7 @@ class Datafeed
         $collection->addStoreFilter($store->getId());
 
         $output = new \HawkSearch\Datafeed\Model\CsvWriter();
-        $output->init($this->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output->init($this->helper->getPathForFile($store, 'content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array('unique_id', 'name', 'url_detail', 'description_short', 'created_date'));
 
         foreach ($collection as $page) {

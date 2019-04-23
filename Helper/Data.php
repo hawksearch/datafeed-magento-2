@@ -442,4 +442,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return $this->getConfigurationData(self::CONFIG_IMAGE_ROLE);
     }
 
+    public function getPathForFile(\Magento\Store\Model\Store $store, $basename) {
+        $dir = sprintf('%s/%s', $this->getFeedFilePath(), $store->getCode());
+        return sprintf('%s/%s.%s', $dir, $basename, $this->getOutputFileExtension());
+    }
+
 }
