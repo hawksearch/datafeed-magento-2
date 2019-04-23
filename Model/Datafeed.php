@@ -93,14 +93,6 @@ class Datafeed
         $this->helper->log($message);
     }
 
-    public function getPathForFile($basename) {
-        $dir = sprintf('%s/%s', $this->helper->getFeedFilePath(), end($this->feedSummary->stores));
-        $this->log(sprintf('checking for dir: %s', $dir));
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        return sprintf('%s/%s.%s', $dir, $basename, $this->helper->getOutputFileExtension());
-    }
 
     /**
      * Recursively sets up the category tree without introducing
