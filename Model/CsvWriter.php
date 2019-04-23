@@ -42,13 +42,13 @@ namespace HawkSearch\Datafeed\Model;
 			$fields[$k] = strtr($f, array('\"' => '"'));
 		}
 		if (false === fputcsv($this->outputFile, $fields, $this->delimiter)) {
-			throw new Exception("CsvWriter: failed to write row.");
+			throw new \Exception("CsvWriter: failed to write row.");
 		}
 	}
 
 	public function openOutput() {
 		if (false === ($this->outputFile = fopen($this->finalDestinationPath, 'a'))) {
-			throw new Exception("CsvWriter: Failed to open destination file '$this->finalDestinationPath'.");
+			throw new \Exception("CsvWriter: Failed to open destination file '$this->finalDestinationPath'.");
 		}
 		if (!is_null($this->bufferSize)) {
 			stream_set_write_buffer($this->outputFile, $this->bufferSize);
