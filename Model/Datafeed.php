@@ -51,9 +51,9 @@ class Datafeed
      * @param \Magento\Catalog\Helper\ImageFactory $imageHelperFactory
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
-     * @param array $generators
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
      * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
+     * @param array $generators
      * @param array $data
      */
     public function __construct(
@@ -423,28 +423,6 @@ class Datafeed
         return $product->getId();
     }
 
-    protected function getContentData(\Magento\Store\Model\Store $store) {
-        $objectManagerr = \Magento\Framework\App\ObjectManager::getInstance();
-        $this->log('starting getContentData()');
-        $collection = $objectManagerr->create('Magento\Cms\Model\ResourceModel\Page\Collection');
-        $collection->addStoreFilter($store->getId());
-
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
-        $output->init($this->helper->getPathForFile($store, 'content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
-        $output->appendRow(array('unique_id', 'name', 'url_detail', 'description_short', 'created_date'));
-
-        foreach ($collection as $page) {
-            $output->appendRow(array(
-                $page->getPageId(),
-                $page->getTitle(),
-                sprintf('%s%s', $store->getBaseUrl(), $page->getIdentifier()),
-                $page->getContentHeading(),
-                $page->getCreationTime()
-            ));
-        }
-        $this->log('done with getting content data');
-    }
-
     public function cronGenerateDatafeed() {
         if ($this->helper->getCronEnabled()) {
             if ($this->helper->isFeedLocked()) {
@@ -476,7 +454,7 @@ class Datafeed
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $this->emulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId(), \Magento\Framework\App\Area::AREA_FRONTEND, true);
 
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
                 $this->setFeedFolder($store);
@@ -493,8 +471,8 @@ class Datafeed
                 //exports Attribute Data
                 $this->getAttributeData($store);
 
-                //exports CMS / Content Data
-                $this->getContentData($store);
+                // content generation moved to generator file
+                //$this->getContentData($store);
 
                 // trigger reindex on hawksearch end
                 $this->helper->triggerReindex($store);

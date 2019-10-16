@@ -49,6 +49,9 @@ class UpgradeData implements \Magento\Framework\Setup\UpgradeDataInterface
             $this->upgradeTo_2103($setup);
         }
         $setup->endSetup();
+        if (version_compare($context->getVersion(), '2.2.0.1', '<')) {
+            $this->upgrade_2201($setup);
+        }
     }
 
     private function upgradeTo_2103($setup)
@@ -83,5 +86,21 @@ class UpgradeData implements \Magento\Framework\Setup\UpgradeDataInterface
         }
         $config->deleteConfig('hawksearch_datafeed/hawksearch_api/api_url_live', 'default', 0);
         $this->cache->clean();
+    }
+
+    private function upgrade_2201(ModuleDataSetupInterface $setup)
+    {
+        $setup->startSetup();
+        $setup->getConnection()->addColumn(
+            $setup->getTable('cms_page'),
+            'hawk_exclude',
+            [
+                'type' => \Magento\Framework\DB\Ddl\Table::TYPE_SMALLINT,
+                'nullable' => false,
+                'default' => 0,
+                'comment' => 'Exclude from HawkSearch'
+            ]
+        );
+        $setup->endSetup();
     }
 }

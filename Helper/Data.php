@@ -47,6 +47,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     const CONFIG_CRON_EMAIL = 'hawksearch_datafeed/feed/cron_email';
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
+    const CONFIG_CONTENT_FILTER_CONTENT = 'hawksearch_datafeed/feed/filter_content';
 
     /**
      * @var StoreManagerInterface
@@ -447,4 +448,8 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         return sprintf('%s/%s.%s', $dir, $basename, $this->getOutputFileExtension());
     }
 
+    public function getSendFilteredContent()
+    {
+        return $this->getConfigurationData(self::CONFIG_CONTENT_FILTER_CONTENT);
+    }
 }
