@@ -21,6 +21,7 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
+    const CONFIG_CONTENT_FILTER_CONTENT = 'hawksearch_datafeed/feed/filter_content';
     private $filesystem;
     private $selectedStores;
 
@@ -445,6 +446,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     public function getPathForFile(\Magento\Store\Model\Store $store, $basename) {
         $dir = sprintf('%s/%s', $this->getFeedFilePath(), $store->getCode());
         return sprintf('%s/%s.%s', $dir, $basename, $this->getOutputFileExtension());
+    }
+
+    public function getSendFilteredContent()
+    {
+        return $this->getConfigurationData(self::CONFIG_CONTENT_FILTER_CONTENT);
     }
 
 }

@@ -23,4 +23,12 @@
             <argument name="context" xsi:type="object">hawkSearchVirtualContext</argument>
         </arguments>
     </type>
+    <type name="HawkSearch\Datafeed\Model\Datafeed">
+        <arguments>
+            <argument name="generators" xsi:type="array">
+                <item name="content_generator" xsi:type="object">HawkSearch\Datafeed\Model\Generator\Content</item>
+            </argument>
+        </arguments>
+    </type>
+
 </config>

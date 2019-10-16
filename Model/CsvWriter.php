@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2019 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -11,7 +11,8 @@
  * IN THE SOFTWARE.
  */
 namespace HawkSearch\Datafeed\Model;
- class CsvWriter {
+
+class CsvWriter {
 	private $finalDestinationPath;
 	private $outputFile;
 	private $outputOpen = false;
@@ -22,7 +23,7 @@ namespace HawkSearch\Datafeed\Model;
         $this->finalDestinationPath = $destFile;
         if (file_exists($this->finalDestinationPath)) {
             if (false === unlink($this->finalDestinationPath)) {
-                throw new Exception("CsvWriteBuffer: unable to remove old file '$this->finalDestinationPath'");
+                throw new \Exception("CsvWriteBuffer: unable to remove old file '$this->finalDestinationPath'");
             }
         }
         $this->delimiter = $delim;
@@ -59,10 +60,10 @@ namespace HawkSearch\Datafeed\Model;
 	public function closeOutput() {
 		if ($this->outputOpen) {
 			if (false === fflush($this->outputFile)) {
-				throw new Exception(sprintf("CsvWriter: Failed to flush feed file: %s", $this->finalDestinationPath));
+				throw new \Exception(sprintf("CsvWriter: Failed to flush feed file: %s", $this->finalDestinationPath));
 			}
 			if (false === fclose($this->outputFile)) {
-				throw new Exception(sprintf("CsvWriter: Failed to close feed file ", $this->finalDestinationPath));
+				throw new \Exception(sprintf("CsvWriter: Failed to close feed file: %s ", $this->finalDestinationPath));
 			}
 			$this->outputOpen = false;
 		}
