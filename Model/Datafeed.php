@@ -41,9 +41,14 @@ class Datafeed
      * @var array
      */
     protected $generators;
+    /**
+     * @var CsvWriterFactory
+     */
+    private $csvWriterFactory;
 
     /**
      * Datafeed constructor.
+     * @param CsvWriterFactory $csvWriterFactory
      * @param \Magento\Store\Model\App\Emulation $emulation
      * @param Data $helper
      * @param \HawkSearch\Datafeed\Model\EmailFactory $emailFactory
@@ -57,6 +62,7 @@ class Datafeed
      * @param array $data
      */
     public function __construct(
+        \HawkSearch\Datafeed\Model\CsvWriterFactory $csvWriterFactory,
         \Magento\Store\Model\App\Emulation $emulation,
         Data $helper,
         EmailFactory $emailFactory,
@@ -76,6 +82,7 @@ class Datafeed
         $this->emailFactory = $emailFactory;
         $this->generators = $generators;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
+        $this->csvWriterFactory = $csvWriterFactory;
     }
 
     protected function _construct()
@@ -126,7 +133,7 @@ class Datafeed
         $currentPage = 1;
 
         $this->log(sprintf('going to open feed file %s', $filename));
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $output = $this->csvWriterFactory->create();
         $output->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('file open, going to append header and root');
         $output->appendRow(array('category_id', 'category_name', 'parent_category_id', 'sort_order', 'is_active', 'category_url', 'include_in_menu'));
@@ -206,7 +213,7 @@ class Datafeed
         $pac->addStoreLabel($store->getId());
         $attributes = array();
 
-        $labels = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $labels = $this->csvWriterFactory->create();
         $labels->init($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $labels->appendRow(array('key', 'store_label'));
         /** @var /Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
@@ -240,7 +247,7 @@ class Datafeed
         }
 
         $this->log(sprintf('going to open feed file %s', $filename));
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $output = $this->csvWriterFactory->create();
         $output->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('feed file open, appending header');
         $output->appendRow(array('unique_id', 'key', 'value'));
@@ -334,7 +341,7 @@ class Datafeed
         }
 
         $filename = $this->helper->getPathForFile($store, 'items');
-        $output = new \HawkSearch\Datafeed\Model\CsvWriter();
+        $output = $this->csvWriterFactory->create();
         $output->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $output->appendRow(array(
             'product_id',
