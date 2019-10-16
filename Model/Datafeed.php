@@ -456,7 +456,7 @@ class Datafeed
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $this->emulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId(), \Magento\Framework\App\Area::AREA_FRONTEND, true);
 
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
                 $this->setFeedFolder($store);
