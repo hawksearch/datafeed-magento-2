@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -17,7 +17,6 @@ use HawkSearch\Datafeed\Model\ImageCache as Task;
 use HawkSearch\Datafeed\Helper\Data as Helper;
 use HawkSearch\Datafeed\Model\EmailFactory;
 use Magento\Framework\Filesystem\DirectoryList;
-
 
 class ImageCache
 {
@@ -38,11 +37,7 @@ class ImageCache
      */
     private $emailFactory;
 
-    public function __construct(
-        Task $task,
-        Helper $helper,
-        DirectoryList $dir,
-        EmailFactory $emailFactory)
+    public function __construct(Task $task, Helper $helper, DirectoryList $dir, EmailFactory $emailFactory)
     {
         $this->task = $task;
         $this->helper = $helper;
@@ -50,10 +45,9 @@ class ImageCache
         $this->emailFactory = $emailFactory;
     }
 
-    public function execute()
-    {
+    public function execute() {
         chdir($this->dir->getRoot());
-        if ($this->helper->getCronImagecacheEnable()) {
+        if($this->helper->getCronImagecacheEnable()) {
             $vars = [];
             $vars['jobTitle'] = Task::SCRIPT_NAME;
             if ($this->helper->isImageCacheLocked()) {
@@ -61,7 +55,7 @@ class ImageCache
             } else {
                 try {
                     $this->helper->createImageCacheLocks(Task::SCRIPT_NAME);
-                    $this->task->refreshImageCache();
+                        $this->task->refreshImageCache();
                     $vars['message'] = "HawkSeach Image Cache Generated!";
                 } catch (\Exception $e) {
                     $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
@@ -71,5 +65,4 @@ class ImageCache
             $this->emailFactory->create()->sendEmail($vars);
         }
     }
-
 }

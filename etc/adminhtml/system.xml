@@ -144,6 +144,10 @@
                     <label>API Mode</label>
                     <source_model>HawkSearch\Datafeed\Model\System\Config\Source\Mode</source_model>
                 </field>
+                <field id="filter_content" type="select" showInStore="1" showInWebsite="1" showInDefault="1" sortOrder="50">
+                    <label>Use Filtered content in content feed</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
             <group id="imagecache" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1"
                    showInStore="1">
@@ -161,6 +165,11 @@
                     <comment>
                         <![CDATA[For Development purposes only, use cron job on live site.]]>
                     </comment>
+                </field>
+                <field id="image_role" translate="label comment" type="select" showInDefault="1" showInWebsite="0" showInStore="1" sortOrder="14">
+                    <label>Image Role</label>
+                    <source_model>HawkSearch\Datafeed\Model\System\Config\Source\ImageRole</source_model>
+                    <comment>The "image role" to be used for hawksearch autosuggest thumbnails</comment>
                 </field>
                 <field id="image_width" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="15">
@@ -193,6 +202,42 @@
                         <field id="cron_enable">1</field>
                     </depends>
                     <validate>required-entry validate-email</validate>
+                </field>
+            </group>
+            <group id="hawksearch_api" translate="label" type="text" sortOrder="13" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Hawksearch Api Settings</label>
+                <field id="api_url_develop" translate="label comment" type="text" showInStore="1" showInWebsite="1" showInDefault="1" sortOrder="1">
+                    <label>API Access URL (Develop)</label>
+                    <comment>Example: https://test.hawksearch.net/</comment>
+                </field>
+                <field id="api_url_staging" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="2">
+                    <label>API Access URL (Staging)</label>
+                </field>
+                <field id="api_url_production" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="3">
+                    <label>API Access URL (Production)</label>
+                </field>
+                <field id="api_ver" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="4">
+                    <label>API version</label>
+                    <comment>Example: v4</comment>
+                </field>
+                <field id="api_key" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
+                       showInStore="1" sortOrder="5">
+                    <label>API key</label>
+                </field>
+                <field id="api_mode" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="6">
+                    <label>API Mode</label>
+                    <source_model>HawkSearch\Datafeed\Model\System\Config\Source\Mode</source_model>
+                </field>
+                <field id="enable_hawksearch_definition_rebuild" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1"  sortOrder="7">
+                    <label>Enable hawksearch definition rebuild</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_hawksearch_index_rebuild" translate="label comment" type="select" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="8">
+                    <label>Enable hawksearch index rebuild</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
             </group>
         </section>

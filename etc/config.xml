@@ -43,6 +43,7 @@
         <image_width>135</image_width>
         <cron_enable>0</cron_enable>
         <cron_string>30 0 * * *</cron_string>
+        <image_role>small_image</image_role>
       </imagecache>
     </hawksearch_datafeed>
   </default>

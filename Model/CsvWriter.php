@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -10,8 +10,12 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-
 namespace HawkSearch\Datafeed\Model;
+
+use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Filesystem;
+
+
 class CsvWriter
 {
     private $finalDestinationPath;
@@ -19,15 +23,23 @@ class CsvWriter
     private $outputOpen = false;
     private $delimiter;
     private $bufferSize;
+    /**
+     * @var Filesystem
+     */
+    private $filesystem;
+
+    public function __construct(Filesystem $filesystem)
+    {
+        $this->filesystem = $filesystem;
+    }
 
     public function init($destFile, $delim, $buffSize = null)
     {
         $this->finalDestinationPath = $destFile;
-        if (file_exists($this->finalDestinationPath)) {
-            if (false === unlink($this->finalDestinationPath)) {
-                throw new \Exception("CsvWriteBuffer: unable to remove old file '$this->finalDestinationPath'");
-            }
-        }
+        $writer = $this->filesystem->getDirectoryWrite(DirectoryList::MEDIA);
+        $writer->create(dirname($destFile));
+        $writer->delete($destFile);
+
         $this->delimiter = $delim;
         $this->bufferSize = $buffSize;
         return $this;
@@ -37,6 +49,7 @@ class CsvWriter
     {
         $this->closeOutput();
     }
+
 
     public function appendRow(array $fields)
     {
@@ -61,7 +74,6 @@ class CsvWriter
         }
         $this->outputOpen = true;
     }
-
     public function closeOutput()
     {
         if ($this->outputOpen) {
@@ -69,7 +81,7 @@ class CsvWriter
                 throw new \Exception(sprintf("CsvWriter: Failed to flush feed file: %s", $this->finalDestinationPath));
             }
             if (false === fclose($this->outputFile)) {
-                throw new \Exception(sprintf("CsvWriter: Failed to close feed file ", $this->finalDestinationPath));
+                throw new \Exception(sprintf("CsvWriter: Failed to close feed file: %s ", $this->finalDestinationPath));
             }
             $this->outputOpen = false;
         }

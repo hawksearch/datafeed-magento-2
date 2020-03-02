@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2018 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,7 +23,6 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class Data extends AbstractHelper
 {
-
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
     const IMAGECACHE_LOCK_FILENAME = 'hawksearchImageCache.lock';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
@@ -33,6 +32,7 @@ class Data extends AbstractHelper
     const CONFIG_LOGGING_ENABLED = 'hawksearch_datafeed/general/logging_enabled';
     const CONFIG_INCLUDE_OOS = 'hawksearch_datafeed/feed/stockstatus';
     const CONFIG_BATCH_LIMIT = 'hawksearch_datafeed/feed/batch_limit';
+    const CONFIG_IMAGE_ROLE = 'hawksearch_datafeed/imagecache/image_role';
     const CONFIG_IMAGE_WIDTH = 'hawksearch_datafeed/imagecache/image_width';
     const CONFIG_IMAGE_HEIGHT = 'hawksearch_datafeed/imagecache/image_height';
     const CONFIG_INCLUDE_DISABLED = 'hawksearch_datafeed/feed/itemstatus';
@@ -52,17 +52,20 @@ class Data extends AbstractHelper
     /**
      * @var StoreManagerInterface
      */
-    private $storeManager;
+    protected $storeManager;
     /**
      * @var ZendClient
      */
     private $zendClient;
-    protected $filesystem;
-    private $selectedStores;
     /**
      * @var CollectionFactory
      */
     private $storeCollectionFactory;
+
+    private $selectedStores;
+    protected $scopeConfig;
+    protected $filesystem;
+
 
     /**
      * Data constructor.
@@ -86,13 +89,13 @@ class Data extends AbstractHelper
         $this->storeCollectionFactory = $storeCollectionFactory;
     }
 
-    public function getConfigurationData($data, $store = null) {
-        $storeScope = ScopeInterface::SCOPE_STORE;
-        if(empty($store)) {
-            $store = $this->storeManager->getStore();
-        }
-        return $this->scopeConfig->getValue($data, $storeScope, $store);
-    }
+//    public function getConfigurationData($data, $store = null) {
+//        $storeScope = ScopeInterface::SCOPE_STORE;
+//        if(empty($store)) {
+//            $store = $this->storeManager->getStore();
+//        }
+//        return $this->scopeConfig->getValue($data, $storeScope, $store);
+//    }
 
     public function getTriggerReindex($store) {
         return $this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $store->getCode());
@@ -207,7 +210,6 @@ class Data extends AbstractHelper
     public function isFeedLocked() {
         $lockfile = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
         if (file_exists($lockfile)) {
-            $this->log('FEED IS LOCKED!');
             return true;
         }
         return false;
@@ -218,7 +220,7 @@ class Data extends AbstractHelper
         return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
     }
 
-    public function removeFeedLocks($scriptName = '', $kill = false) {
+    public function removeFeedLocks($kill = false) {
         $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
 
         if (file_exists($lockfilename)) {
@@ -408,5 +410,10 @@ class Data extends AbstractHelper
     public function getCombineMultiselectAttributes()
     {
         return $this->getConfigurationData(self::CONFIG_COMBINE_MULTISELECT_ATTS);
+    }
+
+    public function getSendFilteredContent()
+    {
+        return $this->getConfigurationData(self::CONFIG_CONTENT_FILTER_CONTENT);
     }
 }
