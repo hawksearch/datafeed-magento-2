@@ -89,16 +89,10 @@ class Data extends AbstractHelper
         $this->storeCollectionFactory = $storeCollectionFactory;
     }
 
-//    public function getConfigurationData($data, $store = null) {
-//        $storeScope = ScopeInterface::SCOPE_STORE;
-//        if(empty($store)) {
-//            $store = $this->storeManager->getStore();
-//        }
-//        return $this->scopeConfig->getValue($data, $storeScope, $store);
-//    }
+    public function getConfigurationData($data, $store = null) {
+        $storeScope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
+        return $this->scopeConfig->getValue($data, $storeScope, $store);
 
-    public function getTriggerReindex($store) {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $store->getCode());
     }
 
     public function moduleIsEnabled() {
@@ -306,13 +300,13 @@ class Data extends AbstractHelper
      * @return string
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    public function getPathForFile($basename) {
+    public function getPathForFile(\Magento\Store\Model\Store $store, $basename) {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
         if(!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
 
-        $dir = implode(DIRECTORY_SEPARATOR, [$relPath, $this->storeManager->getStore()->getCode()]);
+        $dir = implode(DIRECTORY_SEPARATOR, [$relPath, $store->getCode()]);
 
         $mediaWriter = $this->filesystem->getDirectoryWrite('media');
         $mediaWriter->create($dir);
@@ -327,7 +321,7 @@ class Data extends AbstractHelper
      */
     public function triggerReindex(\Magento\Store\Model\Store $store) {
         $this->log('triggerReindex called');
-        if(!$this->scopeConfig->isSetFlag('hawksearch_datafeed/feed/reindex', ScopeInterface::SCOPE_STORE, $store)) {
+        if(!$this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $store)) {
             $this->log('HawkSearch reindex disabled, not triggering reindex');
             return false;
         }
@@ -415,5 +409,10 @@ class Data extends AbstractHelper
     public function getSendFilteredContent()
     {
         return $this->getConfigurationData(self::CONFIG_CONTENT_FILTER_CONTENT);
+    }
+
+    public function getImageRole()
+    {
+        return $this->getConfigurationData(self::CONFIG_IMAGE_ROLE);
     }
 }
