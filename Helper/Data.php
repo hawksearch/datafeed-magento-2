@@ -13,40 +13,121 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
-use Magento\Framework\HTTP\ZendClient;
+use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
+use Magento\Framework\App\Shell;
 use Magento\Framework\Filesystem;
+use Magento\Framework\Filesystem\Driver\File;
+use Magento\Framework\Filesystem\Io\File as ioFile;
+use Composer\Util\Filesystem as UtilFileSystem;
+use Magento\Framework\HTTP\ZendClient;
 use Magento\Store\Model\ResourceModel\Store\CollectionFactory;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
+/**
+ * Class Data
+ *
+ * @package HawkSearch\Datafeed\Helper
+ */
 class Data extends AbstractHelper
 {
-
+    /**
+     *
+     */
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
+    /**
+     *
+     */
     const IMAGECACHE_LOCK_FILENAME = 'hawksearchImageCache.lock';
+    /**
+     *
+     */
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
+    /**
+     *
+     */
     const CONFIG_SUMMARY_FILENAME = 'hawksearchFeedSummary.json';
+    /**
+     *
+     */
     const CONFIG_FEED_PATH = 'hawksearch_datafeed/feed/feed_path';
+    /**
+     *
+     */
     const CONFIG_MODULE_ENABLED = 'hawksearch_datafeed/general/enabled';
+    /**
+     *
+     */
     const CONFIG_LOGGING_ENABLED = 'hawksearch_datafeed/general/logging_enabled';
+    /**
+     *
+     */
     const CONFIG_INCLUDE_OOS = 'hawksearch_datafeed/feed/stockstatus';
+    /**
+     *
+     */
     const CONFIG_BATCH_LIMIT = 'hawksearch_datafeed/feed/batch_limit';
+    /**
+     *
+     */
     const CONFIG_IMAGE_WIDTH = 'hawksearch_datafeed/imagecache/image_width';
+    /**
+     *
+     */
     const CONFIG_IMAGE_HEIGHT = 'hawksearch_datafeed/imagecache/image_height';
+    /**
+     *
+     */
     const CONFIG_INCLUDE_DISABLED = 'hawksearch_datafeed/feed/itemstatus';
+    /**
+     *
+     */
     const CONFIG_BUFFER_SIZE = '65536';
+    /**
+     *
+     */
     const CONFIG_OUTPUT_EXTENSION = 'txt';
+    /**
+     *
+     */
     const CONFIG_FIELD_DELIMITER = 'tab';
+    /**
+     *
+     */
     const CONFIG_SELECTED_STORES = 'hawksearch_datafeed/feed/stores';
+    /**
+     *
+     */
     const CONFIG_CRONLOG_FILENAME = 'hawksearchCronLog.log';
+    /**
+     *
+     */
     const CONFIG_CRON_ENABLE = 'hawksearch_datafeed/feed/cron_enable';
+    /**
+     *
+     */
     const CONFIG_CRON_EMAIL = 'hawksearch_datafeed/feed/cron_email';
+    /**
+     *
+     */
     const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
+    /**
+     *
+     */
     const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
+    /**
+     *
+     */
     const CONFIG_TRIGGER_REINDEX = 'hawksearch_datafeed/feed/reindex';
+    /**
+     *
+     */
     const CONFIG_IMAGECACHE_LOCK_PATH = 'hawksearch_datafeed/feed/image_cache_lock_path';
+    /**
+     *
+     */
     const CONFIG_COMBINE_MULTISELECT_ATTS = 'hawksearch_datafeed/feed/combine_multiselect';
 
     /**
@@ -57,88 +138,188 @@ class Data extends AbstractHelper
      * @var ZendClient
      */
     private $zendClient;
+    /**
+     * @var Filesystem
+     */
     protected $filesystem;
+    /**
+     * @var
+     */
     private $selectedStores;
+    /**
+     * @var UtilFileSystem
+     */
+    private $utilFileSystem;
     /**
      * @var CollectionFactory
      */
     private $storeCollectionFactory;
-
+    /**
+     * @var ioFile
+     */
+    private $fileDirectory;
+    /**
+     * @var File
+     */
+    private $file;
+    /**
+     * @var Shell
+     */
+    private $shell;
     /**
      * Data constructor.
+     *
      * @param StoreManagerInterface $storeManager
-     * @param Filesystem $filesystem
-     * @param ZendClient $zendClient
-     * @param CollectionFactory $storeCollectionFactory
-     * @param Context $context
+     * @param Filesystem            $filesystem
+     * @param ZendClient            $zendClient
+     * @param CollectionFactory     $storeCollectionFactory
+     * @param Context               $context
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         Filesystem $filesystem,
         ZendClient $zendClient,
         CollectionFactory $storeCollectionFactory,
-        Context $context
+        Context $context,
+        ioFile $fileDirectory,
+        File $file,
+        Shell $shell,
+        UtilFileSystem $utilFileSystem
     ) {
         parent::__construct($context);
         $this->storeManager = $storeManager;
         $this->filesystem = $filesystem;
         $this->zendClient = $zendClient;
         $this->storeCollectionFactory = $storeCollectionFactory;
+        $this->fileDirectory = $fileDirectory;
+        $this->file = $file;
+        $this->shell = $shell;
+        $this->utilFileSystem = $utilFileSystem;
     }
 
-    public function getConfigurationData($data, $store = null) {
+    /**
+     * @param  $data
+     * @param  null $store
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getConfigurationData($data, $store = null)
+    {
         $storeScope = ScopeInterface::SCOPE_STORE;
-        if(empty($store)) {
+        if (empty($store)) {
             $store = $this->storeManager->getStore();
         }
         return $this->scopeConfig->getValue($data, $storeScope, $store);
     }
 
-    public function getTriggerReindex($store) {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $store->getCode());
+    /**
+     * @param  $store
+     * @return bool
+     */
+    public function getTriggerReindex($store)
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::CONFIG_TRIGGER_REINDEX,
+            ScopeInterface::SCOPE_STORE,
+            $store->getCode()
+        );
     }
 
-    public function moduleIsEnabled() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function moduleIsEnabled()
+    {
         return $this->getConfigurationData(self::CONFIG_MODULE_ENABLED);
     }
 
-    public function loggingIsEnabled() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function loggingIsEnabled()
+    {
         return $this->getConfigurationData(self::CONFIG_LOGGING_ENABLED);
     }
 
-    public function includeOutOfStockItems() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function includeOutOfStockItems()
+    {
         return $this->getConfigurationData(self::CONFIG_INCLUDE_OOS);
     }
 
-    public function includeDisabledItems() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function includeDisabledItems()
+    {
         return $this->getConfigurationData(self::CONFIG_INCLUDE_DISABLED);
     }
 
-    public function getBatchLimit() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getBatchLimit()
+    {
         return $this->getConfigurationData(self::CONFIG_BATCH_LIMIT);
     }
 
-    public function getGenEmail() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getGenEmail()
+    {
         return $this->getConfigurationData('trans_email/ident_general/email');
     }
 
-    public function getGenName() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getGenName()
+    {
         return $this->getConfigurationData('trans_email/ident_general/name');
     }
 
-    public function getImageWidth() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getImageWidth()
+    {
         return $this->getConfigurationData(self::CONFIG_IMAGE_WIDTH);
     }
 
-    public function getImageHeight() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getImageHeight()
+    {
         return $this->getConfigurationData(self::CONFIG_IMAGE_HEIGHT);
     }
 
-    public function getCronEmail() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getCronEmail()
+    {
         return $this->getConfigurationData(self::CONFIG_CRON_EMAIL);
     }
 
-    public function getFieldDelimiter() {
+    /**
+     * @return string
+     */
+    public function getFieldDelimiter()
+    {
         if (strtolower(self::CONFIG_FIELD_DELIMITER) == 'tab') {
             return "\t";
         } else {
@@ -146,12 +327,20 @@ class Data extends AbstractHelper
         }
     }
 
-    public function getBufferSize() {
+    /**
+     * @return int|string|null
+     */
+    public function getBufferSize()
+    {
         $size = self::CONFIG_BUFFER_SIZE;
         return is_numeric($size) ? $size : null;
     }
 
-    public function getOutputFileExtension() {
+    /**
+     * @return string
+     */
+    public function getOutputFileExtension()
+    {
         return self::CONFIG_OUTPUT_EXTENSION;
     }
 
@@ -159,28 +348,44 @@ class Data extends AbstractHelper
      * @return string
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    public function getFeedFilePath() {
+    public function getFeedFilePath()
+    {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
-        if(!$relPath) {
+        if (!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
-        /** @var \Magento\Framework\Filesystem\Directory\Write $writer */
+        /**
+ * @var \Magento\Framework\Filesystem\Directory\Write $writer 
+*/
         $mediaWriter = $this->filesystem->getDirectoryWrite('media');
         $mediaWriter->create($relPath);
 
         return $mediaWriter->getAbsolutePath($relPath);
     }
 
-    public function getLockFilename() {
+    /**
+     * @return string
+     */
+    public function getLockFilename()
+    {
         return self::CONFIG_LOCK_FILENAME;
     }
 
-    public function getSummaryFilename() {
+    /**
+     * @return string
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function getSummaryFilename()
+    {
         return $this->getFeedFilePath() . DIRECTORY_SEPARATOR . self::CONFIG_SUMMARY_FILENAME;
     }
 
-    public function getSelectedStores() {
-        if(!isset($this->selectedStores)){
+    /**
+     * @return \Magento\Store\Model\ResourceModel\Store\Collection
+     */
+    public function getSelectedStores()
+    {
+        if (!isset($this->selectedStores)) {
             $this->selectedStores = $this->storeCollectionFactory->create();
             $ids = explode(',', $this->scopeConfig->getValue(self::CONFIG_SELECTED_STORES));
             $this->selectedStores->addIdFilter($ids);
@@ -188,59 +393,111 @@ class Data extends AbstractHelper
         return $this->selectedStores;
     }
 
-    public function getCronEnabled() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getCronEnabled()
+    {
         return $this->getConfigurationData(self::CONFIG_CRON_ENABLE);
     }
 
-    public function getCronLogFilename() {
+    /**
+     * @return string
+     */
+    public function getCronLogFilename()
+    {
         return self::CONFIG_CRONLOG_FILENAME;
     }
 
-    public function getCronImagecacheEnable() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getCronImagecacheEnable()
+    {
         return $this->getConfigurationData(self::CONFIG_CRON_IMAGECACHE_ENABLE);
     }
 
-    public function getCronImagecacheEmail() {
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getCronImagecacheEmail()
+    {
         return $this->getConfigurationData(self::CONFIG_CRON_IMAGECACHE_EMAIL);
     }
 
-    public function isFeedLocked() {
-        $lockfile = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-        if (file_exists($lockfile)) {
+    /**
+     * @return bool
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function isFeedLocked()
+    {
+        $lockfile = implode(DIRECTORY_SEPARATOR, [$this->getFeedFilePath(), $this->getLockFilename()]);
+        if ($this->fileDirectory->fileExists($lockfile)) {
             $this->log('FEED IS LOCKED!');
             return true;
         }
         return false;
     }
 
-    public function createFeedLocks($scriptName = '') {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-        return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
+    /**
+     * @param  string $scriptName
+     * @return int
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function createFeedLocks($scriptName = '')
+    {
+        $lockfilename = implode(
+            DIRECTORY_SEPARATOR,
+            [$this->getFeedFilePath(),
+                $this->getLockFilename()]
+        );
+        return $this->file->filePutContents(
+            $lockfilename,
+            json_encode(
+                ['date' => date('Y-m-d H:i:s'),
+                'script' => $scriptName
+                ]
+            )
+        );
     }
 
-    public function removeFeedLocks($scriptName = '', $kill = false) {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
+    /**
+     * @param  string $scriptName
+     * @param  bool   $kill
+     * @return bool
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function removeFeedLocks($scriptName = '', $kill = false)
+    {
+        $lockfilename = implode(DIRECTORY_SEPARATOR, [$this->getFeedFilePath(), $this->getLockFilename()]);
 
-        if (file_exists($lockfilename)) {
-            $data = json_decode(file_get_contents($lockfilename));
-            if(!empty($data) && isset($data->script) && $kill){
+        if ($this->fileDirectory->fileExists($lockfilename)) {
+            $data = json_decode($this->file->fileGetContents($lockfilename));
+            if (!empty($data) && isset($data->script) && $kill) {
                 $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
-                if($procs) {
+                if ($procs) {
                     $procs = explode("\n", $procs);
                     foreach ($procs as $proc) {
                         $pid = explode(' ', $proc, 2)[0];
-                        if(is_numeric($pid)){
+                        if (is_numeric($pid)) {
                             exec(sprintf('kill %s', $pid));
                         }
                     }
                 }
             }
-            return unlink($lockfilename);
+            return $this->utilFileSystem->unlink($lockfilename);
         }
         return false;
     }
 
-    public function runDatafeed() {
+    /**
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function runDatafeed()
+    {
         $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
         $tmpfile = tempnam($tmppath, 'hawkfeed_');
 
@@ -251,25 +508,26 @@ class Data extends AbstractHelper
         $runfile = implode(DIRECTORY_SEPARATOR, $parts);
         $root = BP;
 
-        $f = fopen($tmpfile, 'w');
+        $f = $this->file->fileOpen($tmpfile, 'w');
 
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
-        fwrite($f, "$phpbin -d memory_limit=-1 $runfile -r $root -t $tmpfile\n");
-        fclose($f);
+        $this->file->fileWrite($f, "$phpbin -d memory_limit=-1 $runfile -r $root -t $tmpfile\n");
+        $this->file->fileClose($f);
 
-        $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
+        $cronlog = implode(DIRECTORY_SEPARATOR, [$this->getFeedFilePath(), $this->getCronLogFilename()]);
 
         shell_exec("/bin/sh $tmpfile > $cronlog 2>&1 &");
     }
 
     /**
-     * @param $summary
+     * @param  $summary
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    public function writeSummary($summary) {
+    public function writeSummary($summary)
+    {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
-        if(!$relPath) {
+        if (!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
 
@@ -278,7 +536,11 @@ class Data extends AbstractHelper
         $writer->writeFile($summaryFile, json_encode($summary, JSON_PRETTY_PRINT));
     }
 
-    public function refreshImageCache() {
+    /**
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function refreshImageCache()
+    {
         $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
         $tmpfile = tempnam($tmppath, 'hawkimage_');
 
@@ -288,25 +550,26 @@ class Data extends AbstractHelper
         $runfile = implode(DIRECTORY_SEPARATOR, $parts);
         $root = BP;
 
-        $f = fopen($tmpfile, 'w');
+        $f = $this->file->fileOpen($tmpfile, 'w');
 
         $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
 
-        fwrite($f, "$phpbin -d memory_limit=-1 $runfile -i true -r $root -t $tmpfile\n");
-        fclose($f);
+        $this->file->fileWrite($f, "$phpbin -d memory_limit=-1 $runfile -i true -r $root -t $tmpfile\n");
+        $this->file->fileClose($f);
 
-        $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
+        $cronlog = implode(DIRECTORY_SEPARATOR, [$this->getFeedFilePath(), $this->getCronLogFilename()]);
         shell_exec("/bin/sh $tmpfile > $cronlog 2>&1 &");
     }
 
     /**
-     * @param $basename
+     * @param  $basename
      * @return string
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    public function getPathForFile($basename) {
+    public function getPathForFile($basename)
+    {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
-        if(!$relPath) {
+        if (!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
 
@@ -315,17 +578,29 @@ class Data extends AbstractHelper
         $mediaWriter = $this->filesystem->getDirectoryWrite('media');
         $mediaWriter->create($dir);
 
-        return sprintf('%s%s%s.%s', $mediaWriter->getAbsolutePath($dir), DIRECTORY_SEPARATOR, $basename, $this->getOutputFileExtension());
+        return sprintf(
+            '%s%s%s.%s',
+            $mediaWriter->getAbsolutePath($dir),
+            DIRECTORY_SEPARATOR,
+            $basename,
+            $this->getOutputFileExtension()
+        );
     }
 
     /**
-     * @param \Magento\Store\Model\Store $store
+     * @param  \Magento\Store\Model\Store $store
      * @return int
      * @throws \Zend_Http_Client_Exception
      */
-    public function triggerReindex(\Magento\Store\Model\Store $store) {
+    public function triggerReindex(\Magento\Store\Model\Store $store)
+    {
         $this->log('triggerReindex called');
-        if(!$this->scopeConfig->isSetFlag('hawksearch_datafeed/feed/reindex', ScopeInterface::SCOPE_STORE, $store)) {
+        if (!$this->scopeConfig->isSetFlag(
+            'hawksearch_datafeed/feed/reindex',
+            ScopeInterface::SCOPE_STORE,
+            $store
+        )
+        ) {
             $this->log('HawkSearch reindex disabled, not triggering reindex');
             return false;
         }
@@ -338,7 +613,11 @@ class Data extends AbstractHelper
         $this->zendClient->setMethod(ZendClient::POST);
         $this->log('setMethod called on zendClient');
 
-        $apiKey = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_key', ScopeInterface::SCOPE_STORE, $store);
+        $apiKey = $this->scopeConfig->getValue(
+            'hawksearch_datafeed/hawksearch_api/api_key',
+            ScopeInterface::SCOPE_STORE,
+            $store
+        );
         $this->log(sprintf('setting hawk Api key to "%s"', $apiKey));
 
         $this->zendClient->setHeaders('X-HawkSearch-ApiKey', $apiKey);
@@ -346,45 +625,88 @@ class Data extends AbstractHelper
 
         $this->log('making request...');
         $response = $this->zendClient->request();
-        $this->log(sprintf("request made, response is:\n%s\n\n%s", $response->getHeadersAsString(), $response->getBody()));
+        $this->log(
+            sprintf(
+                "request made, response is:\n%s\n\n%s",
+                $response->getHeadersAsString(),
+                $response->getBody()
+            )
+        );
         return isset($response) ? true : false;
     }
 
-    private function getTriggerReindexUrl(\Magento\Store\Model\Store $store) {
-        $mode = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_mode', ScopeInterface::SCOPE_STORE, $store);
+    /**
+     * @param  \Magento\Store\Model\Store $store
+     * @return string
+     */
+    private function getTriggerReindexUrl(\Magento\Store\Model\Store $store)
+    {
+        $mode = $this->scopeConfig->getValue(
+            'hawksearch_datafeed/hawksearch_api/api_mode',
+            ScopeInterface::SCOPE_STORE,
+            $store
+        );
 
-        $apiUrl = $this->scopeConfig->getValue(sprintf('hawksearch_datafeed/hawksearch_api/api_url_%s', $mode), ScopeInterface::SCOPE_STORE, $store);
+        $apiUrl = $this->scopeConfig->getValue(
+            sprintf(
+                'hawksearch_datafeed/hawksearch_api/api_url_%s',
+                $mode
+            ), ScopeInterface::SCOPE_STORE, $store
+        );
         $apiUrl = rtrim($apiUrl, '/');
 
-        $apiVersion = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_ver', ScopeInterface::SCOPE_STORE, $store);
+        $apiVersion = $this->scopeConfig->getValue(
+            'hawksearch_datafeed/hawksearch_api/api_ver',
+            ScopeInterface::SCOPE_STORE,
+            $store
+        );
 
         return sprintf('%s/api/%s/index', $apiUrl, $apiVersion);
     }
 
-    public function log($message) {
+    /**
+     * @param  $message
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function log($message)
+    {
         if ($this->loggingIsEnabled()) {
             $this->_logger->addDebug($message);
         }
     }
 
+    /**
+     * @return bool
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
     public function isImageCacheLocked()
     {
         $lockfile = $this->getImageCacheLockFile();
-        return $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA)->isExist($lockfile);
+        return $this->filesystem->getDirectoryWrite(
+            DirectoryList::MEDIA
+        )->isExist($lockfile);
     }
 
+    /**
+     * @return string
+     */
     private function getImageCacheLockFile()
     {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_IMAGECACHE_LOCK_PATH);
         return implode(DIRECTORY_SEPARATOR, [$relPath, self::IMAGECACHE_LOCK_FILENAME]);
     }
 
+    /**
+     * @param  string $scriptName
+     * @return int
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function createImageCacheLocks($scriptName = '')
     {
         $lockFile = $this->getImageCacheLockFile();
         $content = json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]);
-        try{
-            $writer = $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA);
+        try {
+            $writer = $this->filesystem->getDirectoryWrite(DirectoryList::MEDIA);
             return $writer->writeFile($lockFile, $content);
         } catch (\Exception $exception) {
             $this->log('failed to create Image cache lock file: ' . $exception->getMessage());
@@ -392,12 +714,17 @@ class Data extends AbstractHelper
         }
     }
 
+    /**
+     * @param  $SCRIPT_NAME
+     * @return bool
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function removeImageCacheLocks($SCRIPT_NAME)
     {
         $lockFile = $this->getImageCacheLockFile();
-        $writer = $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA);
-        try
-        {
+        $writer = $this->filesystem->getDirectoryWrite(DirectoryList::MEDIA);
+        try {
             return $writer->delete($lockFile);
         } catch (\Exception $exception) {
             $this->log('Failed to remove Image Cache lock file: ' . $exception->getMessage());
@@ -405,6 +732,10 @@ class Data extends AbstractHelper
         }
     }
 
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function getCombineMultiselectAttributes()
     {
         return $this->getConfigurationData(self::CONFIG_COMBINE_MULTISELECT_ATTS);

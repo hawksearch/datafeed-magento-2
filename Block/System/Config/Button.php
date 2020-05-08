@@ -23,8 +23,9 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
 
     /**
      * Button constructor.
+     *
      * @param Context $context
-     * @param Helper    $helper
+     * @param Helper  $helper
      * @param array   $data
      */
     public function __construct(
@@ -36,7 +37,8 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
         parent::__construct($context, $data);
     }
 
-    protected function _prepareLayout() {
+    protected function _prepareLayout()
+    {
         parent::_prepareLayout();
         if (!$this->getTemplate()) {
             $this->setTemplate('HawkSearch_Datafeed::system/config/button/feedgenerate.phtml');
@@ -51,7 +53,8 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
      * @return string
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function render(AbstractElement $element) {
+    public function render(AbstractElement $element)
+    {
         // Remove scope label
         $element->unsScope()->unsCanUseWebsiteValue()->unsCanUseDefaultValue();
         return parent::render($element);
@@ -60,11 +63,12 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
     /**
      * Get the button and scripts contents
      *
-     * @param AbstractElement $element
+     * @param  AbstractElement $element
      * @return string
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    protected function _getElementHtml(AbstractElement $element) {
+    protected function _getElementHtml(AbstractElement $element)
+    {
         $config = $element->getFieldConfig();
         $this->addData(
             [
@@ -76,8 +80,8 @@ class Button extends \Magento\Config\Block\System\Config\Form\Field
         return $this->_toHtml();
     }
 
-    public function isFeedLocked() {
+    public function isFeedLocked()
+    {
         return $this->helper->isFeedLocked();
     }
 }
- 

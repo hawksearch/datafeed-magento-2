@@ -15,21 +15,22 @@ $locked = $block->isFeedLocked();
 <div>
     <div id="hawk_datagenerate_result" class="message-validation hidden"></div>
     <button type="button"
-            id="<?php echo $block->getHtmlId() ?>">
-        <span><?php echo $block->escapeHtml($block->getButtonLabel()) ?></span>
+            id="<?=  /* @noEscape */ $block->getHtmlId() ?>">
+        <span><?=  /* @noEscape */ $block->escapeHtml($block->getButtonLabel()) ?></span>
     </button>
     <input type="checkbox"
            value="feedforce"
-           id="<?php echo $block->getHtmlId() ?>_feedforce"
+           id="<?=  /* @noEscape */ $block->getHtmlId() ?>_feedforce"
            name="feedforce"
-           title="force data generation"/><label for="<?php echo $block->getHtmlId() ?>_feedforce">force</label>
+           title="force data generation"/>
+    <label for="<?=  /* @noEscape */ $block->getHtmlId() ?>_feedforce">force</label>
 </div>
 
 <script>
     require(['prototype'], function () {
-        var locked = <?php echo $locked ? 'true' : 'false'; ?>;
-        var b = $('<?php echo $block->getHtmlId() ?>');
-        var cb = $('<?php echo $block->getHtmlId() ?>_feedforce');
+        var locked = <?=  /* @noEscape */ $locked ? 'true' : 'false'; ?>;
+        var b = $('<?=  /* @noEscape */ $block->getHtmlId() ?>');
+        var cb = $('<?=  /* @noEscape */ $block->getHtmlId() ?>_feedforce');
         if (locked) {
             b.disable();
             cb.enable();
@@ -46,7 +47,7 @@ $locked = $block->isFeedLocked();
         }
         b.observe('click', function (event) {
             var isForce = cb.checked;
-            new Ajax.Request('<?php echo $block->getGenerateUrl(); ?>', {
+            new Ajax.Request('<?=  /* @noEscape */ $block->getGenerateUrl(); ?>', {
                 parameters: {force: isForce},
                 onSuccess: function (transport) {
                     var response = transport.responseText.evalJSON();

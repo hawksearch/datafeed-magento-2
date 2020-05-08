@@ -18,18 +18,20 @@ class UpgradeSchema implements UpgradeSchemaInterface
     /**
      * Upgrades DB schema for a module
      *
-     * @param SchemaSetupInterface $setup
-     * @param ModuleContextInterface $context
+     * @param  SchemaSetupInterface   $setup
+     * @param  ModuleContextInterface $context
      * @return void
      */
     public function upgrade(SchemaSetupInterface $setup, ModuleContextInterface $context)
     {
         if (version_compare($context->getVersion(), '2.2.8', '<')) {
-            $this->upgrade_228($setup);
+            $this->upgradeHwkExclude($setup);
         }
     }
-
-    private function upgrade_228($setup)
+    /*
+     * upgrade to 2 2 8
+     */
+    private function upgradeHwkExclude($setup)
     {
         $setup->getConnection()->addColumn(
             $setup->getTable('cms_page'),

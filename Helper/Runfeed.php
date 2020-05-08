@@ -11,7 +11,7 @@
  * IN THE SOFTWARE.
  */
 $opts = getopt('r:t:i:');
-chdir($opts['r']);
+
 require 'app/bootstrap.php';
 
 $bootstrap = \Magento\Framework\App\Bootstrap::create(BP, $_SERVER);
@@ -21,14 +21,16 @@ $obj = $bootstrap->getObjectManager();
 $state = $obj->get('Magento\Framework\App\State');
 $state->setAreaCode('frontend');
 
-/** @var \HawkSearch\Datafeed\Helper\Data $helper */
+/**
+ * @var \HawkSearch\Datafeed\Helper\Data $helper 
+*/
 $helper = $obj->get('HawkSearch\Datafeed\Helper\Data');
 
 if (isset($opts['i'])) {
-    if($helper->isImageCacheLocked()) {
+    if ($helper->isImageCacheLocked()) {
         throw new \Exception('Image Cache currently locked. Image Cache not regenerating.');
     }
-    if($helper->createImageCacheLocks($opts['t'])) {
+    if ($helper->createImageCacheLocks($opts['t'])) {
         $ic = $obj->get('HawkSearch\Datafeed\Model\ImageCache');
         $ic->refreshImageCache();
         $helper->removeImageCacheLocks($opts['t']);

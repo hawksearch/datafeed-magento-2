@@ -20,20 +20,20 @@
 <div>
     <div id="hawk_imagecachegen_result" class="message-validation hidden"></div>
     <button type="button"
-            id="<?php echo $block->getHtmlId() ?>">
-        <span><?php echo $block->escapeHtml($block->getButtonLabel()); ?></span>
+            id="<?=  /* @noEscape */ $block->getHtmlId() ?>">
+        <span><?=  /* @noEscape */ $block->escapeHtml($block->getButtonLabel()); ?></span>
     </button>
     <input type="checkbox"
            value="imageforce"
-           id="<?php echo $block->getHtmlId() ?>_imageforce"
+           id="<?=  /* @noEscape */ $block->getHtmlId() ?>_imageforce"
            name="imageforce"
            title="force image cache generation"/> force
 </div>
 <script>
     require(['prototype'], function() {
-        var locked = <?php echo $locked ? 'true' : 'false'; ?>;
-        var b = $('<?php echo $block->getHtmlId() ?>');
-        var cb = $('<?php echo $block->getHtmlId() ?>_imageforce');
+        var locked = <?=  /* @noEscape */ $locked ? 'true' : 'false'; ?>;
+        var b = $('<?=  /* @noEscape */ $block->getHtmlId() ?>');
+        var cb = $('<?=  /* @noEscape */ $block->getHtmlId() ?>_imageforce');
         if(locked) {
             b.disable();
             cb.enable();
@@ -51,7 +51,7 @@
 
         b.observe('click', function(event) {
             var isForce = cb.checked;
-            new Ajax.Request('<?php echo $block->getGenerateUrl(); ?>', {
+            new Ajax.Request('<?=  /* @noEscape */ $block->getGenerateUrl(); ?>', {
                 parameters: {force: isForce},
                 onSuccess: function (transport) {
                     var response = transport.responseText.evalJSON();

@@ -8,7 +8,6 @@
 
 namespace HawkSearch\Datafeed\Model\Config\Backend;
 
-
 use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Data\Collection\AbstractDb;
@@ -17,8 +16,6 @@ use Magento\Framework\Model\ResourceModel\AbstractResource;
 use Magento\Framework\Registry;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
 use Magento\Eav\Model\Entity\Attribute\Config;
-
-
 
 class Attributes extends \Magento\Framework\App\Config\Value
 {
@@ -33,15 +30,16 @@ class Attributes extends \Magento\Framework\App\Config\Value
 
     /**
      * Attributes constructor.
-     * @param Context $context
-     * @param Registry $registry
-     * @param ScopeConfigInterface $config
-     * @param TypeListInterface $cacheTypeList
+     *
+     * @param Context                    $context
+     * @param Registry                   $registry
+     * @param ScopeConfigInterface       $config
+     * @param TypeListInterface          $cacheTypeList
      * @param AttributeCollectionFactory $attributeCollectionFactory
-     * @param Config $attributeConfig
-     * @param AbstractResource|null $resource
-     * @param AbstractDb|null $resourceCollection
-     * @param array $data
+     * @param Config                     $attributeConfig
+     * @param AbstractResource|null      $resource
+     * @param AbstractDb|null            $resourceCollection
+     * @param array                      $data
      */
     public function __construct(
         Context $context,
@@ -53,8 +51,7 @@ class Attributes extends \Magento\Framework\App\Config\Value
         AbstractResource $resource = null,
         AbstractDb $resourceCollection = null,
         array $data = []
-    )
-    {
+    ) {
         parent::__construct($context, $registry, $config, $cacheTypeList, $resource, $resourceCollection, $data);
         $this->attributeCollectionFactory = $attributeCollectionFactory;
         $this->attributeConfig = $attributeConfig;
@@ -62,14 +59,18 @@ class Attributes extends \Magento\Framework\App\Config\Value
 
     public function afterLoad()
     {
-        /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
+        /**
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac 
+*/
         $pac = $this->attributeCollectionFactory->create();
         $pac->addSearchableAttributeFilter();
         $values = [];
-        /** @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $item */
+        /**
+ * @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $item 
+*/
         foreach ($pac as $item) {
             $locked = $this->attributeConfig->getLockedFields($item);
-            if(isset($locked['is_searchable'])) {
+            if (isset($locked['is_searchable'])) {
                 continue;
             }
             $values[] = $item->getAttributeCode();
@@ -80,19 +81,20 @@ class Attributes extends \Magento\Framework\App\Config\Value
 
     public function afterSave()
     {
-        $newValues = explode(',',$this->getValue());
+        $newValues = explode(',', $this->getValue());
 
-        /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
+        /**
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac 
+*/
         $pac = $this->attributeCollectionFactory->create();
         foreach ($pac as $item) {
-            if(in_array($item->getAttributeCode(), $newValues)){
+            if (in_array($item->getAttributeCode(), $newValues)) {
                 $item->setIsSearchable(true);
-            }else{
+            } else {
                 $item->setIsSearchable(false);
             }
         }
         $pac->save();
         return parent::afterSave();
     }
-
 }

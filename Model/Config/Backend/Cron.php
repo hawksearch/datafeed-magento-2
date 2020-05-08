@@ -47,8 +47,7 @@ class Cron extends \Magento\Framework\App\Config\Value
         AbstractResource $resource = null,
         AbstractDb $resourceCollection = null,
         array $data = []
-    )
-    {
+    ) {
         $this->resourceConfig = $resourceConfig;
         $this->cronString = $cronString;
         parent::__construct($context, $registry, $config, $cacheTypeList, $resource, $resourceCollection, $data);
@@ -58,7 +57,6 @@ class Cron extends \Magento\Framework\App\Config\Value
     {
         return $this->cronString;
     }
-
 
     public function afterSave()
     {

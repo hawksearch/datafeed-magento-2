@@ -12,6 +12,7 @@
  */
 
 namespace HawkSearch\Datafeed\Model;
+
 class Email
 {
 
@@ -40,12 +41,12 @@ class Email
     private $helper;
 
     /**
-     * @param \Magento\Framework\App\Action\Context $context
-     * @param \Magento\Framework\Mail\Template\TransportBuilder $transportBuilder
+     * @param \Magento\Framework\App\Action\Context              $context
+     * @param \Magento\Framework\Mail\Template\TransportBuilder  $transportBuilder
      * @param \Magento\Framework\Translate\Inline\StateInterface $inlineTranslation
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
-     * @param \HawkSearch\Datafeed\Helper\Data $helper
+     * @param \Magento\Store\Model\StoreManagerInterface         $storeManager
+     * @param \HawkSearch\Datafeed\Helper\Data                   $helper
      */
     public function __construct(
         \Magento\Framework\Mail\Template\TransportBuilder $transportBuilder,
@@ -53,15 +54,13 @@ class Email
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \HawkSearch\Datafeed\Helper\Data $helper
-    )
-    {
+    ) {
         $this->_transportBuilder = $transportBuilder;
         $this->inlineTranslation = $inlineTranslation;
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
         $this->helper = $helper;
     }
-
 
     public function sendEmail($templateParams)
     {

@@ -16,16 +16,16 @@ class Cachebutton extends \Magento\Config\Block\System\Config\Form\Field
 {
     private $helper;
 
-    public function __construct(\Magento\Backend\Block\Template\Context $context,
-                                \HawkSearch\Datafeed\Helper\Data $helper,
-                                array $data = [])
-    {
+    public function __construct(
+        \Magento\Backend\Block\Template\Context $context,
+        \HawkSearch\Datafeed\Helper\Data $helper,
+        array $data = []
+    ) {
         $this->helper = $helper;
         parent::__construct($context, $data);
     }
 
-	 
-	 protected function _prepareLayout()
+    protected function _prepareLayout()
     {
         parent::_prepareLayout();
         if (!$this->getTemplate()) {
@@ -33,7 +33,7 @@ class Cachebutton extends \Magento\Config\Block\System\Config\Form\Field
         }
         return $this;
     }
-   /**
+    /**
      * Render button
      *
      * @param  \Magento\Framework\Data\Form\Element\AbstractElement $element
@@ -48,7 +48,7 @@ class Cachebutton extends \Magento\Config\Block\System\Config\Form\Field
     /**
      * Get the button and scripts contents
      *
-     * @param \Magento\Framework\Data\Form\Element\AbstractElement $element
+     * @param  \Magento\Framework\Data\Form\Element\AbstractElement $element
      * @return string
      */
     protected function _getElementHtml(\Magento\Framework\Data\Form\Element\AbstractElement $element)
@@ -56,16 +56,15 @@ class Cachebutton extends \Magento\Config\Block\System\Config\Form\Field
         $config = $element->getFieldConfig();
         $this->addData(
             [
-         		'button_label' =>$config['button_label'],
+                 'button_label' =>$config['button_label'],
                 'generate_url' => $this->getUrl($config['button_url']),
                 'html_id' => $element->getHtmlId(),
             ]
         );
         return $this->_toHtml();
     }
-    public function isFeedLocked() {
+    public function isFeedLocked()
+    {
         return $this->helper->isFeedLocked();
     }
-
 }
- 

@@ -21,6 +21,7 @@ use Magento\Framework\Controller\Result\JsonFactory;
 
 class RunImageCacheGeneration extends Action
 {
+    const FEED_GENERATION_MSG = 'This installation cannot run one off feed generation because the PHP function "shell_exec" has been disabled. Please use cron.';
     /**
      * @var JsonFactory
      */
@@ -45,7 +46,8 @@ class RunImageCacheGeneration extends Action
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\Result\Json|\Magento\Framework\Controller\ResultInterface
      */
-    public function execute() {
+    public function execute()
+    {
         $result = $this->jsonResultFactory->create();
         $data = ['error' => false];
         try {
@@ -53,7 +55,7 @@ class RunImageCacheGeneration extends Action
             $isShellDisabled = is_array($disabledFuncs) ? in_array('shell_exec', $disabledFuncs) : true;
 
             if ($isShellDisabled) {
-                $data['error'] = 'This installation cannot run one off feed generation because the PHP function "shell_exec" has been disabled. Please use cron.';
+                $data['error'] = self::FEED_GENERATION_MSG;
             } else {
                 if (strtolower($this->getRequest()->getParam('force')) == 'true') {
                     $this->helper->removeFeedLocks(true);

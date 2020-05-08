@@ -20,19 +20,19 @@ class Version extends \Magento\Config\Block\System\Config\Form\Field
 {
     private $moduleList;
 
-    public function __construct(Context $context,
-                                ModuleListInterface $moduleList,
-                                array $data = [])
-    {
+    public function __construct(
+        Context $context,
+        ModuleListInterface $moduleList,
+        array $data = []
+    ) {
         $this->moduleList = $moduleList;
         parent::__construct($context, $data);
     }
 
-
     /**
      * Get the button and scripts contents
      *
-     * @param AbstractElement $element
+     * @param  AbstractElement $element
      * @return string
      */
 
@@ -41,4 +41,3 @@ class Version extends \Magento\Config\Block\System\Config\Form\Field
         return $this->moduleList->getOne('HawkSearch_Datafeed')['setup_version'];
     }
 }
- 

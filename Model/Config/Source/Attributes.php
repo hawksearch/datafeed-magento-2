@@ -24,8 +24,9 @@ class Attributes implements \Magento\Framework\Option\ArrayInterface
 
     /**
      * Attributes constructor.
+     *
      * @param AttributeCollection $collectionFactory
-     * @param Config $attributeConfig
+     * @param Config              $attributeConfig
      */
     public function __construct(AttributeCollection $collectionFactory, Config $attributeConfig)
     {
@@ -44,7 +45,7 @@ class Attributes implements \Magento\Framework\Option\ArrayInterface
         $ret = [];
         foreach ($pac->getItems() as $item) {
             $locked = $this->attributeConfig->getLockedFields($item);
-            if(isset($locked['is_searchable'])) {
+            if (isset($locked['is_searchable'])) {
                 continue;
             }
             $ret[] = ['value' => $item->getAttributeCode(), 'label' => $item->getFrontendLabel()];

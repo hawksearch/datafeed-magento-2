@@ -28,6 +28,7 @@ class GetCacheKey extends Action
 
     /**
      * GetCacheKey constructor.
+     *
      * @param Context     $context
      * @param JsonFactory $jsonResultFactory
      * @param Collection  $productCollection
@@ -50,13 +51,14 @@ class GetCacheKey extends Action
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\Result\Json|\Magento\Framework\Controller\ResultInterface
      */
-    public function execute() {
+    public function execute()
+    {
         $result = $this->jsonResultFactory->create();
         $data = ['error' => false];
 
         try {
             $this->productCollection->addAttributeToSelect('small_image');
-            $this->productCollection->addAttributeToFilter('small_image', array('notnull' => true));
+            $this->productCollection->addAttributeToFilter('small_image', ['notnull' => true]);
             $this->productCollection->getSelect()->limit(100);
             $path = '';
             $found = false;
@@ -68,7 +70,7 @@ class GetCacheKey extends Action
                 }
             }
 
-            if($found) {
+            if ($found) {
                 $imageArray = explode("/", $path);
                 $cache_key = "";
                 foreach ($imageArray as $part) {

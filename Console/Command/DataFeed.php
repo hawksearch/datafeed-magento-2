@@ -17,7 +17,6 @@ use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
 use HawkSearch\Datafeed\Helper\Data as Helper;
 
-
 class DataFeed extends Command
 {
     const FORCE_MODE = 'force';
@@ -38,14 +37,16 @@ class DataFeed extends Command
     {
         $this->setName('hawksearch:generate-feed')
             ->setDescription('Generate the HawkSearch data feed')
-            ->setDefinition([
+            ->setDefinition(
+                [
                 new InputOption(
                     self::FORCE_MODE,
                     ['-f', '--force'],
                     InputOption::VALUE_NONE,
                     'Force datafeed to run even if lock present.'
                 )
-            ]);
+                ]
+            );
         parent::configure();
     }
 
@@ -53,8 +54,8 @@ class DataFeed extends Command
         DatafeedTask $task,
         State $state,
         Helper $helper,
-        $name = null)
-    {
+        $name = null
+    ) {
         parent::__construct($name);
         $this->task = $task;
         $this->state = $state;
@@ -62,8 +63,8 @@ class DataFeed extends Command
     }
 
     /**
-     * @param InputInterface $input
-     * @param OutputInterface $output
+     * @param  InputInterface  $input
+     * @param  OutputInterface $output
      * @return int|null|void
      * @throws \Magento\Framework\Exception\FileSystemException
      * @throws \Magento\Framework\Exception\LocalizedException

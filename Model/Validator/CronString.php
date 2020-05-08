@@ -21,6 +21,7 @@ class CronString extends AbstractValidator
 
     /**
      * CronString constructor.
+     *
      * @param Schedule $cronSchedule
      */
     public function __construct(Schedule $cronSchedule)
@@ -43,9 +44,8 @@ class CronString extends AbstractValidator
     {
         $this->messages = [];
         $e = preg_split('#\s+#', $value->getValue(), null, PREG_SPLIT_NO_EMPTY);
-        if (sizeof($e) < 5 || sizeof($e) > 6) {
+        if (count($e) < 5 || count($e) > 6) {
             $this->messages['invalid_length'] = "Cron string should have exactly 5 parts";
-
         }
         $this->testCronPartSimple(0, $e);
         $this->testCronPartSimple(1, $e);
@@ -85,7 +85,7 @@ class CronString extends AbstractValidator
 
     private function isValidCronRange($p, $v)
     {
-        static $range = array(array(0, 59), array(0, 23), array(1, 31), array(1, 12), array(0, 6));
+        static $range = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 6]];
         // steps can be used with ranges
         if (strpos($v, '/') !== false) {
             $ops = explode('/', $v);
@@ -103,7 +103,10 @@ class CronString extends AbstractValidator
             if (count($ops) !== 2) {
                 $this->messages['invalid_range'] = sprintf('Cron String: Invalid range in part %d', $p + 1);
             }
-            if ($ops[0] > $ops[1] || $ops[0] < $range[$p][0] || $ops[0] > $range[$p][1] || $ops[1] < $range[$p][0] || $ops[1] > $range[$p][1]) {
+            if ($ops[0] > $ops[1]
+                || $ops[0] < $range[$p][0]
+                || $ops[0] > $range[$p][1] || $ops[1] < $range[$p][0] || $ops[1] > $range[$p][1]
+            ) {
                 $this->messages['invalid_range'] = sprintf('Cron String: Invalid range in part %d', $p + 1);
             }
         } else {

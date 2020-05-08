@@ -39,10 +39,11 @@ class DataFeed
 
     /**
      * DataFeed constructor.
-     * @param Task $task
-     * @param Helper $helper
+     *
+     * @param Task          $task
+     * @param Helper        $helper
      * @param DirectoryList $dir
-     * @param EmailFactory $emailFactory
+     * @param EmailFactory  $emailFactory
      */
     public function __construct(Task $task, Helper $helper, DirectoryList $dir, EmailFactory $emailFactory)
     {
@@ -52,16 +53,16 @@ class DataFeed
         $this->emailFactory = $emailFactory;
     }
 
-    public function execute() {
-        chdir($this->dir->getRoot());
-        if($this->helper->getCronEnabled()) {
+    public function execute()
+    {
+        if ($this->helper->getCronEnabled()) {
             $vars = [];
             $vars['jobTitle'] = Task::SCRIPT_NAME;
             if ($this->helper->isFeedLocked()) {
                 $vars['message'] = "Hawksearch is currently locked, not generating feed at this time.";
             } else {
                 try {
-                    if($this->helper->createFeedLocks(Task::SCRIPT_NAME)) {
+                    if ($this->helper->createFeedLocks(Task::SCRIPT_NAME)) {
                         $this->task->generateFeed();
                         $this->helper->removeFeedLocks(Task::SCRIPT_NAME);
                         $vars['message'] = "HawkSeach Datafeed Generated!";

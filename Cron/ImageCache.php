@@ -18,7 +18,6 @@ use HawkSearch\Datafeed\Helper\Data as Helper;
 use HawkSearch\Datafeed\Model\EmailFactory;
 use Magento\Framework\Filesystem\DirectoryList;
 
-
 class ImageCache
 {
     /**
@@ -42,8 +41,8 @@ class ImageCache
         Task $task,
         Helper $helper,
         DirectoryList $dir,
-        EmailFactory $emailFactory)
-    {
+        EmailFactory $emailFactory
+    ) {
         $this->task = $task;
         $this->helper = $helper;
         $this->dir = $dir;
@@ -52,7 +51,6 @@ class ImageCache
 
     public function execute()
     {
-        chdir($this->dir->getRoot());
         if ($this->helper->getCronImagecacheEnable()) {
             $vars = [];
             $vars['jobTitle'] = Task::SCRIPT_NAME;
@@ -71,5 +69,4 @@ class ImageCache
             $this->emailFactory->create()->sendEmail($vars);
         }
     }
-
 }
