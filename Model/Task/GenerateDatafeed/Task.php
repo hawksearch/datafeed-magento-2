@@ -4,7 +4,7 @@
 namespace HawkSearch\Datafeed\Model\Task\GenerateDatafeed;
 
 
-use HawkSearch\Datafeed\Model\Task\TaskLockException;
+use HawkSearch\Datafeed\Model\Task\LockException;
 
 class Task
 {
@@ -31,7 +31,7 @@ class Task
      * Task entry point. Every run requires a set of task options an produces a new set of task results.
      * @param TaskOptions $options
      * @return TaskResults
-     * @throws TaskLockException
+     * @throws LockException
      */
     public function execute( TaskOptions $options ) : TaskResults
     {

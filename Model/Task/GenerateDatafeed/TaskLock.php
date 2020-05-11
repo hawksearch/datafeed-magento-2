@@ -5,7 +5,7 @@ namespace HawkSearch\Datafeed\Model\Task\GenerateDatafeed;
 
 
 use Exception;
-use HawkSearch\Datafeed\Model\Task\TaskLockException;
+use HawkSearch\Datafeed\Model\Task\LockException;
 use Magento\Framework\Lock\Backend\Database;
 
 class TaskLock
@@ -29,7 +29,7 @@ class TaskLock
 
     /**
      * Acquires task database lock.
-     * @throws TaskLockException
+     * @throws LockException
      */
     public function lock() : void
     {
@@ -37,17 +37,17 @@ class TaskLock
             $isLocked = $this->databaseLock->lock( self::LOCK_KEY, self::LOCK_TIMEOUT_SECONDS );
         }
         catch ( Exception $exception ) {
-            throw new TaskLockException( $exception->getMessage() );
+            throw new LockException( $exception->getMessage() );
         }
 
         if ( ! $isLocked ) {
-            throw new TaskLockException( 'failed to acquire task lock: ' . self::LOCK_KEY );
+            throw new LockException( 'failed to acquire task lock: ' . self::LOCK_KEY );
         }
     }
 
     /**
      * Releases task database lock.
-     * @throws TaskLockException
+     * @throws LockException
      */
     public function unlock() : void
     {
@@ -55,11 +55,11 @@ class TaskLock
             $isUnlocked = $this->databaseLock->unlock( self::LOCK_KEY );
         }
         catch ( Exception $exception ) {
-            throw new TaskLockException( 'failed to release task lock: ' . $exception->getMessage() );
+            throw new LockException( 'failed to release task lock: ' . $exception->getMessage() );
         }
 
         if ( ! $isUnlocked ) {
-            throw new TaskLockException( 'failed to release task lock: ' . self::LOCK_KEY );
+            throw new LockException( 'failed to release task lock: ' . self::LOCK_KEY );
         }
     }
 }

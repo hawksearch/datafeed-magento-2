@@ -5,6 +5,7 @@
         <arguments>
             <argument name="commands" xsi:type="array">
                 <item name="run_hawksearch_datafeed" xsi:type="object">HawkSearch\Datafeed\Console\Command\DataFeed</item>
+                <item name="hawksearch_schedule_datafeed" xsi:type="object">HawkSearch\Datafeed\Console\Command\ScheduleGenerateDatafeed</item>
             </argument>
         </arguments>
     </type>
