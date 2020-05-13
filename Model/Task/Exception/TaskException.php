@@ -1,7 +1,7 @@
 <?php
 
 
-namespace HawkSearch\Datafeed\Model\Task;
+namespace HawkSearch\Datafeed\Model\Task\Exception;
 
 
 use Exception;

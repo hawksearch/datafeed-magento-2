@@ -5,7 +5,7 @@ namespace HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed;
 
 
 use Exception;
-use HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed\Exception\AlreadyScheduledException;
+use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
 use HawkSearch\Datafeed\Model\Task\TaskException;
 use Magento\Cron\Model\ResourceModel\Schedule as ScheduleResourceModel;
 use Magento\Cron\Model\ResourceModel\Schedule\Collection as ScheduleCollection;

@@ -4,7 +4,7 @@
 namespace HawkSearch\Datafeed\Console\Command;
 
 
-use HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed\Exception\AlreadyScheduledException;
+use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
 use HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed\Task;
 use HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed\TaskResults;
 use HawkSearch\Datafeed\Model\Task\TaskException;
