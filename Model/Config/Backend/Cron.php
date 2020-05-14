@@ -29,7 +29,6 @@ use Magento\Framework\Registry;
 class Cron extends \Magento\Framework\App\Config\Value
 {
     const CRON_DATAFEED_CRON_EXPR = 'crontab/default/jobs/hawksearch_datafeed/schedule';
-    const CRON_IMAGECACHE_CRON_EXPR = 'crontab/default/jobs/hawksearch_datafeed_imagecache/schedule';
 
     private $resourceConfig;
     /**
@@ -64,8 +63,6 @@ class Cron extends \Magento\Framework\App\Config\Value
     {
         if ($this->getPath() == "hawksearch_datafeed/feed/cron_string") {
             $this->resourceConfig->saveConfig(self::CRON_DATAFEED_CRON_EXPR, $this->getValue(), 'default', 0);
-        } elseif ($this->getPath() == "hawksearch_datafeed/imagecache/cron_string") {
-            $this->resourceConfig->saveConfig(self::CRON_IMAGECACHE_CRON_EXPR, $this->getValue(), 'default', 0);
         }
 
         return parent::afterSave();
