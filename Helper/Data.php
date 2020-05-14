@@ -25,7 +25,6 @@ class Data extends AbstractHelper
 {
 
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
-    const IMAGECACHE_LOCK_FILENAME = 'hawksearchImageCache.lock';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
     const CONFIG_SUMMARY_FILENAME = 'hawksearchFeedSummary.json';
     const CONFIG_FEED_PATH = 'hawksearch_datafeed/feed/feed_path';
@@ -33,8 +32,6 @@ class Data extends AbstractHelper
     const CONFIG_LOGGING_ENABLED = 'hawksearch_datafeed/general/logging_enabled';
     const CONFIG_INCLUDE_OOS = 'hawksearch_datafeed/feed/stockstatus';
     const CONFIG_BATCH_LIMIT = 'hawksearch_datafeed/feed/batch_limit';
-    const CONFIG_IMAGE_WIDTH = 'hawksearch_datafeed/imagecache/image_width';
-    const CONFIG_IMAGE_HEIGHT = 'hawksearch_datafeed/imagecache/image_height';
     const CONFIG_INCLUDE_DISABLED = 'hawksearch_datafeed/feed/itemstatus';
     const CONFIG_BUFFER_SIZE = '65536';
     const CONFIG_OUTPUT_EXTENSION = 'txt';
@@ -43,10 +40,7 @@ class Data extends AbstractHelper
     const CONFIG_CRONLOG_FILENAME = 'hawksearchCronLog.log';
     const CONFIG_CRON_ENABLE = 'hawksearch_datafeed/feed/cron_enable';
     const CONFIG_CRON_EMAIL = 'hawksearch_datafeed/feed/cron_email';
-    const CONFIG_CRON_IMAGECACHE_ENABLE = 'hawksearch_datafeed/imagecache/cron_enable';
-    const CONFIG_CRON_IMAGECACHE_EMAIL = 'hawksearch_datafeed/imagecache/cron_email';
     const CONFIG_TRIGGER_REINDEX = 'hawksearch_datafeed/feed/reindex';
-    const CONFIG_IMAGECACHE_LOCK_PATH = 'hawksearch_datafeed/feed/image_cache_lock_path';
     const CONFIG_COMBINE_MULTISELECT_ATTS = 'hawksearch_datafeed/feed/combine_multiselect';
 
     /**
@@ -126,14 +120,6 @@ class Data extends AbstractHelper
         return $this->getConfigurationData('trans_email/ident_general/name');
     }
 
-    public function getImageWidth() {
-        return $this->getConfigurationData(self::CONFIG_IMAGE_WIDTH);
-    }
-
-    public function getImageHeight() {
-        return $this->getConfigurationData(self::CONFIG_IMAGE_HEIGHT);
-    }
-
     public function getCronEmail() {
         return $this->getConfigurationData(self::CONFIG_CRON_EMAIL);
     }
@@ -194,14 +180,6 @@ class Data extends AbstractHelper
 
     public function getCronLogFilename() {
         return self::CONFIG_CRONLOG_FILENAME;
-    }
-
-    public function getCronImagecacheEnable() {
-        return $this->getConfigurationData(self::CONFIG_CRON_IMAGECACHE_ENABLE);
-    }
-
-    public function getCronImagecacheEmail() {
-        return $this->getConfigurationData(self::CONFIG_CRON_IMAGECACHE_EMAIL);
     }
 
     public function isFeedLocked() {
@@ -278,27 +256,6 @@ class Data extends AbstractHelper
         $writer->writeFile($summaryFile, json_encode($summary, JSON_PRETTY_PRINT));
     }
 
-    public function refreshImageCache() {
-        $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
-        $tmpfile = tempnam($tmppath, 'hawkimage_');
-
-        $parts = explode(DIRECTORY_SEPARATOR, __FILE__);
-        array_pop($parts);
-        $parts[] = 'Runfeed.php';
-        $runfile = implode(DIRECTORY_SEPARATOR, $parts);
-        $root = BP;
-
-        $f = fopen($tmpfile, 'w');
-
-        $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
-
-        fwrite($f, "$phpbin -d memory_limit=-1 $runfile -i true -r $root -t $tmpfile\n");
-        fclose($f);
-
-        $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
-        shell_exec("/bin/sh $tmpfile > $cronlog 2>&1 &");
-    }
-
     /**
      * @param $basename
      * @return string
@@ -364,44 +321,6 @@ class Data extends AbstractHelper
     public function log($message) {
         if ($this->loggingIsEnabled()) {
             $this->_logger->addDebug($message);
-        }
-    }
-
-    public function isImageCacheLocked()
-    {
-        $lockfile = $this->getImageCacheLockFile();
-        return $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA)->isExist($lockfile);
-    }
-
-    private function getImageCacheLockFile()
-    {
-        $relPath = $this->scopeConfig->getValue(self::CONFIG_IMAGECACHE_LOCK_PATH);
-        return implode(DIRECTORY_SEPARATOR, [$relPath, self::IMAGECACHE_LOCK_FILENAME]);
-    }
-
-    public function createImageCacheLocks($scriptName = '')
-    {
-        $lockFile = $this->getImageCacheLockFile();
-        $content = json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]);
-        try{
-            $writer = $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA);
-            return $writer->writeFile($lockFile, $content);
-        } catch (\Exception $exception) {
-            $this->log('failed to create Image cache lock file: ' . $exception->getMessage());
-            throw $exception;
-        }
-    }
-
-    public function removeImageCacheLocks($SCRIPT_NAME)
-    {
-        $lockFile = $this->getImageCacheLockFile();
-        $writer = $this->filesystem->getDirectoryWrite(\Magento\Framework\App\Filesystem\DirectoryList::MEDIA);
-        try
-        {
-            return $writer->delete($lockFile);
-        } catch (\Exception $exception) {
-            $this->log('Failed to remove Image Cache lock file: ' . $exception->getMessage());
-            throw $exception;
         }
     }
 
