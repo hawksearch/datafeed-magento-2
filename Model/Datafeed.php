@@ -13,7 +13,6 @@
 
 namespace HawkSearch\Datafeed\Model;
 
-use HawkSearch\Datafeed\Model\CsvWriterFactory;
 use Magento\Framework\Event\Manager as EventManager;
 use Magento\Framework\Model\AbstractModel;
 use HawkSearch\Datafeed\Helper\Data as Helper;
@@ -77,10 +76,6 @@ class Datafeed extends AbstractModel
      * @var Manager
      */
     private $eventManager;
-    /**
-     * @var EmailFactory
-     */
-    private $emailFactory;
 
     /**
      * Constructor
@@ -117,7 +112,6 @@ class Datafeed extends AbstractModel
         EventManager $eventManager,
         Emulation $emulation,
         Helper $helper,
-        EmailFactory $emailFactory,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
@@ -139,7 +133,6 @@ class Datafeed extends AbstractModel
         $this->configurableFactory = $configurableFactory;
         $this->pageCollectionFactory = $pageCollectionFactory;
         $this->eventManager = $eventManager;
-        $this->emailFactory = $emailFactory;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
@@ -149,7 +142,7 @@ class Datafeed extends AbstractModel
         $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
         $this->feedSummary = new \stdClass();
     }
-    
+
     /**
      * Recursively sets up the category tree without introducing
      * duplicate data.

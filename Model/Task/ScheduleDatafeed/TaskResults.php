@@ -1,7 +1,7 @@
 <?php
 
 
-namespace HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed;
+namespace HawkSearch\Datafeed\Model\Task\ScheduleDatafeed;
 
 
 class TaskResults

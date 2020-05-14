@@ -1,23 +1,23 @@
 <?php
 
 
-namespace HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed;
+namespace HawkSearch\Datafeed\Model\Task\ScheduleDatafeed;
 
 
 use Exception;
+use HawkSearch\Datafeed\Cron\DataFeed;
 use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
-use HawkSearch\Datafeed\Model\Task\TaskException;
+use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
 use Magento\Cron\Model\ResourceModel\Schedule as ScheduleResourceModel;
 use Magento\Cron\Model\ResourceModel\Schedule\Collection as ScheduleCollection;
 use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory as ScheduleCollectionFactory;
 use Magento\Cron\Model\Schedule;
 use Magento\Cron\Model\ScheduleFactory;
+use Magento\Framework\Exception\AlreadyExistsException;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 
 class Task
 {
-    private const JOB_CODE = 'justin_test'; // TODO replace with actual value
-
     /** @var DateTime */
     private $dateTime;
 
@@ -67,24 +67,8 @@ class Task
             throw new AlreadyScheduledException();
         }
 
-        try {
-            $createdAt   = $this->dateTime->gmtTimestamp();
-            $scheduledAt = $createdAt + 60; // add 1 minute
-
-            /** @var Schedule $schedule */
-            $schedule = $this->scheduleFactory->create()
-                ->setJobCode( self::JOB_CODE )
-                ->setStatus( Schedule::STATUS_PENDING )
-                ->setCreatedAt( strftime( '%Y-%m-%d %H:%M:%S', $createdAt ) )
-                ->setScheduledAt( strftime( '%Y-%m-%d %H:%M', $scheduledAt ) );
-
-            $this->scheduleResourceModel->save( $schedule );
-
-            return $this->getResults( $schedule );
-        }
-        catch ( Exception $exception ) {
-            throw new TaskException( 'Failed to create schedule entry', 0, $exception );
-        }
+        $schedule = $this->createScheduleEntry();
+        return $this->createResults( $schedule );
     }
 
     /**
@@ -95,10 +79,35 @@ class Task
     {
         /** @var ScheduleCollection $collection */
         $collection = $this->scheduleCollectionFactory->create();
-        $collection->addFieldToFilter( 'job_code', [ 'eq' => self::JOB_CODE ] );
+        $collection->addFieldToFilter( 'job_code', [ 'eq' => Datafeed::JOB_CODE ] );
         $collection->addFieldToFilter( 'status', [ 'eq' => 'pending' ] );
 
         return boolval( $collection->getSize() );
+    }
+
+    /**
+     * @return Schedule
+     * @throws TaskException
+     */
+    private function createScheduleEntry() : Schedule
+    {
+        $createdAt   = $this->dateTime->gmtTimestamp();
+        $scheduledAt = $createdAt + 60; // add 1 minute
+
+        /** @var Schedule $schedule */
+        $schedule = $this->scheduleFactory->create()
+            ->setJobCode( DataFeed::JOB_CODE )
+            ->setStatus( Schedule::STATUS_PENDING )
+            ->setCreatedAt( strftime( '%Y-%m-%d %H:%M:%S', $createdAt ) )
+            ->setScheduledAt( strftime( '%Y-%m-%d %H:%M', $scheduledAt ) );
+
+        try {
+            $this->scheduleResourceModel->save( $schedule );
+            return $schedule;
+        }
+        catch ( AlreadyExistsException | Exception $e ) {
+            throw new TaskException( 'failed to create schedule entry' );
+        }
     }
 
     /**
@@ -106,7 +115,7 @@ class Task
      * @param Schedule $schedule
      * @return TaskResults
      */
-    private function getResults( Schedule $schedule ) : TaskResults
+    private function createResults( Schedule $schedule ) : TaskResults
     {
         /** @var TaskResults $results */
         $results = $this->taskResultsFactory->create();

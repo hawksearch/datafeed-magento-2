@@ -5,14 +5,14 @@ namespace HawkSearch\Datafeed\Console\Command;
 
 
 use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
-use HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed\Task;
-use HawkSearch\Datafeed\Model\Task\ScheduleGenerateDatafeed\TaskResults;
+use HawkSearch\Datafeed\Model\Task\ScheduleDatafeed\Task;
+use HawkSearch\Datafeed\Model\Task\ScheduleDatafeed\TaskResults;
 use HawkSearch\Datafeed\Model\Task\TaskException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ScheduleGenerateDatafeed extends Command
+class ScheduleDatafeed extends Command
 {
     /** @var Task */
     private $task;
