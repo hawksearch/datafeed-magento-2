@@ -120,7 +120,7 @@ class Task
         /** @var TaskResults $results */
         $results = $this->taskResultsFactory->create();
 
-        $results->setJobEntityId( intval( $schedule->getEntityId() ) );
+        $results->setJobEntityId( intval( $schedule->getId() ) );
         $results->setCreatedAt( $schedule->getCreatedAt() );
         $results->setScheduledAt( $schedule->getScheduledAt() );
 
