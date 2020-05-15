@@ -126,7 +126,7 @@ class CsvWriter
         if (false === ($this->outputFile = $this->file->fileOpen($this->finalDestinationPath, 'a'))) {
             throw new \Exception("CsvWriter: Failed to open destination file '$this->finalDestinationPath'.");
         }
-        if ($this->bufferSize === null) {
+        if ($this->bufferSize !== null) {
             try {
                 stream_set_write_buffer($this->outputFile, $this->bufferSize);
             } catch (\Exception $e) {
