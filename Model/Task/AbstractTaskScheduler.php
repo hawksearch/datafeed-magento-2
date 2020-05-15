@@ -53,10 +53,29 @@ abstract class AbstractTaskScheduler
     }
 
     /**
-     * Returns true if there is a pending schedule entry in the cron_schedule table, false otherwise.
+     * Returns true if there is a pending schedule entry in the cron_schedule table scheduled within minute from now.
      * @return bool
      */
-    public function isScheduled() : bool
+    public function isScheduledForNextRun() : bool
+    {
+        $this->requireJobCode();
+
+        $nextMinute = $this->dateTime->gmtTimestamp() + 60;
+
+        /** @var ScheduleCollection $collection */
+        $collection = $this->scheduleCollectionFactory->create();
+        $collection->addFieldToFilter( 'job_code', [ 'eq' => $this->jobCode ] );
+        $collection->addFieldToFilter( 'status', [ 'eq' => Schedule::STATUS_PENDING ] );
+        $collection->addFieldToFilter( 'scheduled_at', [ 'lt' => $this->dateTime->gmtDate( null, $nextMinute ) ] );
+        $collection->addOrder( 'scheduled_at', 'asc' );
+
+        return boolval( $collection->getSize() );
+    }
+
+    /**
+     * @return Schedule|null
+     */
+    public function getNextScheduled() : ?Schedule
     {
         $this->requireJobCode();
 
@@ -64,11 +83,18 @@ abstract class AbstractTaskScheduler
         $collection = $this->scheduleCollectionFactory->create();
         $collection->addFieldToFilter( 'job_code', [ 'eq' => $this->jobCode ] );
         $collection->addFieldToFilter( 'status', [ 'eq' => Schedule::STATUS_PENDING ] );
+        $collection->addOrder( 'scheduled_at', 'asc' );
 
-        return boolval( $collection->getSize() );
+        /** @var Schedule $schedule */
+        $schedule = $collection->getFirstItem();
+
+        return $schedule->getId()
+            ? $schedule
+            : null;
     }
 
     /**
+     * Attempts to schedule a new cron job entry in the cron_schedule table.
      * @throws AlreadyScheduledException
      * @throws SchedulerException
      */
@@ -76,7 +102,7 @@ abstract class AbstractTaskScheduler
     {
         $this->requireJobCode();
 
-        if ( $this->isScheduled() ) {
+        if ( $this->isScheduledForNextRun() ) {
             throw new AlreadyScheduledException( sprintf( 'job_code %s is already scheduled', $this->jobCode ) );
         }
 
@@ -92,6 +118,7 @@ abstract class AbstractTaskScheduler
     }
 
     /**
+     * Creates a new cron_schedule entity.
      * @return Schedule
      */
     private function createScheduleEntry() : Schedule

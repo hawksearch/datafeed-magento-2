@@ -48,7 +48,7 @@
                        showInStore="0">
                     <label/>
                     <button_label>
-                        <![CDATA[Generate Feed]]>
+                        <![CDATA[Schedule Feed Generation]]>
                     </button_label>
                     <button_url>
                         <![CDATA[hawksearchdatafeed/hawkdatagenerate/runFeedGeneration]]>

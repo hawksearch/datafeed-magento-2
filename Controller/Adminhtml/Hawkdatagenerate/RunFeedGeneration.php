@@ -13,57 +13,77 @@
 
 namespace HawkSearch\Datafeed\Controller\Adminhtml\Hawkdatagenerate;
 
+use DateTime;
+use Exception;
+use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
+use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
+use HawkSearch\Datafeed\Model\Task\ScheduleDatafeed\Task;
+use HawkSearch\Datafeed\Model\Task\ScheduleDatafeed\TaskResults;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\Controller\Result\JsonFactory;
-use HawkSearch\Datafeed\Helper\Data as Helper;
+use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\Controller\Result\Redirect;
+use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
 class RunFeedGeneration extends Action
 {
-    /**
-     * @var JsonFactory
-     */
-    protected $jsonResultFactory;
+    /** @var Task */
+    private $task;
 
-    protected $helper;
+    /** @var TimezoneInterface */
+    private $timezone;
 
     /**
-     * @param Context     $context
-     * @param JsonFactory $jsonResultFactory
-     * @param Helper      $helper
+     * @param Context $context
+     * @param Task $task
+     * @param TimezoneInterface $timezone
      */
     public function __construct(
         Context $context,
-        JsonFactory $jsonResultFactory,
-        Helper $helper
-    ) {
-        parent::__construct($context);
-        $this->jsonResultFactory = $jsonResultFactory;
-        $this->helper = $helper;
+        Task $task,
+        TimezoneInterface $timezone
+    )
+    {
+        parent::__construct( $context );
+        $this->task     = $task;
+        $this->timezone = $timezone;
     }
 
     /**
-     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\Result\Json|\Magento\Framework\Controller\ResultInterface
+     * @return Redirect
      */
-    public function execute() {
-        $result = $this->jsonResultFactory->create();
-        $data = ['error' => false];
+    public function execute()
+    {
         try {
-            $disabledFuncs = explode(',', ini_get('disable_functions'));
-            $isShellDisabled = is_array($disabledFuncs) ? in_array('shell_exec', $disabledFuncs) : true;
-
-            if ($isShellDisabled) {
-                $data['error'] = 'This installation cannot run one off feed generation because the PHP function "shell_exec" has been disabled. Please use cron.';
-            } else {
-                if (strtolower($this->getRequest()->getParam('force')) == 'true') {
-                    $this->helper->removeFeedLocks(true);
-                }
-                $this->helper->runDatafeed();
-            }
-        } catch (\Exception $e) {
-            $data['error'] = $e;
+            /** @var TaskResults $taskResults */
+            $taskResults = $this->task->execute();
+            $this->reportSuccess( $taskResults );
         }
-        $result->setData($data);
-        return $result;
+        catch ( AlreadyScheduledException $exception ) {
+            $this->messageManager->addErrorMessage( __( 'Feed Generation is already scheduled for the next CRON run.' ) );
+        }
+        catch ( TaskException $exception ) {
+            $this->messageManager->addErrorMessage( __( 'An error occurred: ' . $exception->getMessage() ) );
+        }
+
+        // return to previous page
+        return $this->resultRedirectFactory->create()->setUrl( $this->_redirect->getRefererUrl() );
+    }
+
+    /**
+     * @param TaskResults $results
+     */
+    private function reportSuccess( TaskResults $results ) : void
+    {
+        try {
+            $scheduledAt = $this->timezone
+                ->date( new DateTime( $results->getScheduledAt() ) )
+                ->format( DateTime::RFC850 );
+            $this->messageManager->addSuccessMessage( __( 'Feed Generation successfully scheduled: ' ) . $scheduledAt );
+        }
+        catch ( Exception $exception ) {
+            $this->messageManager->addSuccessMessage( __( 'Feed Generation successfully scheduled.' ) );
+        }
     }
 }
