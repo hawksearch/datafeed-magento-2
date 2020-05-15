@@ -17,10 +17,5 @@
          method="execute">
       <schedule>0 0 * * *</schedule>
     </job>
-    <job name="hawksearch_datafeed_imagecache"
-         instance="HawkSearch\Datafeed\Cron\ImageCache"
-         method="execute">
-      <schedule>0 0 * * *</schedule>
-    </job>
   </group>
 </config>

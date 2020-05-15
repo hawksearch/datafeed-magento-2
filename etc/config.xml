@@ -39,11 +39,6 @@
         <api_url_production>https://manage.hawksearch.com/api/</api_url_production>
         <api_ver>v4</api_ver>
       </hawksearch_api>
-      <imagecache>
-        <image_width>135</image_width>
-        <cron_enable>0</cron_enable>
-        <cron_string>30 0 * * *</cron_string>
-      </imagecache>
     </hawksearch_datafeed>
   </default>
 </config>

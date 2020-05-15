@@ -10,71 +10,26 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-$locked = $block->isFeedLocked();
+
+use HawkSearch\Datafeed\Block\System\Config\Button;
+
+/** @var Button $block */
+
+$isScheduledForNextRun = $block->isScheduledForNextRun();
+
+$nextScheduledId        = $block->getNextScheduledId();
+$nextScheduledTimestamp = $block->getNextScheduledTimestamp();
 ?>
 <div>
     <div id="hawk_datagenerate_result" class="message-validation hidden"></div>
-    <button type="button"
-            id="<?=  /* @noEscape */ $block->getHtmlId() ?>">
-        <span><?=  /* @noEscape */ $block->escapeHtml($block->getButtonLabel()) ?></span>
-    </button>
-    <input type="checkbox"
-           value="feedforce"
-           id="<?=  /* @noEscape */ $block->getHtmlId() ?>_feedforce"
-           name="feedforce"
-           title="force data generation"/>
-    <label for="<?=  /* @noEscape */ $block->getHtmlId() ?>_feedforce">force</label>
+    <a href="<?php echo $block->escapeHtml( $block->getGenerateUrl() ) ?>">
+        <button type="button">
+            <span><?php echo $block->escapeHtml( $block->getButtonLabel() ) ?></span>
+        </button>
+    </a>
+    <?php if ( $nextScheduledId ): ?>
+        <div id="hawk_datagenerate_next_scheduled" style="margin-top: 8px">
+            <p>Next feed generation at <?= $nextScheduledTimestamp ?> (CRON ID: <?= $nextScheduledId ?>)</p>
+        </div>
+    <?php endif; ?>
 </div>
-
-<script>
-    require(['prototype'], function () {
-        var locked = <?=  /* @noEscape */ $locked ? 'true' : 'false'; ?>;
-        var b = $('<?=  /* @noEscape */ $block->getHtmlId() ?>');
-        var cb = $('<?=  /* @noEscape */ $block->getHtmlId() ?>_feedforce');
-        if (locked) {
-            b.disable();
-            cb.enable();
-            cb.observe('click', function (event) {
-                if (this.checked) {
-                    b.enable();
-                } else {
-                    b.disable();
-                }
-            });
-        } else {
-            b.enable();
-            cb.disable();
-        }
-        b.observe('click', function (event) {
-            var isForce = cb.checked;
-            new Ajax.Request('<?=  /* @noEscape */ $block->getGenerateUrl(); ?>', {
-                parameters: {force: isForce},
-                onSuccess: function (transport) {
-                    var response = transport.responseText.evalJSON();
-                    var responseEl = $("hawk_datagenerate_result");
-                    if (response.error) {
-                        responseEl.innerHTML = response.error;
-                    } else {
-                        responseEl.innerHTML = "Feed generation started";
-                    }
-                    responseEl.removeClassName('hidden');
-
-                    b.disabled = true;
-                    b.addClassName("disabled");
-                    b.stopObserving('click');
-                },
-                onFailure: function (response, rHeader) {
-                    alert('There has been an error. The response is: ' + response);
-                    b.addClassName("disabled");
-                    b.stopObserving('click');
-                },
-                onException: function (request, exception) {
-                    alert('There has been an exception. The exceptions is: ' + exception);
-                    b.addClassName("disabled");
-                    b.stopObserving('click');
-                }
-            });
-        });
-    });
-</script>
-

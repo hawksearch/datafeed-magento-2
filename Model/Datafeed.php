@@ -13,18 +13,17 @@
 
 namespace HawkSearch\Datafeed\Model;
 
-use HawkSearch\Datafeed\Helper\Data as Helper;
-use Magento\Catalog\Helper\CategoryFactory;
-use Magento\Catalog\Model\Product\Attribute\Source\Status;
-use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
-use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
-use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
-use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFactory;
-use Magento\ConfigurableProduct\Model\Product\Type\ConfigurableFactory;
 use Magento\Framework\Event\Manager as EventManager;
 use Magento\Framework\Model\AbstractModel;
-use Magento\Review\Model\Review;
+use HawkSearch\Datafeed\Helper\Data as Helper;
 use Magento\Store\Model\App\Emulation;
+use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
+use Magento\Review\Model\Review;
+use Magento\Catalog\Helper\CategoryFactory;
+use Magento\ConfigurableProduct\Model\Product\Type\ConfigurableFactory;
+use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
+use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFactory;
 
 class Datafeed extends AbstractModel
 {
@@ -77,33 +76,28 @@ class Datafeed extends AbstractModel
      * @var Manager
      */
     private $eventManager;
-    /**
-     * @var EmailFactory
-     */
-    private $emailFactory;
 
     /**
      * Constructor
-     *
-     * @param AttributeCollection                                          $attributeCollection
-     * @param ProductCollection                                            $productCollection
-     * @param Review                                                       $review
-     * @param \HawkSearch\Datafeed\Model\CsvWriterFactory                  $csvWriter
-     * @param CategoryCollectionFactory                                    $categoryCollectionFactory
-     * @param CategoryFactory                                              $categoryHelperFactory
-     * @param ConfigurableFactory                                          $configurableFactory
-     * @param PageCollectionFactory                                        $pageCollectionFactory
-     * @param \Magento\Framework\Module\Manager                            $moduleManager
-     * @param EventManager                                                 $eventManager
-     * @param Emulation                                                    $emulation
-     * @param Helper                                                       $helper
-     * @param EmailFactory                                                 $emailFactory
-     * @param \Magento\CatalogInventory\Helper\Stock                       $stockHelper
-     * @param \Magento\Framework\Model\Context                             $context
-     * @param \Magento\Framework\Registry                                  $registry
+     * @param AttributeCollection $attributeCollection
+     * @param ProductCollection $productCollection
+     * @param Review $review
+     * @param \HawkSearch\Datafeed\Model\CsvWriterFactory $csvWriter
+     * @param CategoryCollectionFactory $categoryCollectionFactory
+     * @param CategoryFactory $categoryHelperFactory
+     * @param ConfigurableFactory $configurableFactory
+     * @param PageCollectionFactory $pageCollectionFactory
+     * @param \Magento\Framework\Module\Manager $moduleManager
+     * @param EventManager $eventManager
+     * @param Emulation $emulation
+     * @param Helper $helper
+     * @param EmailFactory $emailFactory
+     * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
+     * @param \Magento\Framework\Model\Context $context
+     * @param \Magento\Framework\Registry $registry
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
-     * @param \Magento\Framework\Data\Collection\AbstractDb|null           $resourceCollection
-     * @param array                                                        $data
+     * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
+     * @param array $data
      */
     public function __construct(
         AttributeCollection $attributeCollection,
@@ -118,14 +112,14 @@ class Datafeed extends AbstractModel
         EventManager $eventManager,
         Emulation $emulation,
         Helper $helper,
-        EmailFactory $emailFactory,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
-    ) {
+    )
+    {
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->emulation = $emulation;
@@ -139,23 +133,13 @@ class Datafeed extends AbstractModel
         $this->configurableFactory = $configurableFactory;
         $this->pageCollectionFactory = $pageCollectionFactory;
         $this->eventManager = $eventManager;
-        $this->emailFactory = $emailFactory;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
     protected function _construct()
     {
         parent::_construct();
-        $this->productAttributes = [
-            'entity_id',
-            'sku',
-            'name',
-            'url',
-            'small_image',
-            'msrp',
-            'price',
-            'special_price',
-            'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty'];
+        $this->productAttributes = array('entity_id', 'sku', 'name', 'url', 'small_image', 'msrp', 'price', 'special_price', 'special_from_date', 'special_to_date', 'short_description', 'description', 'meta_keyword', 'qty');
         $this->feedSummary = new \stdClass();
     }
 
@@ -167,12 +151,12 @@ class Datafeed extends AbstractModel
      * @param $all
      * @param $tree
      */
-    private function rFind($pid, &$all, &$tree)
+    private function r_find($pid, &$all, &$tree)
     {
         foreach ($all as $item) {
             if ($item['pid'] == $pid) {
                 $tree[] = $item;
-                $this->rFind($item['id'], $all, $tree);
+                $this->r_find($item['id'], $all, $tree);
             }
         }
     }
@@ -183,8 +167,8 @@ class Datafeed extends AbstractModel
         $filename = $this->helper->getPathForFile('hierarchy');
 
         $collection = $this->categoryCollectionFactory->create();
-        $collection->addAttributeToSelect(['name', 'is_active', 'parent_id', 'position', 'include_in_menu']);
-        $collection->addAttributeToFilter('is_active', ['eq' => '1']);
+        $collection->addAttributeToSelect(array('name', 'is_active', 'parent_id', 'position', 'include_in_menu'));
+        $collection->addAttributeToFilter('is_active', array('eq' => '1'));
         $collection->addAttributeToSort('entity_id')->addAttributeToSort('parent_id')->addAttributeToSort('position');
         $collection->setPageSize($this->helper->getBatchLimit());
         $pages = $collection->getLastPageNumber();
@@ -192,35 +176,30 @@ class Datafeed extends AbstractModel
 
         $this->log(sprintf('going to open feed file %s', $filename));
 
-        $output = $this->csvWriter->create()->init(
-            $filename,
-            $this->helper->getFieldDelimiter(),
-            $this->helper->getBufferSize()
-        );
+        $output = $this->csvWriter->create()->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('file open, going to append header and root');
-        $output->appendRow(
-            ['category_id', 'category_name',
-                'parent_category_id', 'sort_order', 'is_active', 'category_url', 'include_in_menu']
-        );
-        $output->appendRow(['1', 'Root', '0', '0', '1', '/', '1']);
+        $output->appendRow(array('category_id', 'category_name', 'parent_category_id', 'sort_order', 'is_active', 'category_url', 'include_in_menu'));
+        $output->appendRow(array('1', 'Root', '0', '0', '1', '/', '1'));
         $this->log('header and root appended');
         $base = $store->getBaseUrl();
 
         $categoryHelper = $this->categoryHelperFactory->create();
-        $cats = [];
+        $cats = array();
         do {
             //$this->log(sprintf('getting category page %d', $currentPage));
             $collection->setCurPage($currentPage);
             $collection->clear();
             $collection->load();
             foreach ($collection as $cat) {
+
+
                 $fullUrl = $categoryHelper->getCategoryUrl($cat);
                 $category_url = substr($fullUrl, strlen($base));
                 if (substr($category_url, 0, 1) != '/') {
                     $category_url = '/' . $category_url;
                 }
                 //$this->log(sprintf("got full category url: %s, returning relative url %s", $fullUrl, $category_url));
-                $cats[] = [
+                $cats[] = array(
                     'id' => $cat->getId(),
                     'name' => $cat->getName(),
                     'pid' => $cat->getParentId(),
@@ -228,13 +207,13 @@ class Datafeed extends AbstractModel
                     'ia' => $cat->getIsActive(),
                     'url' => $category_url,
                     'inmenu' => $cat->getIncludeInMenu()
-                ];
+                );
             }
             $currentPage++;
         } while ($currentPage <= $pages);
 
         $rcid = $store->getRootCategoryId();
-        $myCategories = [];
+        $myCategories = array();
         foreach ($cats as $storecat) {
             if ($storecat['id'] == $rcid) {
                 $myCategories[] = $storecat;
@@ -242,11 +221,10 @@ class Datafeed extends AbstractModel
         }
 
         $this->log("using root category id: $rcid");
-        $this->rFind($rcid, $cats, $myCategories);
+        $this->r_find($rcid, $cats, $myCategories);
 
         foreach ($myCategories as $final) {
-            $output->appendRow(
-                [
+            $output->appendRow(array(
                 $final['id'],
                 $final['name'],
                 $final['pid'],
@@ -254,8 +232,7 @@ class Datafeed extends AbstractModel
                 $final['ia'],
                 $final['url'],
                 $final['inmenu']
-                ]
-            );
+            ));
         }
 
         $this->log('done with _getCategoryData()');
@@ -270,34 +247,24 @@ class Datafeed extends AbstractModel
 
         $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
         $start = time();
-        /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac
-*/
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
         $pac = $this->attributeCollection->create();
         $pac->addSearchableAttributeFilter();
         $pac->addStoreLabel($store->getId());
-        $attributes = [];
+        $attributes = array();
 
-        $labels = $this->csvWriter->create()->init(
-            $labelFilename,
-            $this->helper->getFieldDelimiter(),
-            $this->helper->getBufferSize()
-        );
-        $labels->appendRow(['key', 'store_label']);
+        $labels = $this->csvWriter->create()->init($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $labels->appendRow(array('key', 'store_label'));
         $this->log($pac->getSelect()->__toString());
-        /**
- * @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $att
-*/
+        /** @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
         foreach ($pac as $att) {
             $attributes[$att->getAttributeCode()] = $att;
-            $labels->appendRow([$att->getAttributeCode(), $att->getStoreLabel()]);
+            $labels->appendRow(array($att->getAttributeCode(), $att->getStoreLabel()));
         }
         $labels->closeOutput();
         $this->log(sprintf('Label export took %d seconds', time() - $start));
 
-        /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products
-*/
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $products = $this->productCollection->create();
         $feedCodes = array_diff(array_keys($attributes), $this->productAttributes, ['category_ids', 'category_id']);
         if (!in_array('sku', $feedCodes)) {
@@ -311,10 +278,7 @@ class Datafeed extends AbstractModel
 
         if (!$this->helper->includeDisabledItems()) {
             $this->log('adding status filter');
-            $products->addAttributeToFilter(
-                'status',
-                Status::STATUS_ENABLED
-            );
+            $products->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
         }
 
         if (!$this->helper->includeOutOfStockItems()) {
@@ -322,14 +286,11 @@ class Datafeed extends AbstractModel
             $this->stockHelper->addIsInStockFilterToCollection($products);
         }
 
+
         $this->log(sprintf('going to open feed file %s', $filename));
-        $output = $this->csvWriter->create()->init(
-            $filename,
-            $this->helper->getFieldDelimiter(),
-            $this->helper->getBufferSize()
-        );
+        $output = $this->csvWriter->create()->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('feed file open, appending header');
-        $output->appendRow(['unique_id', 'key', 'value']);
+        $output->appendRow(array('unique_id', 'key', 'value'));
 
         $products->setPageSize($this->helper->getBatchLimit());
         $pages = $products->getLastPageNumber();
@@ -347,71 +308,56 @@ class Datafeed extends AbstractModel
                     if ($product->getData($attcode) === null) {
                         continue;
                     }
-                    if ($attcode == 'sku') {
-                        $output->appendRow(
-                            [
+                    if($attcode == 'sku') {
+                        $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
                             $product->getData($attcode)
-                            ]
-                        );
+                        ));
                         continue;
                     }
-                    if (!isset($attributes[$attcode])) {
-                        throw new \Exception(
-                            sprintf(
-                                "WARNING: attribute code '%s' not in attributes array!",
-                                $attcode
-                            )
-                        );
+                    if(!isset($attributes[$attcode])){
+                        throw new \Exception(sprintf("WARNING: attribute code '%s' not in attributes array!", $attcode));
                     }
                     $source = $attributes[$attcode]->getSource();
                     if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
-                        $options = $product->getResource()->getAttribute(
-                            $attcode
-                        )->getFrontend()->getOption($product->getData($attcode));
-                        if (!is_array($options)) {
-                            $options = [$options];
+                        $options = $product->getResource()->getAttribute($attcode)->getFrontend()->getOption($product->getData($attcode));
+                        if(!is_array($options)){
+                            $options = array($options);
                         }
-                        if ($this->helper->getCombineMultiselectAttributes()) {
-                            $options = [implode(',', $options)];
+                        if($this->helper->getCombineMultiselectAttributes()) {
+                            $options = array(implode(',', $options));
                         }
                         foreach ($options as $option) {
-                            $output->appendRow(
-                                [
+                            $output->appendRow(array(
                                 $product->getSku(),
                                 $attcode,
                                 $option
-                                ]
-                            );
+                            ));
                         }
                     } elseif ($source instanceof \Magento\Catalog\Model\Product\Visibility
                         || $source instanceof \Magento\Tax\Model\TaxClass\Source\Product
                         || $source instanceof \Magento\Catalog\Model\Product\Attribute\Source\Status
                     ) {
-                        $output->appendRow(
-                            [
+                        $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
                             $source->getOptionText($product->getData($attcode))
-                            ]
-                        );
+                        ));
                     } else {
-                        $output->appendRow(
-                            [
+                        $output->appendRow(array(
                             $product->getSku(),
                             $attcode,
                             $product->getData($attcode)
-                            ]
-                        );
+                        ));
                     }
                 }
                 foreach ($product->getCategoryIds() as $id) {
-                    $output->appendRow([$product->getSku(), 'category_id', $id]);
+                    $output->appendRow(array($product->getSku(), 'category_id', $id));
                 }
                 if (($rs = $product->getRatingSummary()) && $rs->getReviewsCount() > 0) {
-                    $output->appendRow([$product->getSku(), 'rating_summary', $rs->getRatingSummary()]);
-                    $output->appendRow([$product->getSku(), 'reviews_count', $rs->getReviewsCount()]);
+                    $output->appendRow(array($product->getSku(), 'rating_summary', $rs->getRatingSummary()));
+                    $output->appendRow(array($product->getSku(), 'reviews_count', $rs->getReviewsCount()));
                 }
             }
 
@@ -422,9 +368,7 @@ class Datafeed extends AbstractModel
 
     private function getProductData(\Magento\Store\Model\Store $store)
     {
-        /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products
-*/
+        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
         $products = $this->productCollection->create();
         $products->addAttributeToSelect($this->productAttributes);
         $products->addMinimalPrice();
@@ -432,7 +376,7 @@ class Datafeed extends AbstractModel
 
         if (!$this->helper->includeDisabledItems()) {
             $this->log('adding status filter');
-            $products->addAttributeToFilter('status', Status::STATUS_ENABLED);
+            $products->addAttributeToFilter('status', \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
         }
 
         if (!$this->helper->includeOutOfStockItems()) {
@@ -454,13 +398,8 @@ class Datafeed extends AbstractModel
 
         $filename = $this->helper->getPathForFile('items');
 
-        $output = $this->csvWriter->create()->init(
-            $filename,
-            $this->helper->getFieldDelimiter(),
-            $this->helper->getBufferSize()
-        );
-        $output->appendRow(
-            [
+        $output = $this->csvWriter->create()->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output->appendRow(array(
             'product_id',
             'unique_id',
             'name',
@@ -484,8 +423,7 @@ class Datafeed extends AbstractModel
             'keyword',
             'metric_inventory',
             'minimal_price',
-            'type_id']
-        );
+            'type_id'));
 
         $products->setPageSize($this->helper->getBatchLimit());
         $pages = $products->getLastPageNumber();
@@ -500,12 +438,9 @@ class Datafeed extends AbstractModel
             $seconds = time() - $start;
             $this->log(sprintf('it took %d seconds to load product page %d', $seconds, $currentPage));
             $start = time();
-            /**
- * @var \Magento\Catalog\Model\Product $product
-*/
+            /** @var \Magento\Catalog\Model\Product $product */
             foreach ($products as $product) {
-                $output->appendRow(
-                    [
+                $output->appendRow(array(
                     $product->getId(),
                     $product->getSku(),
                     $product->getName(),
@@ -530,8 +465,7 @@ class Datafeed extends AbstractModel
                     $product->getQty(),
                     $product->getMinimalPrice(),
                     $product->getTypeId()
-                    ]
-                );
+                ));
             }
             $this->log(sprintf('it took %d seconds to export page %d', time() - $start, $currentPage));
             $currentPage++;
@@ -554,31 +488,24 @@ class Datafeed extends AbstractModel
     private function getContentData(\Magento\Store\Model\Store $store)
     {
         $this->log('starting getContentData()');
-        /**
- * @var \Magento\Cms\Model\ResourceModel\Page\Collection $collection
-*/
+        /** @var \Magento\Cms\Model\ResourceModel\Page\Collection $collection */
         $collection = $this->pageCollectionFactory->create();
         $collection->addStoreFilter($store->getId());
         $collection->addFieldToFilter('is_active', ['eq' => 1]);
         $collection->addFieldToFilter('hawk_exclude', ['neq' => 1]);
 
-        $output = $this->csvWriter->create()->init(
-            $this->helper->getPathForFile('content'),
-            $this->helper->getFieldDelimiter(),
-            $this->helper->getBufferSize()
-        );
-        $output->appendRow(['unique_id', 'name', 'url_detail', 'description_short', 'created_date']);
+
+        $output = $this->csvWriter->create()->init($this->helper->getPathForFile('content'), $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
+        $output->appendRow(array('unique_id', 'name', 'url_detail', 'description_short', 'created_date'));
 
         foreach ($collection as $page) {
-            $output->appendRow(
-                [
+            $output->appendRow(array(
                 $page->getPageId(),
                 $page->getTitle(),
                 sprintf('%s%s', $store->getBaseUrl(), $page->getIdentifier()),
                 $page->getContentHeading(),
                 $page->getCreationTime()
-                ]
-            );
+            ));
         }
         $this->log('done with getting content data');
     }
@@ -588,14 +515,10 @@ class Datafeed extends AbstractModel
      */
     public function generateFeed()
     {
-        /**
- * @var \Magento\Store\Model\ResourceModel\Store\Collection $stores
-*/
+        /** @var \Magento\Store\Model\ResourceModel\Store\Collection $stores */
         $stores = $this->helper->getSelectedStores();
 
-        /**
- * @var \Magento\Store\Model\Store $store
-*/
+        /** @var \Magento\Store\Model\Store $store */
         foreach ($stores as $store) {
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
@@ -620,8 +543,7 @@ class Datafeed extends AbstractModel
                 // emit events to allow extended feeds
                 $this->eventManager->dispatch(
                     'hawksearch_datafeed_generate_custom_feeds',
-                    ['model' => $this, 'store' => $store]
-                );
+                    ['model' => $this, 'store' => $store]);
 
                 // trigger reindex on hawksearch end
                 $this->helper->triggerReindex($store);
@@ -631,16 +553,10 @@ class Datafeed extends AbstractModel
                 // end emulation
                 $this->emulation->stopEnvironmentEmulation();
             } catch (\Exception $e) {
-                $this->log(
-                    sprintf(
-                        "General Exception %s at generateFeed() line %d, stack:\n%s",
-                        $e->getMessage(),
-                        $e->getLine(),
-                        $e->getTraceAsString()
-                    )
-                );
+                $this->log(sprintf("General Exception %s at generateFeed() line %d, stack:\n%s", $e->getMessage(), $e->getLine(), $e->getTraceAsString()));
                 throw $e;
             }
+
         }
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
         $this->feedSummary->complete = date(DATE_ATOM);
@@ -649,8 +565,7 @@ class Datafeed extends AbstractModel
         $this->log('all done, goodbye');
     }
 
-    public function log($message)
-    {
+    public function log($message) {
         $this->helper->log($message);
     }
 }

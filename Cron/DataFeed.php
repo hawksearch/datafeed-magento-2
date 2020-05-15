@@ -13,67 +13,89 @@
 
 namespace HawkSearch\Datafeed\Cron;
 
-use HawkSearch\Datafeed\Helper\Data as Helper;
-use HawkSearch\Datafeed\Model\Datafeed as Task;
+use HawkSearch\Datafeed\Helper\Data;
+use HawkSearch\Datafeed\Model\Datafeed as DatafeedModel;
 use HawkSearch\Datafeed\Model\EmailFactory;
-use Magento\Framework\Filesystem\DirectoryList;
+use HawkSearch\Datafeed\Model\Task\Datafeed\Task;
+use HawkSearch\Datafeed\Model\Task\Datafeed\TaskOptions;
+use HawkSearch\Datafeed\Model\Task\Datafeed\TaskOptionsFactory;
+use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
+use HawkSearch\Datafeed\Model\Task\Exception\TaskLockException;
+use HawkSearch\Datafeed\Model\Task\Exception\TaskUnlockException;
 
 class DataFeed
 {
-    /**
-     * @var Task
-     */
-    private $task;
-    /**
-     * @var Helper
-     */
-    private $helper;
-    /**
-     * @var DirectoryList
-     */
-    private $dir;
-    /**
-     * @var EmailFactory
-     */
+    public const JOB_CODE = 'hawksearch_datafeed';
+
+    /** @var EmailFactory */
     private $emailFactory;
+
+    /** @var Data */
+    private $helper;
+
+    /** @var Task */
+    private $task;
+
+    /** @var TaskOptionsFactory */
+    private $taskOptionsFactory;
 
     /**
      * DataFeed constructor.
-     *
-     * @param Task          $task
-     * @param Helper        $helper
-     * @param DirectoryList $dir
-     * @param EmailFactory  $emailFactory
+     * @param EmailFactory $emailFactory
+     * @param Data $helper
+     * @param Task $task
+     * @param TaskOptionsFactory $taskOptionsFactory
      */
-    public function __construct(Task $task, Helper $helper, DirectoryList $dir, EmailFactory $emailFactory)
+    public function __construct(
+        EmailFactory $emailFactory,
+        Data $helper,
+        Task $task,
+        TaskOptionsFactory $taskOptionsFactory
+    )
     {
-        $this->task = $task;
-        $this->helper = $helper;
-        $this->dir = $dir;
-        $this->emailFactory = $emailFactory;
+        $this->emailFactory       = $emailFactory;
+        $this->helper             = $helper;
+        $this->task               = $task;
+        $this->taskOptionsFactory = $taskOptionsFactory;
     }
 
     public function execute()
     {
-        if ($this->helper->getCronEnabled()) {
-            $vars = [];
-            $vars['jobTitle'] = Task::SCRIPT_NAME;
-            if ($this->helper->isFeedLocked()) {
-                $vars['message'] = "Hawksearch is currently locked, not generating feed at this time.";
-            } else {
-                try {
-                    if ($this->helper->createFeedLocks(Task::SCRIPT_NAME)) {
-                        $this->task->generateFeed();
-                        $this->helper->removeFeedLocks(Task::SCRIPT_NAME);
-                        $vars['message'] = "HawkSeach Datafeed Generated!";
-                    } else {
-                        $vars['message'] = 'Unable to create the lock file. feed not generated';
-                    }
-                } catch (\Exception $e) {
-                    $vars['message'] = sprintf('There has been an error: %s', $e->getMessage());
-                }
-            }
-            $this->emailFactory->create()->sendEmail($vars);
+        if ( ! $this->helper->getCronEnabled() ) {
+            return;
         }
+
+        $message = $this->executeTask();
+
+        $this->emailFactory->create()
+            ->sendEmail( [
+                'jobTitle' => DatafeedModel::SCRIPT_NAME,
+                'message'  => $message
+            ] );
+    }
+
+    /**
+     * Executes the underlying task, and returns execution message.
+     * @return string
+     */
+    private function executeTask() : string
+    {
+        /** @var TaskOptions $taskOptions */
+        $taskOptions = $this->taskOptionsFactory->create();
+
+        try {
+            $this->task->execute( $taskOptions );
+        }
+        catch ( TaskLockException $exception ) {
+            return 'Hawksearch is currently locked, not generating feed at this time.';
+        }
+        catch ( TaskUnlockException $exception ) {
+            return 'HawkSearch Datafeed lock failed to release. Please verify that the job completed successfully.';
+        }
+        catch ( TaskException $exception ) {
+            return sprintf( 'There has been an error: %s', $exception->getMessage() );
+        }
+
+        return 'HawkSearch Datafeed Generated!';
     }
 }
