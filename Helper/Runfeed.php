@@ -22,7 +22,7 @@ $state = $obj->get('Magento\Framework\App\State');
 $state->setAreaCode('frontend');
 
 /**
- * @var \HawkSearch\Datafeed\Helper\Data $helper 
+ * @var \HawkSearch\Datafeed\Helper\Data $helper
 */
 $helper = $obj->get('HawkSearch\Datafeed\Helper\Data');
 

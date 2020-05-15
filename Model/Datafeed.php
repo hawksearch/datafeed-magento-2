@@ -271,7 +271,7 @@ class Datafeed extends AbstractModel
         $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
         $start = time();
         /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac 
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac
 */
         $pac = $this->attributeCollection->create();
         $pac->addSearchableAttributeFilter();
@@ -286,7 +286,7 @@ class Datafeed extends AbstractModel
         $labels->appendRow(['key', 'store_label']);
         $this->log($pac->getSelect()->__toString());
         /**
- * @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $att 
+ * @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $att
 */
         foreach ($pac as $att) {
             $attributes[$att->getAttributeCode()] = $att;
@@ -296,7 +296,7 @@ class Datafeed extends AbstractModel
         $this->log(sprintf('Label export took %d seconds', time() - $start));
 
         /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products 
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products
 */
         $products = $this->productCollection->create();
         $feedCodes = array_diff(array_keys($attributes), $this->productAttributes, ['category_ids', 'category_id']);
@@ -423,7 +423,7 @@ class Datafeed extends AbstractModel
     private function getProductData(\Magento\Store\Model\Store $store)
     {
         /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products 
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products
 */
         $products = $this->productCollection->create();
         $products->addAttributeToSelect($this->productAttributes);
@@ -501,7 +501,7 @@ class Datafeed extends AbstractModel
             $this->log(sprintf('it took %d seconds to load product page %d', $seconds, $currentPage));
             $start = time();
             /**
- * @var \Magento\Catalog\Model\Product $product 
+ * @var \Magento\Catalog\Model\Product $product
 */
             foreach ($products as $product) {
                 $output->appendRow(
@@ -555,7 +555,7 @@ class Datafeed extends AbstractModel
     {
         $this->log('starting getContentData()');
         /**
- * @var \Magento\Cms\Model\ResourceModel\Page\Collection $collection 
+ * @var \Magento\Cms\Model\ResourceModel\Page\Collection $collection
 */
         $collection = $this->pageCollectionFactory->create();
         $collection->addStoreFilter($store->getId());
@@ -589,12 +589,12 @@ class Datafeed extends AbstractModel
     public function generateFeed()
     {
         /**
- * @var \Magento\Store\Model\ResourceModel\Store\Collection $stores 
+ * @var \Magento\Store\Model\ResourceModel\Store\Collection $stores
 */
         $stores = $this->helper->getSelectedStores();
 
         /**
- * @var \Magento\Store\Model\Store $store 
+ * @var \Magento\Store\Model\Store $store
 */
         foreach ($stores as $store) {
             try {

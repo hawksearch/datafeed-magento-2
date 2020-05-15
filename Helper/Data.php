@@ -355,7 +355,7 @@ class Data extends AbstractHelper
             $relPath = self::DEFAULT_FEED_PATH;
         }
         /**
- * @var \Magento\Framework\Filesystem\Directory\Write $writer 
+ * @var \Magento\Framework\Filesystem\Directory\Write $writer
 */
         $mediaWriter = $this->filesystem->getDirectoryWrite('media');
         $mediaWriter->create($relPath);
@@ -651,7 +651,9 @@ class Data extends AbstractHelper
             sprintf(
                 'hawksearch_datafeed/hawksearch_api/api_url_%s',
                 $mode
-            ), ScopeInterface::SCOPE_STORE, $store
+            ),
+            ScopeInterface::SCOPE_STORE,
+            $store
         );
         $apiUrl = rtrim($apiUrl, '/');
 

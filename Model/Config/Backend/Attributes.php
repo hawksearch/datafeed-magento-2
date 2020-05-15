@@ -60,13 +60,13 @@ class Attributes extends \Magento\Framework\App\Config\Value
     public function afterLoad()
     {
         /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac 
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac
 */
         $pac = $this->attributeCollectionFactory->create();
         $pac->addSearchableAttributeFilter();
         $values = [];
         /**
- * @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $item 
+ * @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $item
 */
         foreach ($pac as $item) {
             $locked = $this->attributeConfig->getLockedFields($item);
@@ -84,7 +84,7 @@ class Attributes extends \Magento\Framework\App\Config\Value
         $newValues = explode(',', $this->getValue());
 
         /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac 
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac
 */
         $pac = $this->attributeCollectionFactory->create();
         foreach ($pac as $item) {

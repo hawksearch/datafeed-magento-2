@@ -74,12 +74,12 @@ class ImageCache extends AbstractModel
         $this->helper->log('starting refreshImageCache()');
 
         /**
- * @var \Magento\Store\Model\ResourceModel\Store\Collection $stores 
+ * @var \Magento\Store\Model\ResourceModel\Store\Collection $stores
 */
         $stores = $this->helper->getSelectedStores();
 
         /**
- * @var \Magento\Store\Model\Store $store 
+ * @var \Magento\Store\Model\Store $store
 */
         foreach ($stores as $store) {
             try {
@@ -87,7 +87,7 @@ class ImageCache extends AbstractModel
 
                 $this->emulation->startEnvironmentEmulation($store->getId());
                 /**
- * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products 
+ * @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products
 */
                 $products = $this->productCollectionFactory->create()
                     ->addAttributeToSelect(['small_image'])
