@@ -5,7 +5,6 @@ namespace HawkSearch\Datafeed\Model\Task;
 
 
 use Exception;
-use HawkSearch\Datafeed\Cron\DataFeed;
 use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
 use HawkSearch\Datafeed\Model\Task\Exception\SchedulerException;
 use InvalidArgumentException;
@@ -128,7 +127,7 @@ abstract class AbstractTaskScheduler
 
         /** @var Schedule $schedule */
         $schedule = $this->scheduleFactory->create()
-            ->setJobCode( DataFeed::JOB_CODE )
+            ->setJobCode( $this->jobCode )
             ->setStatus( Schedule::STATUS_PENDING )
             ->setCreatedAt( strftime( '%Y-%m-%d %H:%M:%S', $createdAt ) )
             ->setScheduledAt( strftime( '%Y-%m-%d %H:%M', $scheduledAt ) );
