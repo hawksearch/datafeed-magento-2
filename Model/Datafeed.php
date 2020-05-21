@@ -84,6 +84,11 @@ class Datafeed extends AbstractModel
     private $dateTimeFactory;
 
     /**
+     * @var SftpManagement
+     */
+    private $sftpManagement;
+
+    /**
      * @var array
      */
     private $timeStampData = [];
@@ -107,6 +112,7 @@ class Datafeed extends AbstractModel
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
      * @param DateTimeFactory $dateTimeFactory
+     * @param SftpManagement $sftpManagement
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
      * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
      * @param array $data
@@ -128,11 +134,11 @@ class Datafeed extends AbstractModel
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
         DateTimeFactory $dateTimeFactory,
+        SftpManagement $sftpManagement,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
-    )
-    {
+    ) {
         $this->helper = $helper;
         $this->stockHelper = $stockHelper;
         $this->emulation = $emulation;
@@ -147,6 +153,7 @@ class Datafeed extends AbstractModel
         $this->pageCollectionFactory = $pageCollectionFactory;
         $this->eventManager = $eventManager;
         $this->dateTimeFactory = $dateTimeFactory;
+        $this->sftpManagement = $sftpManagement;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
@@ -617,10 +624,14 @@ class Datafeed extends AbstractModel
             }
 
         }
+
+        if ($this->helper->isSftpEnabled()) {
+            $this->sftpManagement->processFilesToSftp();
+        }
+
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
         $this->feedSummary->complete = date(DATE_ATOM);
         $this->helper->writeSummary($this->feedSummary);
-
         $this->log('all done, goodbye');
     }
 

@@ -145,6 +145,38 @@
                     <source_model>HawkSearch\Datafeed\Model\System\Config\Source\Mode</source_model>
                 </field>
             </group>
+            <group id="hawksearch_sftp" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>SFTP Settings</label>
+                <field id="enabled" translate="label comment" type="select" showInDefault="1" showInWebsite="0"
+                       showInStore="0" sortOrder="5">
+                    <label>Send Feeds to SFTP</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="host" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>SFTP Hostname</label>
+                    <depends>
+                        <field id="hawksearch_datafeed/hawksearch_sftp/enabled">1</field>
+                    </depends>
+                </field>
+                <field id="username" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>SFTP Username</label>
+                    <depends>
+                        <field id="hawksearch_datafeed/hawksearch_sftp/enabled">1</field>
+                    </depends>
+                </field>
+                <field id="password" translate="label" type="password" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>SFTP Password</label>
+                    <depends>
+                        <field id="hawksearch_datafeed/hawksearch_sftp/enabled">1</field>
+                    </depends>
+                </field>
+                <field id="folder" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>SFTP Folder</label>
+                    <depends>
+                        <field id="hawksearch_datafeed/hawksearch_sftp/enabled">1</field>
+                    </depends>
+                </field>
+            </group>
         </section>
     </system>
 </config>
