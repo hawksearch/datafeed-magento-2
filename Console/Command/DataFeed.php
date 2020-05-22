@@ -36,16 +36,16 @@ class DataFeed extends Command
 
     protected function configure()
     {
-        $this->setName( 'hawksearch:generate-feed' )
-            ->setDescription( 'Generate the HawkSearch data feed' )
-            ->setDefinition( [
+        $this->setName('hawksearch:generate-feed')
+            ->setDescription('Generate the HawkSearch data feed')
+            ->setDefinition([
                 new InputOption(
                     self::FORCE_MODE,
                     [ '-f', '--force' ],
                     InputOption::VALUE_NONE,
                     'Force datafeed to run even if lock present.'
                 )
-            ] );
+            ]);
         parent::configure();
     }
 
@@ -62,9 +62,8 @@ class DataFeed extends Command
         State $state,
         Helper $helper,
         $name = null
-    )
-    {
-        parent::__construct( $name );
+    ) {
+        parent::__construct($name);
         $this->task = $task;
         $this->taskOptionsFactory = $taskOptionsFactory;
         $this->state  = $state;
@@ -77,29 +76,28 @@ class DataFeed extends Command
      * @return int|void|null
      * @throws LocalizedException
      */
-    protected function execute( InputInterface $input, OutputInterface $output )
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->state->setAreaCode( Area::AREA_CRONTAB );
+        $this->state->setAreaCode(Area::AREA_CRONTAB);
 
         /** @var TaskOptions $options */
         $options = $this->taskOptionsFactory->create();
 
-        if ( $input->getOption( self::FORCE_MODE ) === self::FORCE_MODE ) {
-            $options->setForceMode( true );
+        if ($input->getOption(self::FORCE_MODE) === self::FORCE_MODE) {
+            $options->setForceMode(true);
         }
 
         try {
-            $this->task->execute( $options );
-            $output->writeln( 'Done' );
-        }
-        catch ( TaskException $exception ) {
-            $output->writeln( sprintf( 'There has been an error: %s', $exception->getMessage() ) );
-        }
-        catch ( TaskLockException $exception ) {
-            $output->writeln( 'Unable to acquire feed lock, feed not generating.' );
-        }
-        catch ( TaskUnlockException $exception ) {
-            $output->writeln( 'HawkSearch Datafeed lock failed to release. Please verify that the job completed successfully.' );
+            $this->task->execute($options);
+            $output->writeln('Done');
+        } catch (TaskException $exception) {
+            $output->writeln(sprintf('There has been an error: %s', $exception->getMessage()));
+        } catch (TaskLockException $exception) {
+            $output->writeln('Unable to acquire feed lock, feed not generating.');
+        } catch (TaskUnlockException $exception) {
+            $output->writeln(
+                'HawkSearch Datafeed lock failed to release. Please verify that the job completed successfully.'
+            );
         }
     }
 }

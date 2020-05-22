@@ -46,9 +46,8 @@ class Button extends Field
         TaskScheduler $taskScheduler,
         TimezoneInterface $timezone,
         array $data = []
-    )
-    {
-        parent::__construct( $context, $data );
+    ) {
+        parent::__construct($context, $data);
         $this->taskScheduler = $taskScheduler;
         $this->timezone      = $timezone;
     }
@@ -56,8 +55,8 @@ class Button extends Field
     protected function _prepareLayout()
     {
         parent::_prepareLayout();
-        if ( ! $this->getTemplate() ) {
-            $this->setTemplate( 'HawkSearch_Datafeed::system/config/button/feedgenerate.phtml' );
+        if (! $this->getTemplate()) {
+            $this->setTemplate('HawkSearch_Datafeed::system/config/button/feedgenerate.phtml');
         }
         return $this;
     }
@@ -69,11 +68,11 @@ class Button extends Field
      * @return string
      * @throws LocalizedException
      */
-    public function render( AbstractElement $element )
+    public function render(AbstractElement $element)
     {
         // Remove scope label
         $element->unsScope()->unsCanUseWebsiteValue()->unsCanUseDefaultValue();
-        return parent::render( $element );
+        return parent::render($element);
     }
 
     /**
@@ -83,13 +82,13 @@ class Button extends Field
      * @return string
      * @throws LocalizedException
      */
-    protected function _getElementHtml( AbstractElement $element )
+    protected function _getElementHtml(AbstractElement $element)
     {
         $config = $element->getFieldConfig();
         $this->addData(
             [
                 'button_label' => $config[ 'button_label' ],
-                'generate_url' => $this->getUrl( $config[ 'button_url' ] ),
+                'generate_url' => $this->getUrl($config[ 'button_url' ]),
                 'html_id'      => $element->getHtmlId(),
             ]
         );
@@ -109,19 +108,18 @@ class Button extends Field
      */
     public function getNextScheduledTimestamp() : string
     {
-        if ( $this->nextScheduled === null ) {
+        if ($this->nextScheduled === null) {
             $this->loadNextScheduled();
         }
 
-        if ( $this->nextScheduled === null ) {
+        if ($this->nextScheduled === null) {
             return '';
         }
 
         try {
-            $date = new DateTime( $this->nextScheduled->getScheduledAt() );
-            return $this->timezone->date( $date )->format( DateTime::RFC850 );
-        }
-        catch ( Exception $exception ) {
+            $date = new DateTime($this->nextScheduled->getScheduledAt());
+            return $this->timezone->date($date)->format(DateTime::RFC850);
+        } catch (Exception $exception) {
             return '';
         }
     }
@@ -131,12 +129,12 @@ class Button extends Field
      */
     public function getNextScheduledId() : string
     {
-        if ( $this->nextScheduled === null ) {
+        if ($this->nextScheduled === null) {
             $this->loadNextScheduled();
         }
 
         return $this->nextScheduled
-            ? strval( $this->nextScheduled->getId() )
+            ? (string)$this->nextScheduled->getId()
             : '';
     }
 

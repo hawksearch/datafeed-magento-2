@@ -43,9 +43,8 @@ class RunFeedGeneration extends Action
         Context $context,
         Task $task,
         TimezoneInterface $timezone
-    )
-    {
-        parent::__construct( $context );
+    ) {
+        parent::__construct($context);
         $this->task     = $task;
         $this->timezone = $timezone;
     }
@@ -58,32 +57,29 @@ class RunFeedGeneration extends Action
         try {
             /** @var TaskResults $taskResults */
             $taskResults = $this->task->execute();
-            $this->reportSuccess( $taskResults );
-        }
-        catch ( AlreadyScheduledException $exception ) {
-            $this->messageManager->addErrorMessage( __( 'Feed Generation is already scheduled for the next CRON run.' ) );
-        }
-        catch ( TaskException $exception ) {
-            $this->messageManager->addErrorMessage( __( 'An error occurred: ' . $exception->getMessage() ) );
+            $this->reportSuccess($taskResults);
+        } catch (AlreadyScheduledException $exception) {
+            $this->messageManager->addErrorMessage(__('Feed Generation is already scheduled for the next CRON run.'));
+        } catch (TaskException $exception) {
+            $this->messageManager->addErrorMessage(__('An error occurred: ' . $exception->getMessage()));
         }
 
         // return to previous page
-        return $this->resultRedirectFactory->create()->setUrl( $this->_redirect->getRefererUrl() );
+        return $this->resultRedirectFactory->create()->setUrl($this->_redirect->getRefererUrl());
     }
 
     /**
      * @param TaskResults $results
      */
-    private function reportSuccess( TaskResults $results ) : void
+    private function reportSuccess(TaskResults $results) : void
     {
         try {
             $scheduledAt = $this->timezone
-                ->date( new DateTime( $results->getScheduledAt() ) )
-                ->format( DateTime::RFC850 );
-            $this->messageManager->addSuccessMessage( __( 'Feed Generation successfully scheduled: ' ) . $scheduledAt );
-        }
-        catch ( Exception $exception ) {
-            $this->messageManager->addSuccessMessage( __( 'Feed Generation successfully scheduled.' ) );
+                ->date(new DateTime($results->getScheduledAt()))
+                ->format(DateTime::RFC850);
+            $this->messageManager->addSuccessMessage(__('Feed Generation successfully scheduled: ') . $scheduledAt);
+        } catch (Exception $exception) {
+            $this->messageManager->addSuccessMessage(__('Feed Generation successfully scheduled.'));
         }
     }
 }

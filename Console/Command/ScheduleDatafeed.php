@@ -3,7 +3,6 @@
 
 namespace HawkSearch\Datafeed\Console\Command;
 
-
 use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
 use HawkSearch\Datafeed\Model\Task\ScheduleDatafeed\Task;
@@ -24,10 +23,9 @@ class ScheduleDatafeed extends Command
     public function __construct(
         Task $task,
         string $name = null
-    )
-    {
+    ) {
         $this->task = $task;
-        parent::__construct( $name );
+        parent::__construct($name);
     }
 
     /**
@@ -35,8 +33,8 @@ class ScheduleDatafeed extends Command
      */
     protected function configure()
     {
-        $this->setName( 'hawksearch:datafeed:schedule-datafeed' )
-            ->setDescription( 'Creates a cron schedule entry to generate datafeed in the next cron run.' );
+        $this->setName('hawksearch:datafeed:schedule-datafeed')
+            ->setDescription('Creates a cron schedule entry to generate datafeed in the next cron run.');
         parent::configure();
     }
 
@@ -48,18 +46,15 @@ class ScheduleDatafeed extends Command
     protected function execute(
         InputInterface $input,
         OutputInterface $output
-    )
-    {
+    ) {
         try {
             /** @var TaskResults $results */
             $results = $this->task->execute();
-            $this->reportSuccess( $output, $results );
-        }
-        catch ( AlreadyScheduledException $exception ) {
-            $output->writeln( 'Failed to schedule datafeed generation: a pending job already exists' );
-        }
-        catch ( TaskException $exception ) {
-            $output->writeln( 'Failed to schedule datafeed generation: ' . $exception->getMessage() );
+            $this->reportSuccess($output, $results);
+        } catch (AlreadyScheduledException $exception) {
+            $output->writeln('Failed to schedule datafeed generation: a pending job already exists');
+        } catch (TaskException $exception) {
+            $output->writeln('Failed to schedule datafeed generation: ' . $exception->getMessage());
         }
     }
 
@@ -71,11 +66,10 @@ class ScheduleDatafeed extends Command
     private function reportSuccess(
         OutputInterface $output,
         TaskResults $results
-    )
-    {
-        $output->writeln( 'Job was scheduled successfully, and can be viewed in the cron_schedule table:' );
-        $output->writeln( 'schedule_id: ' . $results->getJobEntityId() );
-        $output->writeln( 'created_at: ' . $results->getCreatedAt() . ' UTC' );
-        $output->writeln( 'scheduled_at: ' . $results->getScheduledAt() . ' UTC' );
+    ) {
+        $output->writeln('Job was scheduled successfully, and can be viewed in the cron_schedule table:');
+        $output->writeln('schedule_id: ' . $results->getJobEntityId());
+        $output->writeln('created_at: ' . $results->getCreatedAt() . ' UTC');
+        $output->writeln('scheduled_at: ' . $results->getScheduledAt() . ' UTC');
     }
 }

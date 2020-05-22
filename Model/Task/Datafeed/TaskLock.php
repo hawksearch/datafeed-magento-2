@@ -3,7 +3,6 @@
 
 namespace HawkSearch\Datafeed\Model\Task\Datafeed;
 
-
 use HawkSearch\Datafeed\Model\Task\AbstractTaskLock;
 
 class TaskLock extends AbstractTaskLock
