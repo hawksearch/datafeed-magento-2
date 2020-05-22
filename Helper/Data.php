@@ -264,29 +264,6 @@ class Data extends AbstractHelper
         return false;
     }
 
-    public function runDatafeed() {
-        $tmppath = $this->filesystem->getDirectoryWrite('tmp')->getAbsolutePath();
-        $tmpfile = tempnam($tmppath, 'hawkfeed_');
-
-        $parts = explode(DIRECTORY_SEPARATOR, __FILE__);
-
-        array_pop($parts);
-        $parts[] = 'Runfeed.php';
-        $runfile = implode(DIRECTORY_SEPARATOR, $parts);
-        $root = BP;
-
-        $f = fopen($tmpfile, 'w');
-
-        $phpbin = PHP_BINDIR . DIRECTORY_SEPARATOR . "php";
-
-        fwrite($f, "$phpbin -d memory_limit=-1 $runfile -r $root -t $tmpfile\n");
-        fclose($f);
-
-        $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
-
-        shell_exec("/bin/sh $tmpfile > $cronlog 2>&1 &");
-    }
-
     /**
      * @param $summary
      * @throws \Magento\Framework\Exception\FileSystemException
