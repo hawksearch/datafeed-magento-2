@@ -10,14 +10,17 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Model;
 
 use Exception;
 use HawkSearch\Datafeed\Helper\Data;
+use HawkSearch\Datafeed\Exception\SftpException;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
 use Magento\Framework\Filesystem\Io\Sftp;
+use Zend_Filter_BaseName;
 
 /**
  * Class SftpManagement
@@ -42,19 +45,27 @@ class SftpManagement
     private $config;
 
     /**
+     * @var Zend_Filter_BaseName
+     */
+    private $baseName;
+
+    /**
      * SftpManagement constructor.
      * @param Sftp $sftp
      * @param File $file
      * @param Data $config
+     * @param Zend_Filter_BaseName $baseName
      */
     public function __construct(
         Sftp $sftp,
         File $file,
-        Data $config
+        Data $config,
+        Zend_Filter_BaseName $baseName
     ) {
         $this->sftp = $sftp;
         $this->file = $file;
         $this->config = $config;
+        $this->baseName = $baseName;
     }
 
     /**
@@ -86,9 +97,9 @@ class SftpManagement
                     $this->processDirectories($sftpFolderPath);
                 }
 
-                foreach ($filesToProcess as $store => $filesData) {
-                    if (!$this->sftp->cd($store)) {
-                        $this->processDirectories($store);
+                foreach ($filesToProcess as $storeCode => $filesData) {
+                    if (!$this->sftp->cd($storeCode)) {
+                        $this->processDirectories($storeCode);
                     }
 
                     foreach ($filesData as $files) {
@@ -103,14 +114,16 @@ class SftpManagement
             }
         } catch (FileSystemException $e) {
             $this->config->log($e->getMessage());
+        } catch (SftpException $e) {
+            $this->config->log($e->getMessage());
         } catch (Exception $e) {
             $this->config->log($e->getMessage());
         } finally {
             $this->sftp->close();
         }
 
-        $this->config->log('SUCCEED FILES: ' . PHP_EOL . implode(PHP_EOL, $processedFiles['success']));
-        $this->config->log('FAILED FILES: ' . PHP_EOL . implode(PHP_EOL, $processedFiles['error']));
+        $this->config->log('Succeed Files:' . PHP_EOL . implode(PHP_EOL, $processedFiles['success']));
+        $this->config->log('Failed Files:' . PHP_EOL . implode(PHP_EOL, $processedFiles['error']));
 
         $processedFiles['failed_to_remove'] = $this->removeSucceedFiles($processedFiles['success']);
 
@@ -136,7 +149,7 @@ class SftpManagement
             }
         }
 
-        $this->config->log('FAILED TO REMOVE FROM MAGENTO FEED PATH: ' . PHP_EOL .
+        $this->config->log('Failed to remove from Magento Feed path:' . PHP_EOL .
             implode(PHP_EOL, $failedFiles));
 
         return $failedFiles;
@@ -144,13 +157,18 @@ class SftpManagement
 
     /**
      * @param string $path
-     * @throws Exception
+     * @throws SftpException
      */
     private function processDirectories(string $path)
     {
-        $this->sftp->mkdir('/' . $path);
-        if (!$this->sftp->cd($path)) {
-            throw new Exception(__('Wasn\'t able to create or navigate to SFTP directory: %1', $path));
+        $dirList = explode(DIRECTORY_SEPARATOR, $path);
+        foreach ($dirList as $dir) {
+            if (!$this->sftp->cd($dir)) {
+                $this->sftp->mkdir($dir, 0777, false);
+                if (!$this->sftp->cd($dir)) {
+                    throw new SftpException(__('Wasn\'t able to create or navigate to SFTP directory: %1', $path));
+                }
+            }
         }
     }
 
@@ -165,11 +183,11 @@ class SftpManagement
         $feedsPath = $this->config->getFeedFilePath();
         foreach ($this->file->readDirectory($feedsPath) as $path) {
             if ($this->file->isDirectory($path)) {
-                $storeCode = basename($path);
+                $storeCode = $this->baseName->filter($path);
                 foreach ($this->file->readDirectory($path) as $file) {
                     if ($this->file->isFile($file)) {
                         $filesToProcess[$storeCode][] = [
-                            'filename' => basename($file),
+                            'filename' => $this->baseName->filter($file),
                             'source' => $file
                         ];
                     }
