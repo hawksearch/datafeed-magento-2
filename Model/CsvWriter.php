@@ -13,9 +13,10 @@
 
 namespace HawkSearch\Datafeed\Model;
 
-use Magento\Framework\Filesystem\Io\File as ioFile;
 use Composer\Util\Filesystem as UtilFileSystem;
+use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
+use Magento\Framework\Filesystem\Io\File as ioFile;
 
 /**
  * Class CsvWriter
@@ -78,14 +79,16 @@ class CsvWriter
      * @param  $delim
      * @param  null     $buffSize
      * @return $this
-     * @throws \Exception
+     * @throws FileSystemException
      */
     public function init($destFile, $delim, $buffSize = null)
     {
         $this->finalDestinationPath = $destFile;
         if ($this->fileDirectory->fileExists($this->finalDestinationPath)) {
             if (false === $this->utilFileSystem->unlink($this->finalDestinationPath)) {
-                throw new \Exception("CsvWriteBuffer: unable to remove old file '$this->finalDestinationPath'");
+                throw new FileSystemException(
+                    __("CsvWriteBuffer: unable to remove old file %1", $this->finalDestinationPath)
+                );
             }
         }
         $this->delimiter = $delim;
@@ -94,7 +97,7 @@ class CsvWriter
     }
 
     /**
-     * @throws \Exception
+     * @throws FileSystemException
      */
     public function __destruct()
     {
@@ -103,7 +106,7 @@ class CsvWriter
 
     /**
      * @param  array $fields
-     * @throws \Exception
+     * @throws FileSystemException
      */
     public function appendRow(array $fields)
     {
@@ -114,39 +117,39 @@ class CsvWriter
             $fields[$k] = strtr($f, ['\"' => '"']);
         }
         if (false === fputcsv($this->outputFile, $fields, $this->delimiter)) {
-            throw new \Exception("CsvWriter: failed to write row.");
+            throw new FileSystemException(__("CsvWriter: failed to write row."));
         }
     }
 
     /**
-     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws FileSystemException
      */
     public function openOutput()
     {
         if (false === ($this->outputFile = $this->file->fileOpen($this->finalDestinationPath, 'a'))) {
-            throw new \Exception("CsvWriter: Failed to open destination file '$this->finalDestinationPath'.");
+            throw new FileSystemException(
+                __("CsvWriter: Failed to open destination file: %1", $this->finalDestinationPath)
+            );
         }
-        if ($this->bufferSize !== null) {
-            try {
-                stream_set_write_buffer($this->outputFile, $this->bufferSize);
-            } catch (\Exception $e) {
-                throw new \Exception($e->getMessage());
-            }
-        }
+
         $this->outputOpen = true;
     }
 
     /**
-     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws FileSystemException
      */
     public function closeOutput()
     {
         if ($this->outputOpen) {
             if (false === $this->file->fileFlush($this->outputFile)) {
-                throw new \Exception(sprintf("CsvWriter: Failed to flush feed file: %s", $this->finalDestinationPath));
+                throw new FileSystemException(
+                    __("CsvWriter: Failed to flush feed file: %1", $this->finalDestinationPath)
+                );
             }
             if (false === $this->file->fileClose($this->outputFile)) {
-                throw new \Exception(sprintf("CsvWriter: Failed to close feed file ", $this->finalDestinationPath));
+                throw new FileSystemException(
+                    __("CsvWriter: Failed to close feed file: %1", $this->finalDestinationPath)
+                );
             }
             $this->outputOpen = false;
         }

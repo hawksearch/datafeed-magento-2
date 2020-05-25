@@ -13,17 +13,18 @@
 
 namespace HawkSearch\Datafeed\Model;
 
-use Magento\Framework\Event\Manager as EventManager;
-use Magento\Framework\Model\AbstractModel;
 use HawkSearch\Datafeed\Helper\Data as Helper;
-use Magento\Store\Model\App\Emulation;
+use Magento\Catalog\Helper\CategoryFactory;
+use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
-use Magento\Review\Model\Review;
-use Magento\Catalog\Helper\CategoryFactory;
-use Magento\ConfigurableProduct\Model\Product\Type\ConfigurableFactory;
-use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
 use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFactory;
+use Magento\ConfigurableProduct\Model\Product\Type\ConfigurableFactory;
+use Magento\Framework\Event\Manager as EventManager;
+use Magento\Framework\Model\AbstractModel;
+use Magento\Review\Model\Review;
+use Magento\Store\Model\App\Emulation;
+use HawkSearch\Datafeed\Exception\DataFeedException;
 
 class Datafeed extends AbstractModel
 {
@@ -342,7 +343,7 @@ class Datafeed extends AbstractModel
                         continue;
                     }
                     if (!isset($attributes[$attcode])) {
-                        throw new \Exception(
+                        throw new DataFeedException(
                             sprintf("WARNING: attribute code '%s' not in attributes array!", $attcode)
                         );
                     }
@@ -600,7 +601,6 @@ class Datafeed extends AbstractModel
                 );
                 throw $e;
             }
-
         }
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
         $this->feedSummary->complete = date(DATE_ATOM);

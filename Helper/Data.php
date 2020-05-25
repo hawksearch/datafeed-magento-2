@@ -202,45 +202,6 @@ class Data extends AbstractHelper
         return self::CONFIG_CRONLOG_FILENAME;
     }
 
-    public function isFeedLocked()
-    {
-        $lockfile = implode(DIRECTORY_SEPARATOR, [$this->getFeedFilePath(), $this->getLockFilename()]);
-        if (file_exists($lockfile)) {
-            $this->log('FEED IS LOCKED!');
-            return true;
-        }
-        return false;
-    }
-
-    public function createFeedLocks($scriptName = '')
-    {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, [$this->getFeedFilePath(), $this->getLockFilename()]);
-        return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
-    }
-
-    public function removeFeedLocks($scriptName = '', $kill = false)
-    {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, [$this->getFeedFilePath(), $this->getLockFilename()]);
-
-        if (file_exists($lockfilename)) {
-            $data = json_decode(file_get_contents($lockfilename));
-            if (!empty($data) && isset($data->script) && $kill) {
-                $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
-                if ($procs) {
-                    $procs = explode("\n", $procs);
-                    foreach ($procs as $proc) {
-                        $pid = explode(' ', $proc, 2)[0];
-                        if (is_numeric($pid)) {
-                            exec(sprintf('kill %s', $pid));
-                        }
-                    }
-                }
-            }
-            return unlink($lockfilename);
-        }
-        return false;
-    }
-
     /**
      * @param $summary
      * @throws \Magento\Framework\Exception\FileSystemException
