@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright (c) 2017 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
@@ -11,85 +10,119 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Controller\Search;
 
 use Magento\Catalog\Helper\Image;
-use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Catalog\Model\Product\Image as ProductImage;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Encryption\Encryptor;
+use Magento\Framework\View\Config;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 
-class GetCacheKey extends Action
+/**
+ * Class GetCacheKey
+ * Get cache key for hawksearch_autosuggest_image images
+ */
+class GetCacheKey extends Action implements HttpGetActionInterface
 {
-    protected $jsonResultFactory;
-    protected $productCollection;
-    protected $imageHelper;
+    /**
+     * Image theme view Id
+     */
+    const IMAGE_VIEW_ID = 'hawksearch_autosuggest_image';
+
+    /**
+     * @var JsonFactory
+     */
+    private $jsonResultFactory;
+
+    /**
+     * @var Config
+     */
+    private $config;
+
+    /**
+     * @var Encryptor
+     */
+    private $encryptor;
+
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
 
     /**
      * GetCacheKey constructor.
-     *
-     * @param Context     $context
+     * @param Context $context
      * @param JsonFactory $jsonResultFactory
-     * @param Collection  $productCollection
-     * @param Image       $imageHelper
+     * @param Config $config
+     * @param Encryptor $encryptor
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         Context $context,
         JsonFactory $jsonResultFactory,
-        Collection $productCollection,
-        Image $imageHelper
+        Config $config,
+        Encryptor $encryptor,
+        ScopeConfigInterface $scopeConfig
     ) {
-        // TODO: find a better way to determine the image cache checksum.
-        // TODO: remove direct use of the collection
         $this->jsonResultFactory = $jsonResultFactory;
-        $this->productCollection = $productCollection;
-        $this->imageHelper = $imageHelper;
+        $this->config = $config;
+        $this->encryptor = $encryptor;
+        $this->scopeConfig = $scopeConfig;
         parent::__construct($context);
     }
 
     /**
-     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\Result\Json|\Magento\Framework\Controller\ResultInterface
+     * @return Json
      */
     public function execute()
     {
         $result = $this->jsonResultFactory->create();
         $data = ['error' => false];
 
-        try {
-            $this->productCollection->addAttributeToSelect('small_image');
-            $this->productCollection->addAttributeToFilter('small_image', ['notnull' => true]);
-            $this->productCollection->getSelect()->limit(100);
-            $path = '';
-            $found = false;
-            foreach ($this->productCollection as $product) {
-                $path = $this->imageHelper->init($product, 'hawksearch_autosuggest_image')->getUrl();
-                if (strpos($path, '/small_image/') !== false) {
-                    $found = true;
-                    break;
-                }
-            }
+        $cacheKey = $this->encryptor->hash(
+            implode('_', $this->getMiscParams()),
+            Encryptor::HASH_VERSION_MD5
+        );
 
-            if ($found) {
-                $imageArray = explode("/", $path);
-                $cache_key = "";
-                foreach ($imageArray as $part) {
-                    if (preg_match('/[0-9a-fA-F]{32}/', $part)) {
-                        $cache_key = $part;
-                    }
-                }
+        $data['cache_key'] = $cacheKey;
+        $data['date_time'] = date('Y-m-d H:i:s');
 
-                $data['cache_key'] = $cache_key;
-                $data['date_time'] = date('Y-m-d H:i:s');
-            } else {
-                $data['error'] = true;
-                $data['message'] = 'CacheKey not found';
-            }
-        } catch (\Exception $e) {
-            $data['error'] = true;
-            $data['message'] = $e->getMessage();
-        }
-        $result->setData($data);
-        return $result;
+        return $result->setData($data);
+    }
+
+    /**
+     * Converting bool into a string representation
+     *
+     * @return array
+     */
+    private function getMiscParams()
+    {
+        $mediaAttributes = $this->config->getViewConfig()
+            ->getMediaAttributes(
+                'Magento_Catalog',
+                Image::MEDIA_TYPE_CONFIG_NODE,
+                self::IMAGE_VIEW_ID
+            );
+
+        $miscParams['image_height'] = 'h:' . ($mediaAttributes['height'] ?? 'empty');
+        $miscParams['image_width'] = 'w:' . ($mediaAttributes['width'] ?? 'empty');
+        $miscParams['background'] = !empty($mediaAttributes['background'])
+            ? 'rgb' . implode(',', $mediaAttributes['background'])
+            : 'rgb255,255,255';
+        $miscParams['angle'] = 'r:' . 'empty';
+        $miscParams['quality'] = 'q:' . $this->scopeConfig->getValue(ProductImage::XML_PATH_JPEG_QUALITY);
+        $miscParams['keep_aspect_ratio'] = (empty($mediaAttributes['aspect_ratio']) ? '' : 'non') . 'proportional';
+        $miscParams['keep_frame'] = (empty($mediaAttributes['frame']) ? '' : 'no') . 'frame';
+        $miscParams['keep_transparency'] = (empty($mediaAttributes['transparency']) ? '' : 'no') . 'transparency';
+        $miscParams['constrain_only'] = (empty($mediaAttributes['constrain']) ? 'do' : 'not') . 'constrainonly';
+
+        return $miscParams;
     }
 }
