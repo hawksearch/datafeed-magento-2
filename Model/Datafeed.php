@@ -13,6 +13,7 @@
 
 namespace HawkSearch\Datafeed\Model;
 
+use HawkSearch\Datafeed\Exception\DataFeedException;
 use HawkSearch\Datafeed\Helper\Data as Helper;
 use Magento\Catalog\Helper\CategoryFactory;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
@@ -22,9 +23,11 @@ use Magento\Cms\Model\ResourceModel\Page\CollectionFactory as PageCollectionFact
 use Magento\ConfigurableProduct\Model\Product\Type\ConfigurableFactory;
 use Magento\Framework\Event\Manager as EventManager;
 use Magento\Framework\Model\AbstractModel;
+use Magento\Framework\Module\Manager;
+use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
 use Magento\Review\Model\Review;
 use Magento\Store\Model\App\Emulation;
-use HawkSearch\Datafeed\Exception\DataFeedException;
+use Magento\Framework\Filesystem\Io\File;
 
 class Datafeed extends AbstractModel
 {
@@ -54,7 +57,7 @@ class Datafeed extends AbstractModel
      */
     private $csvWriter;
     /**
-     * @var \Magento\Framework\Module\Manager
+     * @var Manager
      */
     private $moduleManager;
     /**
@@ -79,6 +82,26 @@ class Datafeed extends AbstractModel
     private $eventManager;
 
     /**
+     * @var DateTimeFactory
+     */
+    private $dateTimeFactory;
+
+    /**
+     * @var SftpManagement
+     */
+    private $sftpManagement;
+
+    /**
+     * @var File
+     */
+    private $file;
+
+    /**
+     * @var array
+     */
+    private $timeStampData = [];
+
+    /**
      * Constructor
      * @param AttributeCollection $attributeCollection
      * @param ProductCollection $productCollection
@@ -96,6 +119,9 @@ class Datafeed extends AbstractModel
      * @param \Magento\CatalogInventory\Helper\Stock $stockHelper
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
+     * @param DateTimeFactory $dateTimeFactory
+     * @param SftpManagement $sftpManagement
+     * @param File $file
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
      * @param \Magento\Framework\Data\Collection\AbstractDb|null $resourceCollection
      * @param array $data
@@ -109,13 +135,16 @@ class Datafeed extends AbstractModel
         CategoryFactory $categoryHelperFactory,
         ConfigurableFactory $configurableFactory,
         PageCollectionFactory $pageCollectionFactory,
-        \Magento\Framework\Module\Manager $moduleManager,
+        Manager $moduleManager,
         EventManager $eventManager,
         Emulation $emulation,
         Helper $helper,
         \Magento\CatalogInventory\Helper\Stock $stockHelper,
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
+        DateTimeFactory $dateTimeFactory,
+        SftpManagement $sftpManagement,
+        File $file,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
@@ -133,6 +162,9 @@ class Datafeed extends AbstractModel
         $this->configurableFactory = $configurableFactory;
         $this->pageCollectionFactory = $pageCollectionFactory;
         $this->eventManager = $eventManager;
+        $this->dateTimeFactory = $dateTimeFactory;
+        $this->sftpManagement = $sftpManagement;
+        $this->file = $file;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
@@ -176,6 +208,16 @@ class Datafeed extends AbstractModel
         }
     }
 
+    /**
+     * @param string $filePath
+     * @return string
+     */
+    private function getBaseName(string $filePath)
+    {
+        $pathInfo = $this->file->getPathInfo($filePath);
+        return $pathInfo['basename'] ?? '';
+    }
+
     private function getCategoryData(\Magento\Store\Model\Store $store)
     {
         $this->log('starting _getCategoryData()');
@@ -194,17 +236,6 @@ class Datafeed extends AbstractModel
         $output = $this->csvWriter->create()
             ->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
         $this->log('file open, going to append header and root');
-        $output->appendRow([
-            'category_id',
-            'category_name',
-            'parent_category_id',
-            'sort_order',
-            'is_active',
-            'category_url',
-            'include_in_menu'
-        ]);
-        $output->appendRow(['1', 'Root', '0', '0', '1', '/', '1']);
-        $this->log('header and root appended');
         $base = $store->getBaseUrl();
 
         $categoryHelper = $this->categoryHelperFactory->create();
@@ -245,6 +276,18 @@ class Datafeed extends AbstractModel
         $this->log("using root category id: $rcid");
         $this->rFind($rcid, $cats, $myCategories);
 
+        $output->appendRow([
+            'category_id',
+            'category_name',
+            'parent_category_id',
+            'sort_order',
+            'is_active',
+            'category_url',
+            'include_in_menu'
+        ]);
+        $output->appendRow(['1', 'Root', '0', '0', '1', '/', '1']);
+        $this->log('header and root appended');
+
         foreach ($myCategories as $final) {
             $output->appendRow([
                 $final['id'],
@@ -257,6 +300,7 @@ class Datafeed extends AbstractModel
             ]);
         }
 
+        $this->timeStampData[] = [$this->getBaseName($filename), count($myCategories)+1];
         $this->log('done with _getCategoryData()');
         return true;
     }
@@ -285,6 +329,7 @@ class Datafeed extends AbstractModel
             $labels->appendRow([$att->getAttributeCode(), $att->getStoreLabel()]);
         }
         $labels->closeOutput();
+        $this->timeStampData[] = [$this->getBaseName($labelFilename), count($pac)];
         $this->log(sprintf('Label export took %d seconds', time() - $start));
 
         /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
@@ -329,6 +374,7 @@ class Datafeed extends AbstractModel
             $products->clear();
             $this->review->appendSummary($products);
             $products->load();
+            $counter = 0;
             foreach ($products as $product) {
                 foreach ($feedCodes as $attcode) {
                     if ($product->getData($attcode) === null) {
@@ -340,6 +386,7 @@ class Datafeed extends AbstractModel
                             $attcode,
                             $product->getData($attcode)
                         ]);
+                        $counter++;
                         continue;
                     }
                     if (!isset($attributes[$attcode])) {
@@ -363,6 +410,7 @@ class Datafeed extends AbstractModel
                                 $attcode,
                                 $option
                             ]);
+                            $counter++;
                         }
                     } elseif ($source instanceof \Magento\Catalog\Model\Product\Visibility
                         || $source instanceof \Magento\Tax\Model\TaxClass\Source\Product
@@ -373,26 +421,34 @@ class Datafeed extends AbstractModel
                             $attcode,
                             $source->getOptionText($product->getData($attcode))
                         ]);
+                        $counter++;
                     } else {
                         $output->appendRow([
                             $product->getSku(),
                             $attcode,
                             $product->getData($attcode)
                         ]);
+                        $counter++;
                     }
                 }
                 foreach ($product->getCategoryIds() as $id) {
                     $output->appendRow([$product->getSku(), 'category_id', $id]);
+                    $counter++;
                 }
                 if (($rs = $product->getRatingSummary()) && $rs->getReviewsCount() > 0) {
                     $output->appendRow([$product->getSku(), 'rating_summary', $rs->getRatingSummary()]);
+                    $counter++;
                     $output->appendRow([$product->getSku(), 'reviews_count', $rs->getReviewsCount()]);
+                    $counter++;
                 }
             }
 
             $this->log(sprintf('page %d took %d seconds to export', $currentPage, time() - $start));
             $currentPage++;
         } while ($currentPage <= $pages);
+
+        $this->timeStampData[] = [$this->getBaseName($filename), $counter];
+        return true;
     }
 
     private function getProductData(\Magento\Store\Model\Store $store)
@@ -505,6 +561,8 @@ class Datafeed extends AbstractModel
         } while ($currentPage <= $pages);
 
         $this->log('done with _getProductData()');
+        $this->timeStampData[] = [$this->getBaseName($filename), count($products)];
+        return true;
     }
 
     private function getGroupId(\Magento\Catalog\Model\Product $product, $configurable)
@@ -545,6 +603,32 @@ class Datafeed extends AbstractModel
             ]);
         }
         $this->log('done with getting content data');
+        $this->timeStampData[] = [
+            $this->getBaseName($this->helper->getPathForFile('content')),
+            $collection->getSize()];
+        return true;
+    }
+
+    /**
+     * @return void
+     */
+    private function generateTimestamp()
+    {
+        try {
+            /** @var CsvWriter $output */
+            $output = $this->csvWriter->create()->init(
+                $this->helper->getPathForFile('timestamp'),
+                $this->helper->getFieldDelimiter(),
+                $this->helper->getBufferSize()
+            );
+            $time = $this->dateTimeFactory->create();
+            $output->appendRow([$time->gmtDate('c')]);
+            foreach ($this->timeStampData as $argument) {
+                $output->appendRow($argument);
+            }
+        } catch (\Exception $e) {
+            $this->log($e->getMessage());
+        }
     }
 
     /**
@@ -565,6 +649,9 @@ class Datafeed extends AbstractModel
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
                 $this->feedSummary->stores[$store->getCode()] = ['start_time' => date(DATE_ATOM)];
 
+                $this->timeStampData = [];
+                $this->timeStampData[] = ['dataset', 'full'];
+
                 //exports Category Data
                 $this->getCategoryData($store);
 
@@ -576,6 +663,9 @@ class Datafeed extends AbstractModel
 
                 //exports CMS / Content Data
                 $this->getContentData($store);
+
+                //generate timestamp file
+                $this->generateTimestamp();
 
                 // emit events to allow extended feeds
                 $this->eventManager->dispatch(
@@ -602,10 +692,14 @@ class Datafeed extends AbstractModel
                 throw $e;
             }
         }
+
+        if ($this->helper->isSftpEnabled()) {
+            $this->sftpManagement->processFilesToSftp();
+        }
+
         $this->log(sprintf('going to write summary file %s', $this->helper->getSummaryFilename()));
         $this->feedSummary->complete = date(DATE_ATOM);
         $this->helper->writeSummary($this->feedSummary);
-
         $this->log('all done, goodbye');
     }
 

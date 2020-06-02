@@ -13,17 +13,16 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
-use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Filesystem;
+use Magento\Framework\HTTP\ZendClient;
 use Magento\Store\Model\ResourceModel\Store\CollectionFactory;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 class Data extends AbstractHelper
 {
-
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
     const CONFIG_SUMMARY_FILENAME = 'hawksearchFeedSummary.json';
@@ -42,6 +41,12 @@ class Data extends AbstractHelper
     const CONFIG_CRON_EMAIL = 'hawksearch_datafeed/feed/cron_email';
     const CONFIG_TRIGGER_REINDEX = 'hawksearch_datafeed/feed/reindex';
     const CONFIG_COMBINE_MULTISELECT_ATTS = 'hawksearch_datafeed/feed/combine_multiselect';
+
+    const CONFIG_SEND_FILES_TO_SFTP = 'hawksearch_datafeed/hawksearch_sftp/enabled';
+    const CONFIG_SFTP_HOST = 'hawksearch_datafeed/hawksearch_sftp/host';
+    const CONFIG_SFTP_USERNAME = 'hawksearch_datafeed/hawksearch_sftp/username';
+    const CONFIG_SFTP_PASSWORD = 'hawksearch_datafeed/hawksearch_sftp/password';
+    const CONFIG_SFTP_FOLDER = 'hawksearch_datafeed/hawksearch_sftp/folder';
 
     /**
      * @var StoreManagerInterface
@@ -133,6 +138,46 @@ class Data extends AbstractHelper
     public function getCronEmail()
     {
         return $this->getConfigurationData(self::CONFIG_CRON_EMAIL);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function isSftpEnabled()
+    {
+        return $this->getConfigurationData(self::CONFIG_SEND_FILES_TO_SFTP);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSftpHost()
+    {
+        return $this->getConfigurationData(self::CONFIG_SFTP_HOST);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSftpUser()
+    {
+        return $this->getConfigurationData(self::CONFIG_SFTP_USERNAME);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSftpPassword()
+    {
+        return $this->getConfigurationData(self::CONFIG_SFTP_PASSWORD);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSftpFolder()
+    {
+        return $this->getConfigurationData(self::CONFIG_SFTP_FOLDER);
     }
 
     public function getFieldDelimiter()
