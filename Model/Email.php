@@ -71,7 +71,7 @@ class Email
             ->setTemplateIdentifier('hawksearch_datafeed_cronemail')
             ->setTemplateOptions(
                 [
-                    'area' => \Magento\Framework\App\Area::AREA_ADMINHTML,
+                    'area' => \Magento\Framework\App\Area::AREA_FRONTEND,
                     'store' => \Magento\Store\Model\Store::DEFAULT_STORE_ID,
                 ]
             )

@@ -51,8 +51,7 @@ class DataFeed
         Data $helper,
         Task $task,
         TaskOptionsFactory $taskOptionsFactory
-    )
-    {
+    ) {
         $this->emailFactory       = $emailFactory;
         $this->helper             = $helper;
         $this->task               = $task;
@@ -61,17 +60,17 @@ class DataFeed
 
     public function execute()
     {
-        if ( ! $this->helper->getCronEnabled() ) {
+        if (! $this->helper->getCronEnabled()) {
             return;
         }
 
         $message = $this->executeTask();
 
         $this->emailFactory->create()
-            ->sendEmail( [
+            ->sendEmail([
                 'jobTitle' => DatafeedModel::SCRIPT_NAME,
                 'message'  => $message
-            ] );
+            ]);
     }
 
     /**
@@ -84,16 +83,13 @@ class DataFeed
         $taskOptions = $this->taskOptionsFactory->create();
 
         try {
-            $this->task->execute( $taskOptions );
-        }
-        catch ( TaskLockException $exception ) {
+            $this->task->execute($taskOptions);
+        } catch (TaskLockException $exception) {
             return 'Hawksearch is currently locked, not generating feed at this time.';
-        }
-        catch ( TaskUnlockException $exception ) {
+        } catch (TaskUnlockException $exception) {
             return 'HawkSearch Datafeed lock failed to release. Please verify that the job completed successfully.';
-        }
-        catch ( TaskException $exception ) {
-            return sprintf( 'There has been an error: %s', $exception->getMessage() );
+        } catch (TaskException $exception) {
+            return sprintf('There has been an error: %s', $exception->getMessage());
         }
 
         return 'HawkSearch Datafeed Generated!';

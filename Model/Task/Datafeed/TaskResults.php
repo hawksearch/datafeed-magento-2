@@ -3,7 +3,6 @@
 
 namespace HawkSearch\Datafeed\Model\Task\Datafeed;
 
-
 class TaskResults
 {
     /** @var TaskOptions */
@@ -20,7 +19,7 @@ class TaskResults
     /**
      * @param TaskOptions $optionsUsed
      */
-    public function setOptionsUsed( TaskOptions $optionsUsed ) : void
+    public function setOptionsUsed(TaskOptions $optionsUsed) : void
     {
         $this->optionsUsed = $optionsUsed;
     }

@@ -14,7 +14,7 @@
 use HawkSearch\Datafeed\Block\System\Config\Button;
 
 /** @var Button $block */
-
+// @codingStandardsIgnoreFile
 $isScheduledForNextRun = $block->isScheduledForNextRun();
 
 $nextScheduledId        = $block->getNextScheduledId();
@@ -22,14 +22,14 @@ $nextScheduledTimestamp = $block->getNextScheduledTimestamp();
 ?>
 <div>
     <div id="hawk_datagenerate_result" class="message-validation hidden"></div>
-    <a href="<?php echo $block->escapeHtml( $block->getGenerateUrl() ) ?>">
+    <a href="<?= $block->escapeHtml($block->getGenerateUrl()) ?>">
         <button type="button">
-            <span><?php echo $block->escapeHtml( $block->getButtonLabel() ) ?></span>
+            <span><?= $block->escapeHtml($block->getButtonLabel()) ?></span>
         </button>
     </a>
-    <?php if ( $nextScheduledId ): ?>
+    <?php if ($nextScheduledId) : ?>
         <div id="hawk_datagenerate_next_scheduled" style="margin-top: 8px">
-            <p>Next feed generation at <?= $nextScheduledTimestamp ?> (CRON ID: <?= $nextScheduledId ?>)</p>
+            <p><?= $block->escapeHtml(__('Next feed generation at %1 (CRON ID: %2)', $nextScheduledTimestamp, $nextScheduledId)) ?></p>
         </div>
     <?php endif; ?>
 </div>

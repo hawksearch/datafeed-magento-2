@@ -13,17 +13,16 @@
 
 namespace HawkSearch\Datafeed\Helper;
 
-use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Filesystem;
+use Magento\Framework\HTTP\ZendClient;
 use Magento\Store\Model\ResourceModel\Store\CollectionFactory;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 class Data extends AbstractHelper
 {
-
     const DEFAULT_FEED_PATH = 'hawksearch/feeds';
     const CONFIG_LOCK_FILENAME = 'hawksearchFeedLock.lock';
     const CONFIG_SUMMARY_FILENAME = 'hawksearchFeedSummary.json';
@@ -86,47 +85,58 @@ class Data extends AbstractHelper
         $this->storeCollectionFactory = $storeCollectionFactory;
     }
 
-    public function getConfigurationData($data, $store = null) {
+    public function getConfigurationData($data, $store = null)
+    {
         $storeScope = ScopeInterface::SCOPE_STORE;
-        if(empty($store)) {
+        if (empty($store)) {
             $store = $this->storeManager->getStore();
         }
         return $this->scopeConfig->getValue($data, $storeScope, $store);
     }
 
-    public function getTriggerReindex($store) {
-        return $this->scopeConfig->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $store->getCode());
+    public function getTriggerReindex($store)
+    {
+        return $this->scopeConfig
+            ->isSetFlag(self::CONFIG_TRIGGER_REINDEX, ScopeInterface::SCOPE_STORE, $store->getCode());
     }
 
-    public function moduleIsEnabled() {
+    public function moduleIsEnabled()
+    {
         return $this->getConfigurationData(self::CONFIG_MODULE_ENABLED);
     }
 
-    public function loggingIsEnabled() {
+    public function loggingIsEnabled()
+    {
         return $this->getConfigurationData(self::CONFIG_LOGGING_ENABLED);
     }
 
-    public function includeOutOfStockItems() {
+    public function includeOutOfStockItems()
+    {
         return $this->getConfigurationData(self::CONFIG_INCLUDE_OOS);
     }
 
-    public function includeDisabledItems() {
+    public function includeDisabledItems()
+    {
         return $this->getConfigurationData(self::CONFIG_INCLUDE_DISABLED);
     }
 
-    public function getBatchLimit() {
+    public function getBatchLimit()
+    {
         return $this->getConfigurationData(self::CONFIG_BATCH_LIMIT);
     }
 
-    public function getGenEmail() {
+    public function getGenEmail()
+    {
         return $this->getConfigurationData('trans_email/ident_general/email');
     }
 
-    public function getGenName() {
+    public function getGenName()
+    {
         return $this->getConfigurationData('trans_email/ident_general/name');
     }
 
-    public function getCronEmail() {
+    public function getCronEmail()
+    {
         return $this->getConfigurationData(self::CONFIG_CRON_EMAIL);
     }
 
@@ -170,7 +180,8 @@ class Data extends AbstractHelper
         return $this->getConfigurationData(self::CONFIG_SFTP_FOLDER);
     }
 
-    public function getFieldDelimiter() {
+    public function getFieldDelimiter()
+    {
         if (strtolower(self::CONFIG_FIELD_DELIMITER) == 'tab') {
             return "\t";
         } else {
@@ -178,12 +189,14 @@ class Data extends AbstractHelper
         }
     }
 
-    public function getBufferSize() {
+    public function getBufferSize()
+    {
         $size = self::CONFIG_BUFFER_SIZE;
         return is_numeric($size) ? $size : null;
     }
 
-    public function getOutputFileExtension() {
+    public function getOutputFileExtension()
+    {
         return self::CONFIG_OUTPUT_EXTENSION;
     }
 
@@ -191,9 +204,10 @@ class Data extends AbstractHelper
      * @return string
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    public function getFeedFilePath() {
+    public function getFeedFilePath()
+    {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
-        if(!$relPath) {
+        if (!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
         /** @var \Magento\Framework\Filesystem\Directory\Write $writer */
@@ -203,16 +217,19 @@ class Data extends AbstractHelper
         return $mediaWriter->getAbsolutePath($relPath);
     }
 
-    public function getLockFilename() {
+    public function getLockFilename()
+    {
         return self::CONFIG_LOCK_FILENAME;
     }
 
-    public function getSummaryFilename() {
+    public function getSummaryFilename()
+    {
         return $this->getFeedFilePath() . DIRECTORY_SEPARATOR . self::CONFIG_SUMMARY_FILENAME;
     }
 
-    public function getSelectedStores() {
-        if(!isset($this->selectedStores)){
+    public function getSelectedStores()
+    {
+        if (!isset($this->selectedStores)) {
             $this->selectedStores = $this->storeCollectionFactory->create();
             $ids = explode(',', $this->scopeConfig->getValue(self::CONFIG_SELECTED_STORES));
             $this->selectedStores->addIdFilter($ids);
@@ -220,57 +237,24 @@ class Data extends AbstractHelper
         return $this->selectedStores;
     }
 
-    public function getCronEnabled() {
+    public function getCronEnabled()
+    {
         return $this->getConfigurationData(self::CONFIG_CRON_ENABLE);
     }
 
-    public function getCronLogFilename() {
+    public function getCronLogFilename()
+    {
         return self::CONFIG_CRONLOG_FILENAME;
-    }
-
-    public function isFeedLocked() {
-        $lockfile = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-        if (file_exists($lockfile)) {
-            $this->log('FEED IS LOCKED!');
-            return true;
-        }
-        return false;
-    }
-
-    public function createFeedLocks($scriptName = '') {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-        return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
-    }
-
-    public function removeFeedLocks($scriptName = '', $kill = false) {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-
-        if (file_exists($lockfilename)) {
-            $data = json_decode(file_get_contents($lockfilename));
-            if(!empty($data) && isset($data->script) && $kill){
-                $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
-                if($procs) {
-                    $procs = explode("\n", $procs);
-                    foreach ($procs as $proc) {
-                        $pid = explode(' ', $proc, 2)[0];
-                        if(is_numeric($pid)){
-                            exec(sprintf('kill %s', $pid));
-                        }
-                    }
-                }
-            }
-            return unlink($lockfilename);
-        }
-        return false;
     }
 
     /**
      * @param $summary
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    public function writeSummary($summary) {
+    public function writeSummary($summary)
+    {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
-        if(!$relPath) {
+        if (!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
 
@@ -284,9 +268,10 @@ class Data extends AbstractHelper
      * @return string
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    public function getPathForFile($basename) {
+    public function getPathForFile($basename)
+    {
         $relPath = $this->scopeConfig->getValue(self::CONFIG_FEED_PATH);
-        if(!$relPath) {
+        if (!$relPath) {
             $relPath = self::DEFAULT_FEED_PATH;
         }
 
@@ -295,7 +280,13 @@ class Data extends AbstractHelper
         $mediaWriter = $this->filesystem->getDirectoryWrite('media');
         $mediaWriter->create($dir);
 
-        return sprintf('%s%s%s.%s', $mediaWriter->getAbsolutePath($dir), DIRECTORY_SEPARATOR, $basename, $this->getOutputFileExtension());
+        return sprintf(
+            '%s%s%s.%s',
+            $mediaWriter->getAbsolutePath($dir),
+            DIRECTORY_SEPARATOR,
+            $basename,
+            $this->getOutputFileExtension()
+        );
     }
 
     /**
@@ -303,9 +294,10 @@ class Data extends AbstractHelper
      * @return int
      * @throws \Zend_Http_Client_Exception
      */
-    public function triggerReindex(\Magento\Store\Model\Store $store) {
+    public function triggerReindex(\Magento\Store\Model\Store $store)
+    {
         $this->log('triggerReindex called');
-        if(!$this->scopeConfig->isSetFlag('hawksearch_datafeed/feed/reindex', ScopeInterface::SCOPE_STORE, $store)) {
+        if (!$this->scopeConfig->isSetFlag('hawksearch_datafeed/feed/reindex', ScopeInterface::SCOPE_STORE, $store)) {
             $this->log('HawkSearch reindex disabled, not triggering reindex');
             return false;
         }
@@ -318,7 +310,8 @@ class Data extends AbstractHelper
         $this->zendClient->setMethod(ZendClient::POST);
         $this->log('setMethod called on zendClient');
 
-        $apiKey = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_key', ScopeInterface::SCOPE_STORE, $store);
+        $apiKey = $this->scopeConfig
+            ->getValue('hawksearch_datafeed/hawksearch_api/api_key', ScopeInterface::SCOPE_STORE, $store);
         $this->log(sprintf('setting hawk Api key to "%s"', $apiKey));
 
         $this->zendClient->setHeaders('X-HawkSearch-ApiKey', $apiKey);
@@ -326,22 +319,34 @@ class Data extends AbstractHelper
 
         $this->log('making request...');
         $response = $this->zendClient->request();
-        $this->log(sprintf("request made, response is:\n%s\n\n%s", $response->getHeadersAsString(), $response->getBody()));
+        $this->log(sprintf(
+            "request made, response is:\n%s\n\n%s",
+            $response->getHeadersAsString(),
+            $response->getBody()
+        ));
         return isset($response) ? true : false;
     }
 
-    private function getTriggerReindexUrl(\Magento\Store\Model\Store $store) {
-        $mode = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_mode', ScopeInterface::SCOPE_STORE, $store);
+    private function getTriggerReindexUrl(\Magento\Store\Model\Store $store)
+    {
+        $mode = $this->scopeConfig
+            ->getValue('hawksearch_datafeed/hawksearch_api/api_mode', ScopeInterface::SCOPE_STORE, $store);
 
-        $apiUrl = $this->scopeConfig->getValue(sprintf('hawksearch_datafeed/hawksearch_api/api_url_%s', $mode), ScopeInterface::SCOPE_STORE, $store);
+        $apiUrl = $this->scopeConfig
+            ->getValue(sprintf(
+                'hawksearch_datafeed/hawksearch_api/api_url_%s',
+                $mode
+            ), ScopeInterface::SCOPE_STORE, $store);
         $apiUrl = rtrim($apiUrl, '/');
 
-        $apiVersion = $this->scopeConfig->getValue('hawksearch_datafeed/hawksearch_api/api_ver', ScopeInterface::SCOPE_STORE, $store);
+        $apiVersion = $this->scopeConfig
+            ->getValue('hawksearch_datafeed/hawksearch_api/api_ver', ScopeInterface::SCOPE_STORE, $store);
 
         return sprintf('%s/api/%s/index', $apiUrl, $apiVersion);
     }
 
-    public function log($message) {
+    public function log($message)
+    {
         if ($this->loggingIsEnabled()) {
             $this->_logger->addDebug($message);
         }

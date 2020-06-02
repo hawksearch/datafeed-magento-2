@@ -3,7 +3,6 @@
 
 namespace HawkSearch\Datafeed\Model\Task\Datafeed;
 
-
 use HawkSearch\Datafeed\Model\Datafeed;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskLockException;
@@ -30,8 +29,7 @@ class Task
         Datafeed $datafeed,
         TaskLock $taskLock,
         TaskResultsFactory $taskResultsFactory
-    )
-    {
+    ) {
         $this->datafeed = $datafeed;
         $this->taskLock           = $taskLock;
         $this->taskResultsFactory = $taskResultsFactory;
@@ -45,22 +43,21 @@ class Task
      * @throws TaskUnlockException
      * @throws TaskException
      */
-    public function execute( TaskOptions $options ) : TaskResults
+    public function execute(TaskOptions $options) : TaskResults
     {
-        $this->lock( $options );
+        $this->lock($options);
 
         try {
             $this->datafeed->generateFeed();
-        }
-        catch ( FileSystemException $exception ) {
-            throw new TaskException( $exception->getMessage() );
+        } catch (FileSystemException $exception) {
+            throw new TaskException($exception->getMessage());
         }
 
-        $this->unlock( $options );
+        $this->unlock($options);
 
         /** @var TaskResults $results */
         $results = $this->taskResultsFactory->create();
-        $results->setOptionsUsed( $options );
+        $results->setOptionsUsed($options);
         return $results;
     }
 
@@ -68,9 +65,9 @@ class Task
      * @param TaskOptions $options
      * @throws TaskLockException
      */
-    private function lock( TaskOptions $options ) : void
+    private function lock(TaskOptions $options) : void
     {
-        if ( $options->isForceMode() ) {
+        if ($options->isForceMode()) {
             return;
         }
 
@@ -81,9 +78,9 @@ class Task
      * @param TaskOptions $options
      * @throws TaskUnlockException
      */
-    private function unlock( TaskOptions $options ) : void
+    private function unlock(TaskOptions $options) : void
     {
-        if ( $options->isForceMode() ) {
+        if ($options->isForceMode()) {
             return;
         }
 

@@ -3,7 +3,6 @@
 
 namespace HawkSearch\Datafeed\Model\Task\Exception;
 
-
 use Exception;
 
 class AlreadyScheduledException extends Exception
