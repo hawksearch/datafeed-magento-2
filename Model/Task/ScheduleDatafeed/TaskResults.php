@@ -3,7 +3,6 @@
 
 namespace HawkSearch\Datafeed\Model\Task\ScheduleDatafeed;
 
-
 class TaskResults
 {
     /** @var int Job Entity ID */
@@ -26,7 +25,7 @@ class TaskResults
     /**
      * @param int $jobEntityId
      */
-    public function setJobEntityId( int $jobEntityId ) : void
+    public function setJobEntityId(int $jobEntityId) : void
     {
         $this->jobEntityId = $jobEntityId;
     }
@@ -42,7 +41,7 @@ class TaskResults
     /**
      * @param string $createdAt
      */
-    public function setCreatedAt( string $createdAt ) : void
+    public function setCreatedAt(string $createdAt) : void
     {
         $this->createdAt = $createdAt;
     }
@@ -58,7 +57,7 @@ class TaskResults
     /**
      * @param string $scheduledAt
      */
-    public function setScheduledAt( string $scheduledAt ) : void
+    public function setScheduledAt(string $scheduledAt) : void
     {
         $this->scheduledAt = $scheduledAt;
     }

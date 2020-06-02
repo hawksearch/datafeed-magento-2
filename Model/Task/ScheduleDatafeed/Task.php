@@ -3,7 +3,6 @@
 
 namespace HawkSearch\Datafeed\Model\Task\ScheduleDatafeed;
 
-
 use HawkSearch\Datafeed\Model\Task\Datafeed\TaskScheduler as DatafeedTaskScheduler;
 use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
 use HawkSearch\Datafeed\Model\Task\Exception\SchedulerException;
@@ -25,8 +24,7 @@ class Task
     public function __construct(
         TaskResultsFactory $taskResultsFactory,
         DatafeedTaskScheduler $datafeedTaskScheduler
-    )
-    {
+    ) {
         $this->datafeedTaskScheduler = $datafeedTaskScheduler;
         $this->taskResultsFactory    = $taskResultsFactory;
     }
@@ -41,10 +39,9 @@ class Task
     {
         try {
             $schedule = $this->datafeedTaskScheduler->schedule();
-            return $this->createResults( $schedule );
-        }
-        catch ( SchedulerException $exception ) {
-            throw new TaskException( 'failed to schedule task: ' . $exception->getMessage() );
+            return $this->createResults($schedule);
+        } catch (SchedulerException $exception) {
+            throw new TaskException('failed to schedule task: ' . $exception->getMessage());
         }
     }
 
@@ -53,14 +50,14 @@ class Task
      * @param Schedule $schedule
      * @return TaskResults
      */
-    private function createResults( Schedule $schedule ) : TaskResults
+    private function createResults(Schedule $schedule) : TaskResults
     {
         /** @var TaskResults $results */
         $results = $this->taskResultsFactory->create();
 
-        $results->setJobEntityId( intval( $schedule->getId() ) );
-        $results->setCreatedAt( $schedule->getCreatedAt() );
-        $results->setScheduledAt( $schedule->getScheduledAt() );
+        $results->setJobEntityId((int)$schedule->getId());
+        $results->setCreatedAt($schedule->getCreatedAt());
+        $results->setScheduledAt($schedule->getScheduledAt());
 
         return $results;
     }
