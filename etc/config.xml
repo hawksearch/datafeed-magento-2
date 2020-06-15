@@ -42,6 +42,17 @@
             <hawksearch_sftp>
                 <enabled>0</enabled>
             </hawksearch_sftp>
+            <attributes>
+                <mapping>
+                    {
+                    "category": {
+                        "hawk_attribute_label": "Category",
+                        "hawk_attribute_code": "category",
+                        "magento_attribute": "category_ids"
+                        }
+                    }
+                </mapping>
+            </attributes>
         </hawksearch_datafeed>
     </default>
 </config>
