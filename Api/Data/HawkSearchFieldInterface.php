@@ -23,6 +23,8 @@ interface HawkSearchFieldInterface
     /**#@+
      * Constants for keys of data array
      */
+    const FIELD_ID = 'FieldId';
+    const SYNC_GUID = 'SyncGuid';
     const NAME = 'Name';
     const FIELD_TYPE = 'FieldType';
     const LABEL = 'Label';
@@ -38,6 +40,7 @@ interface HawkSearchFieldInterface
     const IS_PREFIX = 'IsPrefix';
     const IS_HIDDEN = 'IsHidden';
     const IS_COMPARE = 'IsCompare';
+    const SORT_ORDER = 'SortOrder';
     const PARTIAL_QUERY = 'PartialQuery';
     const IS_KEYWORD_TEXT = 'IsKeywordText';
     const IS_QUERY = 'IsQuery';
@@ -62,6 +65,28 @@ interface HawkSearchFieldInterface
     const CREATE_DATE = 'CreateDate';
     const MODIFY_DATE = 'ModifyDate';
     /**#@-*/
+
+    /**
+     * @return string
+     */
+    public function getFieldId() : string;
+
+    /**
+     * @param string $value
+     * @return $this
+     */
+    public function setFieldId(string $value);
+
+    /**
+     * @return string
+     */
+    public function getSyncGuid() : string;
+
+    /**
+     * @param string $value
+     * @return $this
+     */
+    public function setSyncGuid(string $value);
 
     /**
      * @return string
@@ -227,6 +252,17 @@ interface HawkSearchFieldInterface
      * @return $this
      */
     public function setIsCompare(bool $value);
+
+    /**
+     * @return int
+     */
+    public function getSortOrder(): int;
+
+    /**
+     * @param int $value
+     * @return $this
+     */
+    public function setSortOrder(int $value);
 
     /**
      * @return string

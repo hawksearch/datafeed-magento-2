@@ -19,6 +19,10 @@ use Magento\Framework\DataObject;
 
 class HawkSearchField extends DataObject implements HawkSearchFieldInterface
 {
+    /**
+     * HawkSearchField constructor.
+     * @param array $data
+     */
     public function __construct(
         array $data = [
             "FieldType" => "keyword",
@@ -34,6 +38,7 @@ class HawkSearchField extends DataObject implements HawkSearchFieldInterface
             "IsPrefix" => false,
             "IsHidden" => false,
             "IsCompare" => false,
+            "SortOrder" => 0,
             "PartialQuery" => "",
             "IsKeywordText" => true,
             "IsQuery" => false,
@@ -60,6 +65,40 @@ class HawkSearchField extends DataObject implements HawkSearchFieldInterface
         ]
     ) {
         parent::__construct($data);
+    }
+
+    /**
+     * @return string
+     */
+    public function getFieldId(): string
+    {
+        return $this->getData(static::FIELD_ID);
+    }
+
+    /**
+     * @param string $value
+     * @return $this
+     */
+    public function setFieldId(string $value)
+    {
+        return $this->setData(static::FIELD_ID, $value);
+    }
+
+    /**
+     * @return string
+     */
+    public function getSyncGuid(): string
+    {
+        return $this->getData(static::SYNC_GUID);
+    }
+
+    /**
+     * @param string $value
+     * @return $this
+     */
+    public function setSyncGuid(string $value)
+    {
+        return $this->setData(static::SYNC_GUID, $value);
     }
 
     /**
@@ -315,6 +354,23 @@ class HawkSearchField extends DataObject implements HawkSearchFieldInterface
     public function setIsCompare(bool $value)
     {
         return $this->setData(static::IS_COMPARE, $value);
+    }
+
+    /**
+     * @return int
+     */
+    public function getSortOrder(): int
+    {
+        return $this->getData(static::SORT_ORDER);
+    }
+
+    /**
+     * @param int $value
+     * @return $this
+     */
+    public function setSortOrder(int $value)
+    {
+        return $this->setData(static::SORT_ORDER, $value);
     }
 
     /**

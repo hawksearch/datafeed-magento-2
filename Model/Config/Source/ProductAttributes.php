@@ -46,7 +46,7 @@ class ProductAttributes implements OptionSourceInterface
         foreach ($allAttributes as $attribute) {
             $options[] = [
                 'value' => $attribute->getAttributeCode(),
-                'label' => $attribute->getDefaultFrontendLabel()
+                'label' => $attribute->getAttributeCode()
             ];
         }
 

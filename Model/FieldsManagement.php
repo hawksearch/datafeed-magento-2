@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Model;
 
+use HawkSearch\Connector\Gateway\Http\ClientInterface;
 use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Connector\Gateway\InstructionException;
 use HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface;
@@ -107,22 +108,20 @@ class FieldsManagement implements FieldsManagementInterface
             $hawkFieldsResponse = $this->instructionManagerPool->get('hawksearch')
                 ->executeByCode('getFields')->get();
             $currentMapping = $this->jsonSerializer->unserialize($this->configProvider->getMapping());
-            if (is_array($hawkFieldsResponse)) {
+
+            if ($hawkFieldsResponse[ClientInterface::RESPONSE_CODE] === 200) {
+
                 //prepare array fields
                 $arrayFields = [];
-                foreach ($hawkFieldsResponse as $field) {
-                    if (isset(
-                        $field[HawkSearchFieldInterface::NAME],
-                        $field[HawkSearchFieldInterface::LABEL]
-                    )) {
-                        $arrayFields[$field[HawkSearchFieldInterface::NAME] . self::FIELD_SUFFIX] = [
-                            FieldsMapping::HAWK_ATTRIBUTE_LABEL => $field[HawkSearchFieldInterface::LABEL],
-                            FieldsMapping::HAWK_ATTRIBUTE_CODE => $field[HawkSearchFieldInterface::NAME],
-                            FieldsMapping::MAGENTO_ATTRIBUTE => $currentMapping[
-                                    $field[HawkSearchFieldInterface::NAME] . self::FIELD_SUFFIX
-                                ][FieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
-                        ];
-                    }
+                /** @var HawkSearchFieldInterface $field */
+                foreach ($hawkFieldsResponse[ClientInterface::RESPONSE_DATA] as $field) {
+                    $arrayFields[$field[HawkSearchFieldInterface::NAME] . self::FIELD_SUFFIX] = [
+                        FieldsMapping::HAWK_ATTRIBUTE_LABEL => $field->getLabel(),
+                        FieldsMapping::HAWK_ATTRIBUTE_CODE => $field->getName(),
+                        FieldsMapping::MAGENTO_ATTRIBUTE => $currentMapping[
+                            $field->getName() . self::FIELD_SUFFIX
+                        ][FieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
+                    ];
                 }
 
                 //prepare return data
@@ -142,8 +141,10 @@ class FieldsManagement implements FieldsManagementInterface
                 }
 
                 $response->setResponseData($result);
+            } else {
+                $response->setStatus(self::STATUS_ERROR);
+                $response->setMessage($hawkFieldsResponse[ClientInterface::RESPONSE_MESSAGE]);
             }
-
         } catch (InstructionException $e) {
             $this->logger->error($e->getMessage());
             $response->setStatus(self::STATUS_ERROR);

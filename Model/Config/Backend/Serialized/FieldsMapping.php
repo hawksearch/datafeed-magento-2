@@ -13,6 +13,7 @@
 
 namespace HawkSearch\Datafeed\Model\Config\Backend\Serialized;
 
+use HawkSearch\Connector\Gateway\Http\ClientInterface;
 use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Connector\Gateway\InstructionException;
 use HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface;
@@ -147,9 +148,7 @@ class FieldsMapping extends ArraySerialized
                     $response = $this->instructionManagerPool
                         ->get('hawksearch')->executeByCode('postField', $data)->get();
 
-                    if (!isset($response['FieldId']) && isset($response['Message'])) {
-                        $errors[] = 'HawkSearch: ' . $response['Message'] . ':' . $data[HawkSearchFieldInterface::NAME];
-                    } else {
+                    if ($response[ClientInterface::RESPONSE_CODE] === 201) {
                         $valueToSave[$data[HawkSearchFieldInterface::NAME] . FieldsManagement::FIELD_SUFFIX] = [
                             ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL => $newField[
                                 ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL] ?? '',
@@ -158,7 +157,12 @@ class FieldsMapping extends ArraySerialized
                             ConfigFieldsMapping::MAGENTO_ATTRIBUTE => $newField[
                                 ConfigFieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
                         ];
+                    } else {
+                        $errors[] = 'HawkSearch: ' . $response[ClientInterface::RESPONSE_MESSAGE]
+                            . '. Field "' . $data[HawkSearchFieldInterface::NAME] . '". '
+                            . $response[ClientInterface::RESPONSE_DATA]->getData('Message');
                     }
+
                 } catch (InstructionException $e) {
                     $this->_logger->error($e->getMessage());
                     $errors[] = $e->getMessage();

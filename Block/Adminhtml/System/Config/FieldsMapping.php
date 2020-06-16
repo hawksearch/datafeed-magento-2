@@ -57,7 +57,7 @@ class FieldsMapping extends AbstractFieldArray
             self::HAWK_ATTRIBUTE_CODE,
             [
                 'label' => __('HawkSearch Code'),
-                'class' => 'required-entry',
+                'class' => 'required-entry validate-code',
                 'readonly' => true
             ]
         );
