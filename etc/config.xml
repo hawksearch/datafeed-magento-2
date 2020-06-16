@@ -45,7 +45,7 @@
             <attributes>
                 <mapping>
                     {
-                    "category": {
+                    "category_field": {
                         "hawk_attribute_label": "Category",
                         "hawk_attribute_code": "category",
                         "magento_attribute": "category_ids"

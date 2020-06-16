@@ -15,19 +15,30 @@ namespace HawkSearch\Datafeed\Model\Config\Backend\Serialized;
 
 use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Connector\Gateway\InstructionException;
+use HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface;
+use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping as ConfigFieldsMapping;
+use HawkSearch\Datafeed\Model\FieldsManagement;
+use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
 use Magento\Config\Model\Config\Backend\Serialized\ArraySerialized;
 use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Data\Collection\AbstractDb;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\NotFoundException;
+use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\Model\Context;
 use Magento\Framework\Model\ResourceModel\AbstractResource;
 use Magento\Framework\Registry;
 use Magento\Framework\Serialize\Serializer\Json;
-use HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterfaceFactory;
 
 class FieldsMapping extends ArraySerialized
 {
+    /**#@+
+     * Constants
+     */
+    const NEW_ROW_PATTERN_ID = '/^_\d*_\d*$/';
+    /**#@-*/
+
     /**
      * @var Json
      */
@@ -39,9 +50,14 @@ class FieldsMapping extends ArraySerialized
     private $instructionManagerPool;
 
     /**
-     * @var HawkSearchFieldInterfaceFactory
+     * @var ProductAttributeRepositoryInterface
      */
-    private $hawkSearchFieldFactory;
+    private $productAttributeRepository;
+
+    /**
+     * @var ManagerInterface
+     */
+    private $message;
 
     /**
      * FieldsMapping constructor.
@@ -50,6 +66,8 @@ class FieldsMapping extends ArraySerialized
      * @param ScopeConfigInterface $config
      * @param TypeListInterface $cacheTypeList
      * @param InstructionManagerPool $instructionManagerPool
+     * @param ProductAttributeRepositoryInterface $productAttributeRepository
+     * @param ManagerInterface $message
      * @param AbstractResource|null $resource
      * @param AbstractDb|null $resourceCollection
      * @param array $data
@@ -61,6 +79,8 @@ class FieldsMapping extends ArraySerialized
         ScopeConfigInterface $config,
         TypeListInterface $cacheTypeList,
         InstructionManagerPool $instructionManagerPool,
+        ProductAttributeRepositoryInterface $productAttributeRepository,
+        ManagerInterface $message,
         AbstractResource $resource = null,
         AbstractDb $resourceCollection = null,
         array $data = [],
@@ -78,58 +98,83 @@ class FieldsMapping extends ArraySerialized
         );
         $this->serializer = $serializer;
         $this->instructionManagerPool = $instructionManagerPool;
+        $this->productAttributeRepository = $productAttributeRepository;
+        $this->message = $message;
     }
 
     /**
-     * Processing object after load data
-     *
-     * @return void
-     * @throws InstructionException
-     * @throws NotFoundException
-     */
-    protected function _afterLoad()
-    {
-        parent::_afterLoad();
-//        $hawkFields = $this->instructionManagerPool->get('hawksearch')->executeByCode('getFields');
-//        $savedMapping = $this->getValue();
-//
-//        $newValue = [];
-//
-//        foreach ($hawkFields->get() as $field) {
-//            $newValue[$field['Name']] = [
-//                'hawk_attribute_label' => $field['Label'],
-//                'hawk_attribute_code' => $field['Name'],
-//                'magento_attribute' => $savedMapping[$field['Name']] ?? ''
-//            ];
-//        }
-//
-//        $this->setValue($newValue);
-    }
-
-    /**
-     * Unset array element with '__empty' key
-     *
      * @return $this
      */
     public function beforeSave()
     {
-//        $value = $this->getValue();
-//
-//        $mapping = [];
-//
-//        foreach ($value as $attributeMap) {
-//            if (is_array($attributeMap)
-//                && isset($attributeMap['magento_attribute'])
-//                && isset($attributeMap['hawk_attribute_code'])
-//                && $attributeMap['magento_attribute']
-//                && $attributeMap['hawk_attribute_code']
-//            ) {
-//                $mapping[$attributeMap['hawk_attribute_code']] = $attributeMap['magento_attribute'];
-//            }
-//        }
-//
-//        $this->setValue($mapping);
-        $hawkFields = $this->instructionManagerPool->get('hawksearch')->executeByCode('postField');
+        $submitValue = $this->getValue();
+
+        $valueToSave = [];
+        $newFields = [];
+        $errors = [];
+
+        if (is_array($submitValue)) {
+            unset($submitValue['__empty']);
+
+            foreach ($submitValue as $id => $value) {
+                if (preg_match(self::NEW_ROW_PATTERN_ID, $id)) {
+                    $newFields[$id] = $value;
+                } else {
+                    $valueToSave[$id] = $value;
+                }
+            }
+
+            foreach ($newFields as $newField) {
+                $data = [
+                    HawkSearchFieldInterface::LABEL => $newField[ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL] ?? '',
+                    HawkSearchFieldInterface::NAME => $newField[ConfigFieldsMapping::HAWK_ATTRIBUTE_CODE] ?? '',
+                ];
+                if (!empty($newField[ConfigFieldsMapping::MAGENTO_ATTRIBUTE])) {
+                    try {
+                        $attribute = $this->productAttributeRepository
+                            ->get($newField[ConfigFieldsMapping::MAGENTO_ATTRIBUTE]);
+
+                        $data[HawkSearchFieldInterface::IS_SORT] = $attribute->getUsedForSortBy() ? true : false;
+                        $data[HawkSearchFieldInterface::IS_COMPARE] = $attribute->getIsComparable() ? true : false;
+                        $data[HawkSearchFieldInterface::IS_QUERY] = $attribute->getIsSearchable() ? true : false;
+                    } catch (NoSuchEntityException $e) {
+                        $this->_logger->error($e->getMessage());
+                        $errors[] = $e->getMessage();
+                    }
+                }
+
+                try {
+                    $response = $this->instructionManagerPool
+                        ->get('hawksearch')->executeByCode('postField', $data)->get();
+
+                    if (!isset($response['FieldId']) && isset($response['Message'])) {
+                        $errors[] = 'HawkSearch: ' . $response['Message'] . ':' . $data[HawkSearchFieldInterface::NAME];
+                    } else {
+                        $valueToSave[$data[HawkSearchFieldInterface::NAME] . FieldsManagement::FIELD_SUFFIX] = [
+                            ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL => $newField[
+                                ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL] ?? '',
+                            ConfigFieldsMapping::HAWK_ATTRIBUTE_CODE => $newField[
+                                ConfigFieldsMapping::HAWK_ATTRIBUTE_CODE] ?? '',
+                            ConfigFieldsMapping::MAGENTO_ATTRIBUTE => $newField[
+                                ConfigFieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
+                        ];
+                    }
+                } catch (InstructionException $e) {
+                    $this->_logger->error($e->getMessage());
+                    $errors[] = $e->getMessage();
+                } catch (NotFoundException $e) {
+                    $this->_logger->error($e->getMessage());
+                    $errors[] = $e->getMessage();
+                }
+            }
+        }
+
+        if ($errors) {
+            $this->message->addErrorMessage(implode("; ", $errors));
+        }
+
+        $this->setValue($valueToSave);
+
         return parent::beforeSave();
     }
 }

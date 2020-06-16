@@ -21,6 +21,14 @@ use Magento\Framework\Exception\LocalizedException;
 
 class FieldsMapping extends AbstractFieldArray
 {
+    /**#@+
+     * Constants
+     */
+    const HAWK_ATTRIBUTE_LABEL = 'hawk_attribute_label';
+    const HAWK_ATTRIBUTE_CODE = 'hawk_attribute_code';
+    const MAGENTO_ATTRIBUTE = 'magento_attribute';
+    /**#@-*/
+
     /**
      * @var string
      */
@@ -38,7 +46,7 @@ class FieldsMapping extends AbstractFieldArray
     protected function _prepareToRender()
     {
         $this->addColumn(
-            'hawk_attribute_label',
+            self::HAWK_ATTRIBUTE_LABEL,
             [
                 'label' => __('HawkSearch Label'),
                 'class' => 'required-entry',
@@ -46,7 +54,7 @@ class FieldsMapping extends AbstractFieldArray
             ]
         );
         $this->addColumn(
-            'hawk_attribute_code',
+            self::HAWK_ATTRIBUTE_CODE,
             [
                 'label' => __('HawkSearch Code'),
                 'class' => 'required-entry',
@@ -54,10 +62,9 @@ class FieldsMapping extends AbstractFieldArray
             ]
         );
         $this->addColumn(
-            'magento_attribute',
+            self::MAGENTO_ATTRIBUTE,
             [
                 'label' => __('Magento Attribute'),
-                'class' => 'required-entry',
                 'renderer' => $this->getAttributeRenderer()
             ]
         );

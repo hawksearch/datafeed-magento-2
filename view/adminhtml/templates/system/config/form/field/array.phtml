@@ -10,9 +10,14 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
+
+use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
+use HawkSearch\Datafeed\Model\FieldsManagement;
+
 ?>
 
 <?php
+/** @var FieldsMapping $block */
 $_htmlId = $block->getHtmlId() ? $block->getHtmlId() : '_' . uniqid();
 $_colspan = $block->isAddAfter() ? 2 : 1;
 ?>
@@ -33,6 +38,13 @@ $_colspan = $block->isAddAfter() ? 2 : 1;
                 <td colspan="<?= count($block->getColumns())+$_colspan ?>" class="col-actions-add">
                     <button id="addToEndBtn<?= $block->escapeHtmlAttr($_htmlId) ?>" class="action-add" title="<?= $block->escapeHtmlAttr(__('Add')) ?>" type="button">
                         <span><?= $block->escapeHtml($block->getAddButtonLabel()) ?></span>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="<?= count($block->getColumns())+$_colspan ?>" class="col-actions-sync">
+                    <button id="syncBtn<?= $block->escapeHtmlAttr($_htmlId) ?>" class="action-sync" title="<?= $block->escapeHtmlAttr(__('Pull data from HawkSearch')) ?>" type="button">
+                        <span><?= $block->escapeHtmlAttr(__('Pull data from HawkSearch')) ?></span>
                     </button>
                 </td>
             </tr>
@@ -142,6 +154,31 @@ $_colspan = $block->isAddAfter() ? 2 : 1;
 
             del: function(rowId) {
                 $(rowId).remove();
+            },
+
+            syncFields: function () {
+                jQuery.ajax({
+                    type: 'GET',
+                    url: '/rest/V1/hawksearch/fields',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    showLoader: true
+                }).then(function (data) {
+                    if (data.status === '<?= FieldsManagement::STATUS_SUCCESS ?>' && data.response_data.length > 0) {
+                        //clear table data
+                        document.getElementById('addRow<?= $block->escapeHtmlAttr($_htmlId) ?>').innerHTML = "";
+                        //add new data from response
+                        data.response_data.forEach(function (value, index) {
+                            arrayRow<?= $block->escapeJs($_htmlId) ?>.add(JSON.parse(value), false);
+                        });
+                    }
+                    if (data.status === '<?= FieldsManagement::STATUS_ERROR ?>') {
+                        alert(data.message);
+                    }
+                    if (data.status === '<?= FieldsManagement::STATUS_SUCCESS ?>' && data.response_data.length === 0) {
+                        alert('Empty API response.');
+                    }
+                })
             }
         }
 
@@ -151,6 +188,12 @@ $_colspan = $block->isAddAfter() ? 2 : 1;
             arrayRow<?= $block->escapeJs($_htmlId) ?>.add.bind(
                 arrayRow<?= $block->escapeJs($_htmlId) ?>, false, false, true
             )
+        );
+
+        // bind Sync action to "Sync data with HawkSearch" button
+        Event.observe('syncBtn<?= $block->escapeJs($_htmlId) ?>',
+            'click',
+            arrayRow<?= $block->escapeJs($_htmlId) ?>.syncFields.bind()
         );
 
         // add existing rows
