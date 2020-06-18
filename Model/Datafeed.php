@@ -13,7 +13,6 @@
 
 namespace HawkSearch\Datafeed\Model;
 
-use HawkSearch\Datafeed\Exception\DataFeedException;
 use HawkSearch\Datafeed\Helper\Data as Helper;
 use Magento\Catalog\Helper\CategoryFactory;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
@@ -31,6 +30,7 @@ use Magento\Framework\Filesystem\Io\File;
 
 class Datafeed extends AbstractModel
 {
+    const FEED_PATH = 'hawksearch/feeds';
     const SCRIPT_NAME = 'Datafeed';
     private $feedSummary;
     private $productAttributes;
@@ -191,6 +191,15 @@ class Datafeed extends AbstractModel
     }
 
     /**
+     * @param array $data
+     * @return void
+     */
+    public function setTimeStampData(array $data)
+    {
+        $this->timeStampData[] = $data;
+    }
+
+    /**
      * Recursively sets up the category tree without introducing
      * duplicate data.
      *
@@ -212,7 +221,7 @@ class Datafeed extends AbstractModel
      * @param string $filePath
      * @return string
      */
-    private function getBaseName(string $filePath)
+    public function getBaseName(string $filePath)
     {
         $pathInfo = $this->file->getPathInfo($filePath);
         return $pathInfo['basename'] ?? '';
@@ -302,266 +311,6 @@ class Datafeed extends AbstractModel
 
         $this->timeStampData[] = [$this->getBaseName($filename), count($myCategories)+1];
         $this->log('done with _getCategoryData()');
-        return true;
-    }
-
-    private function getAttributeData(\Magento\Store\Model\Store $store)
-    {
-        $this->log('starting _getAttributeData');
-        $filename = $this->helper->getPathForFile('attributes');
-        $labelFilename = $this->helper->getPathForFile('labels');
-
-        $this->log(sprintf('exporting attribute labels for store %s', $store->getName()));
-        $start = time();
-        /** @var \Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection $pac */
-        $pac = $this->attributeCollection->create();
-        $pac->addSearchableAttributeFilter();
-        $pac->addStoreLabel($store->getId());
-        $attributes = [];
-
-        $labels = $this->csvWriter->create()
-            ->init($labelFilename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
-        $labels->appendRow(['key', 'store_label']);
-        $this->log($pac->getSelect()->__toString());
-        /** @var \Magento\Catalog\Model\ResourceModel\Eav\Attribute $att */
-        foreach ($pac as $att) {
-            $attributes[$att->getAttributeCode()] = $att;
-            $labels->appendRow([$att->getAttributeCode(), $att->getStoreLabel()]);
-        }
-        $labels->closeOutput();
-        $this->timeStampData[] = [$this->getBaseName($labelFilename), count($pac)];
-        $this->log(sprintf('Label export took %d seconds', time() - $start));
-
-        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-        $products = $this->productCollection->create();
-        $feedCodes = array_diff(array_keys($attributes), $this->productAttributes, ['category_ids', 'category_id']);
-        if (!in_array('sku', $feedCodes)) {
-            array_push($feedCodes, 'sku');
-        }
-        $this->log(sprintf('searchable atts: %s', implode(', ', array_keys($attributes))));
-        $this->log(sprintf('adding attributes to select: %s', implode(', ', $feedCodes)));
-        $products->addAttributeToSelect($feedCodes);
-
-        $products->addStoreFilter($store);
-
-        if (!$this->helper->includeDisabledItems()) {
-            $this->log('adding status filter');
-            $products->addAttributeToFilter(
-                'status',
-                \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED
-            );
-        }
-
-        if (!$this->helper->includeOutOfStockItems()) {
-            $this->log('adding out of stock filter');
-            $this->stockHelper->addIsInStockFilterToCollection($products);
-        }
-
-        $this->log(sprintf('going to open feed file %s', $filename));
-        $output = $this->csvWriter->create()
-            ->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
-        $this->log('feed file open, appending header');
-        $output->appendRow(['unique_id', 'key', 'value']);
-
-        $products->setPageSize($this->helper->getBatchLimit());
-        $pages = $products->getLastPageNumber();
-        $currentPage = 1;
-
-        do {
-            $this->log(sprintf('starting attribute export for page %d', $currentPage));
-            $start = time();
-            $products->setCurPage($currentPage);
-            $products->clear();
-            $this->review->appendSummary($products);
-            $products->load();
-            $counter = 0;
-            foreach ($products as $product) {
-                foreach ($feedCodes as $attcode) {
-                    if ($product->getData($attcode) === null) {
-                        continue;
-                    }
-                    if ($attcode == 'sku') {
-                        $output->appendRow([
-                            $product->getSku(),
-                            $attcode,
-                            $product->getData($attcode)
-                        ]);
-                        $counter++;
-                        continue;
-                    }
-                    if (!isset($attributes[$attcode])) {
-                        throw new DataFeedException(
-                            sprintf("WARNING: attribute code '%s' not in attributes array!", $attcode)
-                        );
-                    }
-                    $source = $attributes[$attcode]->getSource();
-                    if ($source instanceof \Magento\Eav\Model\Entity\Attribute\Source\Table) {
-                        $options = $product->getResource()
-                            ->getAttribute($attcode)->getFrontend()->getOption($product->getData($attcode));
-                        if (!is_array($options)) {
-                            $options = [$options];
-                        }
-                        if ($this->helper->getCombineMultiselectAttributes()) {
-                            $options = [implode(',', $options)];
-                        }
-                        foreach ($options as $option) {
-                            $output->appendRow([
-                                $product->getSku(),
-                                $attcode,
-                                $option
-                            ]);
-                            $counter++;
-                        }
-                    } elseif ($source instanceof \Magento\Catalog\Model\Product\Visibility
-                        || $source instanceof \Magento\Tax\Model\TaxClass\Source\Product
-                        || $source instanceof \Magento\Catalog\Model\Product\Attribute\Source\Status
-                    ) {
-                        $output->appendRow([
-                            $product->getSku(),
-                            $attcode,
-                            $source->getOptionText($product->getData($attcode))
-                        ]);
-                        $counter++;
-                    } else {
-                        $output->appendRow([
-                            $product->getSku(),
-                            $attcode,
-                            $product->getData($attcode)
-                        ]);
-                        $counter++;
-                    }
-                }
-                foreach ($product->getCategoryIds() as $id) {
-                    $output->appendRow([$product->getSku(), 'category_id', $id]);
-                    $counter++;
-                }
-                if (($rs = $product->getRatingSummary()) && $rs->getReviewsCount() > 0) {
-                    $output->appendRow([$product->getSku(), 'rating_summary', $rs->getRatingSummary()]);
-                    $counter++;
-                    $output->appendRow([$product->getSku(), 'reviews_count', $rs->getReviewsCount()]);
-                    $counter++;
-                }
-            }
-
-            $this->log(sprintf('page %d took %d seconds to export', $currentPage, time() - $start));
-            $currentPage++;
-        } while ($currentPage <= $pages);
-
-        $this->timeStampData[] = [$this->getBaseName($filename), $counter];
-        return true;
-    }
-
-    private function getProductData(\Magento\Store\Model\Store $store)
-    {
-        /** @var \Magento\Catalog\Model\ResourceModel\Product\Collection $products */
-        $products = $this->productCollection->create();
-        $products->addAttributeToSelect($this->productAttributes);
-        $products->addMinimalPrice();
-        $products->addStoreFilter($store);
-
-        if (!$this->helper->includeDisabledItems()) {
-            $this->log('adding status filter');
-            $products->addAttributeToFilter(
-                'status',
-                \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED
-            );
-        }
-
-        if (!$this->helper->includeOutOfStockItems()) {
-            $this->log('adding out of stock filter');
-            $this->stockHelper->addIsInStockFilterToCollection($products);
-        }
-
-        // taken from the product grid collection:
-        if ($this->moduleManager->isEnabled('Magento_CatalogInventory')) {
-            $products->joinField(
-                'qty',
-                'cataloginventory_stock_item',
-                'qty',
-                'product_id=entity_id',
-                '{{table}}.stock_id=1',
-                'left'
-            );
-        }
-
-        $filename = $this->helper->getPathForFile('items');
-
-        $output = $this->csvWriter->create()
-            ->init($filename, $this->helper->getFieldDelimiter(), $this->helper->getBufferSize());
-        $output->appendRow([
-            'product_id',
-            'unique_id',
-            'name',
-            'url_detail',
-            'image',
-            'price_retail',
-            'price_sale',
-            'price_special',
-            'price_special_from_date',
-            'price_special_to_date',
-            'group_id',
-            'description_short',
-            'description_long',
-            'brand',
-            'sku',
-            'sort_default',
-            'sort_rating',
-            'is_free_shipping',
-            'is_new',
-            'is_on_sale',
-            'keyword',
-            'metric_inventory',
-            'minimal_price',
-            'type_id']);
-
-        $products->setPageSize($this->helper->getBatchLimit());
-        $pages = $products->getLastPageNumber();
-        $currentPage = 1;
-        $configurable = $this->configurableFactory->create();
-        do {
-            $this->log(sprintf('Starting product page %d', $currentPage));
-            $products->setCurPage($currentPage);
-            $products->clear();
-            $start = time();
-            $products->load();
-            $seconds = time() - $start;
-            $this->log(sprintf('it took %d seconds to load product page %d', $seconds, $currentPage));
-            $start = time();
-            /** @var \Magento\Catalog\Model\Product $product */
-            foreach ($products as $product) {
-                $output->appendRow([
-                    $product->getId(),
-                    $product->getSku(),
-                    $product->getName(),
-                    substr($product->getProductUrl(1), strlen($store->getBaseUrl())),
-                    $product->getSmallImage(),
-                    $product->getMsrp(),
-                    $product->getPrice(),
-                    $product->getSpecialPrice(),
-                    $product->getSpecialFromDate(),
-                    $product->getSpecialToDate(),
-                    $this->getGroupId($product, $configurable),
-                    $product->getShortDescription(),
-                    $product->getDescription(),
-                    '',
-                    $product->getSku(),
-                    '',
-                    '',
-                    '',
-                    '',
-                    $product->getSpecialPrice() ? 1 : 0,
-                    $product->getMetaKeyword(),
-                    $product->getQty(),
-                    $product->getMinimalPrice(),
-                    $product->getTypeId()
-                ]);
-            }
-            $this->log(sprintf('it took %d seconds to export page %d', time() - $start, $currentPage));
-            $currentPage++;
-        } while ($currentPage <= $pages);
-
-        $this->log('done with _getProductData()');
-        $this->timeStampData[] = [$this->getBaseName($filename), count($products)];
         return true;
     }
 
@@ -655,23 +404,17 @@ class Datafeed extends AbstractModel
                 //exports Category Data
                 $this->getCategoryData($store);
 
-                // exports Product Data
-                $this->getProductData($store);
-
-                //exports Attribute Data
-                $this->getAttributeData($store);
-
                 //exports CMS / Content Data
                 $this->getContentData($store);
-
-                //generate timestamp file
-                $this->generateTimestamp();
 
                 // emit events to allow extended feeds
                 $this->eventManager->dispatch(
                     'hawksearch_datafeed_generate_custom_feeds',
                     ['model' => $this, 'store' => $store]
                 );
+
+                //generate timestamp file
+                $this->generateTimestamp();
 
                 // trigger reindex on hawksearch end
                 $this->helper->triggerReindex($store);

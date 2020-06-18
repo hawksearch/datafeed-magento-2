@@ -14,11 +14,17 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Model\Config\Source;
 
-use Magento\Framework\Data\OptionSourceInterface;
 use Magento\Eav\Model\Config;
+use Magento\Framework\Data\OptionSourceInterface;
 
 class ProductAttributes implements OptionSourceInterface
 {
+    /**#@+
+     * Constants
+     */
+    const SEPARATE_METHOD = 'separate_method_hawk';
+    /**#@-*/
+
     /**
      * @var Config
      */
@@ -38,9 +44,24 @@ class ProductAttributes implements OptionSourceInterface
     public function toOptionArray()
     {
         $allAttributes = $this->eavConfig->getEntityAttributes('catalog_product');
-        $options[] = [
-            'value' => null,
-            'label' => '--Please Select--'
+        $options = [
+            [
+                'value' => null,
+                'label' => '--Please Select--'
+            ],
+            [
+                'value' => self::SEPARATE_METHOD,
+                'label' => 'Dedicated Method'
+            ],
+            [
+                'value' => 'entity_id',
+                'label' => 'entity_id'
+            ],
+            [
+                'value' => 'type_id',
+                'label' => 'type_id'
+            ]
+
         ];
 
         foreach ($allAttributes as $attribute) {

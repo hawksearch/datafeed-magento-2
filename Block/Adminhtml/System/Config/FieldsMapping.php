@@ -18,6 +18,7 @@ use HawkSearch\Datafeed\Block\Adminhtml\Form\Field\AttributeColumn;
 use Magento\Config\Block\System\Config\Form\Field\FieldArray\AbstractFieldArray;
 use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
+use HawkSearch\Datafeed\Exception\DataFeedException;
 
 class FieldsMapping extends AbstractFieldArray
 {
@@ -137,12 +138,12 @@ class FieldsMapping extends AbstractFieldArray
      * @param string $columnName
      * @param bool $newRow
      * @return string
-     * @throws \Exception
+     * @throws DataFeedException
      */
     public function renderCellTemplate($columnName, $newRow = false)
     {
         if (empty($this->_columns[$columnName])) {
-            throw new \Exception('Wrong column name specified.');
+            throw new DataFeedException('Wrong column name specified.');
         }
         $column = $this->_columns[$columnName];
         $inputName = $this->_getCellInputElementName($columnName);

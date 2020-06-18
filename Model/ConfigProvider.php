@@ -31,6 +31,10 @@ class ConfigProvider
      * Configuration paths
      */
     const MAPPING = 'hawksearch_datafeed/attributes/mapping';
+    const INCLUDE_OUT_OF_STOCK_ITEMS = 'hawksearch_datafeed/feed/stockstatus';
+    const INCLUDE_DISABLED_ITEMS = 'hawksearch_datafeed/feed/itemstatus';
+    const FEED_PATH = 'hawksearch_datafeed/feed/feed_path';
+    const BATCH_LIMIT = 'hawksearch_datafeed/feed/batch_limit';
     /**#@-*/
 
     /**
@@ -79,6 +83,42 @@ class ConfigProvider
     public function getMapping($store = null) : ?string
     {
         return $this->getConfig(self::MAPPING, $store);
+    }
+
+    /**
+     * @param null $store
+     * @return bool | null
+     */
+    public function includeOutOfStockItems($store = null) : ?bool
+    {
+        return (bool)$this->getConfig(self::INCLUDE_OUT_OF_STOCK_ITEMS, $store);
+    }
+
+    /**
+     * @param null $store
+     * @return bool | null
+     */
+    public function includeDisabledItems($store = null) : ?bool
+    {
+        return (bool)$this->getConfig(self::INCLUDE_DISABLED_ITEMS, $store);
+    }
+
+    /**
+     * @param null $store
+     * @return string | null
+     */
+    public function getFeedPath($store = null) : ?string
+    {
+        return $this->getConfig(self::FEED_PATH, $store);
+    }
+
+    /**
+     * @param null $store
+     * @return int | null
+     */
+    public function getBatchLimit($store = null) : ?int
+    {
+        return (int)$this->getConfig(self::BATCH_LIMIT, $store);
     }
 
     /**
