@@ -31,4 +31,9 @@
             <argument name="context" xsi:type="object">hawkSearchVirtualContext</argument>
         </arguments>
     </type>
+
+    <preference for="HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface" type="HawkSearch\Datafeed\Model\HawkSearchField" />
+    <preference for="HawkSearch\Datafeed\Api\Data\ResponseInterface" type="HawkSearch\Datafeed\Model\Response\Response" />
+    <preference for="HawkSearch\Datafeed\Api\FieldsManagementInterface" type="HawkSearch\Datafeed\Model\FieldsManagement" />
+
 </config>

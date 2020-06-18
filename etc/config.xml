@@ -20,8 +20,6 @@
             <feed>
                 <batch_limit>10000</batch_limit>
                 <reindex>0</reindex>
-                <stockstatus>0</stockstatus>
-                <itemstatus>0</itemstatus>
                 <delimiter>tab</delimiter>
                 <buffer_size>65536</buffer_size>
                 <output_file_ext>txt</output_file_ext>
@@ -42,6 +40,147 @@
             <hawksearch_sftp>
                 <enabled>0</enabled>
             </hawksearch_sftp>
+            <attributes>
+                <mapping>
+                    {
+                        "product_id_field": {
+                            "hawk_attribute_label": "Product Id",
+                            "hawk_attribute_code": "product_id",
+                            "magento_attribute": "entity_id"
+                        },
+                            "unique_id_field": {
+                            "hawk_attribute_label": "Unique Id",
+                            "hawk_attribute_code": "unique_id",
+                            "magento_attribute": "sku"
+                        },
+                        "name_field": {
+                            "hawk_attribute_label": "Name",
+                            "hawk_attribute_code": "name",
+                            "magento_attribute": "name"
+                        },
+                        "url_detail_field": {
+                            "hawk_attribute_label": "Url Detail",
+                            "hawk_attribute_code": "url_detail",
+                            "magento_attribute": "separate_method_hawk"
+                        },
+                        "image_field": {
+                            "hawk_attribute_label": "Image",
+                            "hawk_attribute_code": "image",
+                            "magento_attribute": "small_image"
+                        },
+                        "price_retail_field": {
+                            "hawk_attribute_label": "Price Retail",
+                            "hawk_attribute_code": "price_retail",
+                            "magento_attribute": "msrp"
+                        },
+                        "price_sale_field": {
+                            "hawk_attribute_label": "Price Sale",
+                            "hawk_attribute_code": "price_sale",
+                            "magento_attribute": "price"
+                        },
+                        "price_special_field": {
+                            "hawk_attribute_label": "Price Special",
+                            "hawk_attribute_code": "price_special",
+                            "magento_attribute": "special_price"
+                        },
+                        "price_special_from_date_field": {
+                            "hawk_attribute_label": "Price Special From Date",
+                            "hawk_attribute_code": "price_special_from_date",
+                            "magento_attribute": "special_from_date"
+                        },
+                        "price_special_to_date_field": {
+                            "hawk_attribute_label": "Price Special To Date",
+                            "hawk_attribute_code": "price_special_to_date",
+                            "magento_attribute": "special_to_date"
+                        },
+                        "group_id_field": {
+                            "hawk_attribute_label": "Group Id",
+                            "hawk_attribute_code": "group_id",
+                            "magento_attribute": "separate_method_hawk"
+                        },
+                        "description_short_field": {
+                            "hawk_attribute_label": "Description Short",
+                            "hawk_attribute_code": "description_short",
+                            "magento_attribute": "short_description"
+                        },
+                        "description_long_field": {
+                            "hawk_attribute_label": "Description Long",
+                            "hawk_attribute_code": "description_long",
+                            "magento_attribute": "description"
+                        },
+                        "brand_field": {
+                            "hawk_attribute_label": "Brand",
+                            "hawk_attribute_code": "brand",
+                            "magento_attribute": ""
+                        },
+                        "sku_field": {
+                            "hawk_attribute_label": "Sku",
+                            "hawk_attribute_code": "sku",
+                            "magento_attribute": "sku"
+                        },
+                        "sort_default_field": {
+                            "hawk_attribute_label": "Sort Default",
+                            "hawk_attribute_code": "sort_default",
+                            "magento_attribute": ""
+                        },
+                        "sort_rating_field": {
+                            "hawk_attribute_label": "Sort Rating",
+                            "hawk_attribute_code": "sort_rating",
+                            "magento_attribute": ""
+                        },
+                        "is_free_shipping_field": {
+                            "hawk_attribute_label": "Is Free Shipping",
+                            "hawk_attribute_code": "is_free_shipping",
+                            "magento_attribute": ""
+                        },
+                        "is_new_field": {
+                            "hawk_attribute_label": "Is New",
+                            "hawk_attribute_code": "is_new",
+                            "magento_attribute": ""
+                        },
+                        "is_on_sale_field": {
+                            "hawk_attribute_label": "Is On Sale",
+                            "hawk_attribute_code": "is_on_sale",
+                            "magento_attribute": "separate_method_hawk"
+                        },
+                        "keyword_field": {
+                            "hawk_attribute_label": "Keyword",
+                            "hawk_attribute_code": "keyword",
+                            "magento_attribute": "meta_keyword"
+                        },
+                        "metric_inventory_field": {
+                            "hawk_attribute_label": "Metric Inventory",
+                            "hawk_attribute_code": "metric_inventory",
+                            "magento_attribute": "separate_method_hawk"
+                        },
+                        "minimal_price_field": {
+                            "hawk_attribute_label": "Minimal Price",
+                            "hawk_attribute_code": "minimal_price",
+                            "magento_attribute": "minimal_price"
+                        },
+                        "type_id_field": {
+                            "hawk_attribute_label": "Type Id",
+                            "hawk_attribute_code": "type_id",
+                            "magento_attribute": "type_id"
+                        },
+                        "category_id_field": {
+                            "hawk_attribute_label": "Category Id",
+                            "hawk_attribute_code": "category_id",
+                            "magento_attribute": "separate_method_hawk"
+                        },
+                        "rating_summary_field": {
+                            "hawk_attribute_label": "Rating Summary",
+                            "hawk_attribute_code": "rating_summary",
+                            "magento_attribute": "separate_method_hawk"
+                        },
+                        "reviews_count_field": {
+                            "hawk_attribute_label": "Reviews Count",
+                            "hawk_attribute_code": "reviews_count",
+                            "magento_attribute": "separate_method_hawk"
+                        }
+                    }
+                </mapping>
+            </attributes>
         </hawksearch_datafeed>
     </default>
 </config>

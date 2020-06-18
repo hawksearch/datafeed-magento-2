@@ -266,7 +266,7 @@ class Data extends AbstractHelper
     /**
      * @param $basename
      * @return string
-     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\FileSystemException|\Magento\Framework\Exception\NoSuchEntityException
      */
     public function getPathForFile($basename)
     {

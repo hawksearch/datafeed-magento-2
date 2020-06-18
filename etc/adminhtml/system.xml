@@ -61,11 +61,6 @@
                     <label>Feed Stores</label>
                     <source_model>Magento\Config\Model\Config\Source\Store</source_model>
                 </field>
-                <field id="attributes" type="multiselect" showInDefault="1" showInStore="0" showInWebsite="0">
-                    <label>Feed Attributes</label>
-                    <source_model>HawkSearch\Datafeed\Model\Config\Source\Attributes</source_model>
-                    <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Attributes</backend_model>
-                </field>
                 <field id="batch_limit" translate="label comment" type="text" showInDefault="1" showInWebsite="1"
                        showInStore="1" sortOrder="15">
                     <label>Batch Limit</label>
@@ -75,16 +70,6 @@
                     <label>Run Index when Complete</label>
                     <comment>Run an API index in the Hawksearch portal when the datafeed generation is complete.
                     </comment>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
-                <field id="stockstatus" translate="label comment" type="select" showInDefault="1" showInWebsite="1"
-                       showInStore="1" sortOrder="20">
-                    <label>Allow Out of Stock Items</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
-                <field id="itemstatus" translate="label comment" type="select" showInDefault="1" showInWebsite="1"
-                       showInStore="1" sortOrder="25">
-                    <label>Allow Disabled Items</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="cron_enable" translate="label comment" type="select" showInDefault="1" showInWebsite="1"
@@ -115,7 +100,7 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
             </group>
-            <group id="hawksearch_api" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="hawksearch_api" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Hawksearch Api Settings</label>
                 <field id="api_url_develop" translate="label comment" type="text" showInStore="1" showInWebsite="1" showInDefault="1" sortOrder="1">
                     <label>API Access URL (Develop)</label>
@@ -145,7 +130,7 @@
                     <source_model>HawkSearch\Datafeed\Model\System\Config\Source\Mode</source_model>
                 </field>
             </group>
-            <group id="hawksearch_sftp" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+            <group id="hawksearch_sftp" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>SFTP Settings</label>
                 <field id="enabled" translate="label comment" type="select" showInDefault="1" showInWebsite="0"
                        showInStore="0" sortOrder="5">
@@ -176,6 +161,21 @@
                         <field id="hawksearch_datafeed/hawksearch_sftp/enabled">1</field>
                     </depends>
                 </field>
+            </group>
+            <group id="attributes" translate="label" type="text" sortOrder="40" showInDefault="0" showInWebsite="0" showInStore="1">
+                <label>Fields Mapping</label>
+
+                <field id="mapping" translate="label" type="text" sortOrder="20" showInDefault="0" showInWebsite="0" showInStore="1">
+                    <label>Attributes Mapping</label>
+                    <frontend_model>HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping</frontend_model>
+                    <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Serialized\FieldsMapping</backend_model>
+                    <comment>
+                        <![CDATA[
+                            Specify a product's attributes mapping.
+                        ]]>
+                    </comment>
+                </field>
+
             </group>
         </section>
     </system>
