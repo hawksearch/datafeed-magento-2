@@ -15,10 +15,8 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
 use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
-use HawkSearch\Datafeed\Helper\Data;
 use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
 use HawkSearch\Datafeed\Model\ConfigProvider;
-use HawkSearch\Datafeed\Model\CsvWriterFactory;
 use HawkSearch\Datafeed\Model\Datafeed;
 use HawkSearch\Datafeed\Model\FieldsManagement;
 use Magento\Catalog\Model\Product;
@@ -80,22 +78,12 @@ class ItemFeed implements ObserverInterface
     /**
      * @var CollectionFactory
      */
-    private $productCollectionFactory;
+    private $collectionFactory;
 
     /**
      * @var ConfigProvider
      */
     private $config;
-
-    /**
-     * @var CsvWriterFactory
-     */
-    private $csvFactory;
-
-    /**
-     * @var Data
-     */
-    private $helper; //TODO helper should be removed as soon as all required updates are done
 
     /**
      * @var Json
@@ -114,27 +102,21 @@ class ItemFeed implements ObserverInterface
 
     /**
      * ItemFeed constructor.
-     * @param CollectionFactory $productCollectionFactory
+     * @param CollectionFactory $collectionFactory
      * @param ConfigProvider $config
-     * @param CsvWriterFactory $csvFactory
-     * @param Data $helper
      * @param Json $jsonSerializer
      * @param Configurable $configurableType
      * @param GetSalableQuantityDataBySku $salableQnt
      */
     public function __construct(
-        CollectionFactory $productCollectionFactory,
+        CollectionFactory $collectionFactory,
         ConfigProvider $config,
-        CsvWriterFactory $csvFactory,
-        Data $helper,
         Json $jsonSerializer,
         Configurable $configurableType,
         GetSalableQuantityDataBySku $salableQnt
     ) {
-        $this->productCollectionFactory = $productCollectionFactory;
+        $this->collectionFactory = $collectionFactory;
         $this->config = $config;
-        $this->csvFactory = $csvFactory;
-        $this->helper = $helper;
         $this->jsonSerializer = $jsonSerializer;
         $this->configurableType = $configurableType;
         $this->salableQnt = $salableQnt;
@@ -169,18 +151,14 @@ class ItemFeed implements ObserverInterface
 
             //prepare product collection
             $feedExecutor->log('- Prepare product collection');
-            $collection = $this->productCollectionFactory->create();
+            $collection = $this->collectionFactory->create();
             $collection->addAttributeToSelect('*');
             $collection->addPriceData();
             $collection->addStoreFilter($store);
             $collection->setPageSize($this->config->getBatchLimit());
 
-            //TODO this helper functionality should be moved to the $feedExecutor
-            $output = $this->csvFactory->create()->init(
-                $this->helper->getPathForFile($this->filename),
-                $this->helper->getFieldDelimiter(),
-                $this->helper->getBufferSize()
-            );
+            //init output
+            $output = $feedExecutor->initOutput($this->filename, $store->getCode());
 
             //adding column names
             $feedExecutor->log('- Adding column names');
@@ -217,11 +195,8 @@ class ItemFeed implements ObserverInterface
         } catch (FileSystemException $e) {
             $feedExecutor->log('- ERROR');
             $feedExecutor->log($e->getMessage());
-        } catch (NoSuchEntityException $e) {
-            $feedExecutor->log('- ERROR');
-            $feedExecutor->log($e->getMessage());
         } finally {
-            $feedExecutor->setTimeStampData([$this->filename . '.' . $this->helper::CONFIG_OUTPUT_EXTENSION, $counter]);
+            $feedExecutor->setTimeStampData([$this->filename . '.' . $this->config::CONFIG_OUTPUT_EXTENSION, $counter]);
         }
 
         $feedExecutor->log('END ---- ' . $this->filename . ' ----');

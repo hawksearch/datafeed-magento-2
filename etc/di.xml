@@ -9,31 +9,17 @@
             </argument>
         </arguments>
     </type>
-    <virtualType name="hawkSearchVirtualLogHandler" type="Magento\Framework\Logger\Handler\Base">
-        <arguments>
-            <argument name="fileName" xsi:type="string">var/log/hawksearch_datafeed.log</argument>
-        </arguments>
-    </virtualType>
-    <virtualType name="hawkSearchVirtualLogger" type="Magento\Framework\Logger\Monolog">
+    <type name="HawkSearch\Datafeed\Logger\DataFeedLogger">
         <arguments>
             <argument name="handlers" xsi:type="array">
-                <item name="report" xsi:type="object">hawkSearchVirtualLogHandler</item>
+                <item name="debug" xsi:type="object">HawkSearch\Datafeed\Logger\Handler\DebugHandler</item>
             </argument>
-        </arguments>
-    </virtualType>
-    <virtualType name="hawkSearchVirtualContext" type="Magento\Framework\App\Helper\Context">
-        <arguments>
-            <argument name="logger" xsi:type="object">hawkSearchVirtualLogger</argument>
-        </arguments>
-    </virtualType>
-    <type name="HawkSearch\Datafeed\Helper\Data">
-        <arguments>
-            <argument name="context" xsi:type="object">hawkSearchVirtualContext</argument>
         </arguments>
     </type>
 
     <preference for="HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface" type="HawkSearch\Datafeed\Model\HawkSearchField" />
     <preference for="HawkSearch\Datafeed\Api\Data\ResponseInterface" type="HawkSearch\Datafeed\Model\Response\Response" />
     <preference for="HawkSearch\Datafeed\Api\FieldsManagementInterface" type="HawkSearch\Datafeed\Model\FieldsManagement" />
+    <preference for="HawkSearch\Datafeed\Api\Data\FeedSummaryInterface" type="HawkSearch\Datafeed\Model\FeedSummary" />
 
 </config>

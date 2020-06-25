@@ -14,33 +14,34 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
-use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
 use HawkSearch\Datafeed\Model\ConfigProvider;
 use HawkSearch\Datafeed\Model\Datafeed;
-use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory;
+use Magento\Cms\Model\Page;
+use Magento\Cms\Model\ResourceModel\Page\CollectionFactory;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Store\Model\Store;
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
 
-class LabelFeed implements ObserverInterface
+class ContentFeed implements ObserverInterface
 {
     /**#@+
      * Constants
      */
     const FEED_COLUMNS = [
-        'key',
-        'store_label'
+        'unique_id',
+        'name',
+        'url_detail',
+        'description_short',
+        'created_date'
     ];
     /**#@-*/
 
     /**
      * @var string
      */
-    private $filename = 'labels';
+    private $filename = 'content';
 
     /**
      * @var CollectionFactory
@@ -53,24 +54,16 @@ class LabelFeed implements ObserverInterface
     private $config;
 
     /**
-     * @var Json
-     */
-    private $jsonSerializer;
-
-    /**
      * ItemFeed constructor.
      * @param CollectionFactory $collectionFactory
      * @param ConfigProvider $config
-     * @param Json $jsonSerializer
      */
     public function __construct(
         CollectionFactory $collectionFactory,
-        ConfigProvider $config,
-        Json $jsonSerializer
+        ConfigProvider $config
     ) {
         $this->collectionFactory = $collectionFactory;
         $this->config = $config;
-        $this->jsonSerializer = $jsonSerializer;
     }
 
     /**
@@ -90,22 +83,12 @@ class LabelFeed implements ObserverInterface
         $feedExecutor->log('START ---- ' . $this->filename . ' ----');
 
         try {
-            //prepare attributes to select
-            $feedExecutor->log('- Prepare attributes to select');
-            $configurationMap = $this->jsonSerializer->unserialize($this->config->getMapping($store));
-
-            $attributesToSelect = [];
-            foreach ($configurationMap as $field) {
-                if (!empty($field[FieldsMapping::MAGENTO_ATTRIBUTE])) {
-                    $attributesToSelect[] = $field[FieldsMapping::MAGENTO_ATTRIBUTE];
-                }
-            }
-
-            //prepare attribute collection
-            $feedExecutor->log('- Prepare attribute collection');
+            //prepare cms pages collection
+            $feedExecutor->log('- Prepare cms pages collection');
             $collection = $this->collectionFactory->create();
-            $collection->addFieldToFilter('attribute_code', ['in' => $attributesToSelect]);
-            $collection->addStoreLabel($store->getId());
+            $collection->addStoreFilter($store->getId());
+            $collection->addFieldToFilter('is_active', ['eq' => 1]);
+            $collection->addFieldToFilter('hawk_exclude', ['neq' => 1]);
             $collection->setPageSize($this->config->getBatchLimit());
 
             //init output
@@ -116,21 +99,24 @@ class LabelFeed implements ObserverInterface
             $output->appendRow(self::FEED_COLUMNS);
 
             //adding attribute data
-            $feedExecutor->log('- Adding attribute data');
+            $feedExecutor->log('- Adding pages data');
 
             $currentPage = 1;
             do {
-                $feedExecutor->log(sprintf('- Starting attribute page %d', $currentPage));
+                $feedExecutor->log(sprintf('- Starting content page %d', $currentPage));
                 $collection->clear();
                 $collection->setCurPage($currentPage);
                 $collection->load();
                 $start = time();
 
-                /** @var Attribute $attribute */
-                foreach ($collection->getItems() as $attribute) {
+                /** @var Page $page */
+                foreach ($collection->getItems() as $page) {
                     $output->appendRow([
-                        $attribute->getAttributeCode(),
-                        $attribute->getStoreLabel()
+                        $page->getId(),
+                        $page->getTitle(),
+                        sprintf('%s%s', $store->getBaseUrl(), $page->getIdentifier()),
+                        $page->getContentHeading(),
+                        $page->getCreationTime()
                     ]);
                     $counter++;
                 }

@@ -1,85 +1,109 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ *  IN THE SOFTWARE.
  */
+declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Model;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Mail\Template\TransportBuilder;
+use Magento\Framework\Translate\Inline\StateInterface;
+use Magento\Store\Model\StoreManagerInterface;
+use HawkSearch\Datafeed\Logger\DataFeedLogger;
+
 class Email
 {
-
     /**
-     * @var \Magento\Framework\Mail\Template\TransportBuilder
+     * @var TransportBuilder
      */
     protected $_transportBuilder;
 
     /**
-     * @var \Magento\Framework\Translate\Inline\StateInterface
+     * @var StateInterface
      */
     protected $inlineTranslation;
 
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var ScopeConfigInterface
      */
     protected $scopeConfig;
 
     /**
-     * @var \Magento\Store\Model\StoreManagerInterface
+     * @var StoreManagerInterface
      */
     protected $storeManager;
     /**
-     * @var \HawkSearch\Datafeed\Helper\Data
+     * @var ConfigProvider
      */
-    private $helper;
+    private $configProvider;
 
     /**
-     * @param \Magento\Framework\App\Action\Context              $context
-     * @param \Magento\Framework\Mail\Template\TransportBuilder  $transportBuilder
-     * @param \Magento\Framework\Translate\Inline\StateInterface $inlineTranslation
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-     * @param \Magento\Store\Model\StoreManagerInterface         $storeManager
-     * @param \HawkSearch\Datafeed\Helper\Data                   $helper
+     * @var DataFeedLogger
+     */
+    private $logger;
+
+    /**
+     * Email constructor.
+     * @param TransportBuilder $transportBuilder
+     * @param StateInterface $inlineTranslation
+     * @param ScopeConfigInterface $scopeConfig
+     * @param StoreManagerInterface $storeManager
+     * @param ConfigProvider $configProvider
+     * @param DataFeedLogger $logger
      */
     public function __construct(
-        \Magento\Framework\Mail\Template\TransportBuilder $transportBuilder,
-        \Magento\Framework\Translate\Inline\StateInterface $inlineTranslation,
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \HawkSearch\Datafeed\Helper\Data $helper
+        TransportBuilder $transportBuilder,
+        StateInterface $inlineTranslation,
+        ScopeConfigInterface $scopeConfig,
+        StoreManagerInterface $storeManager,
+        ConfigProvider $configProvider,
+        DataFeedLogger $logger
     ) {
         $this->_transportBuilder = $transportBuilder;
         $this->inlineTranslation = $inlineTranslation;
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
-        $this->helper = $helper;
+        $this->configProvider = $configProvider;
+        $this->logger = $logger;
     }
 
-    public function sendEmail($templateParams)
+    /**
+     * @param array $templateParams
+     * @return void
+     */
+    public function sendEmail(array $templateParams)
     {
-        $receiver = $this->helper->getCronEmail();
-        $this->inlineTranslation->suspend();
-        $sender = ['name' => $this->helper->getGenName(), 'email' => $this->helper->getGenEmail()];
-        $transport = $this->_transportBuilder
-            ->setTemplateIdentifier('hawksearch_datafeed_cronemail')
-            ->setTemplateOptions(
-                [
-                    'area' => \Magento\Framework\App\Area::AREA_FRONTEND,
-                    'store' => \Magento\Store\Model\Store::DEFAULT_STORE_ID,
-                ]
-            )
-            ->setTemplateVars($templateParams)
-            ->setFrom($sender)
-            ->addTo($receiver)
-            ->getTransport();
-        $transport->sendMessage();
+        try {
+            $this->inlineTranslation->suspend();
+            $transport = $this->_transportBuilder
+                ->setTemplateIdentifier('hawksearch_datafeed_cronemail')
+                ->setTemplateOptions(
+                    [
+                        'area' => \Magento\Framework\App\Area::AREA_FRONTEND,
+                        'store' => \Magento\Store\Model\Store::DEFAULT_STORE_ID,
+                    ]
+                )
+                ->setTemplateVars($templateParams)
+                ->setFrom([
+                    'name' => $this->configProvider->getGenName(),
+                    'email' => $this->configProvider->getGenEmail()
+                ])
+                ->addTo($this->configProvider->getCronEmail())
+                ->getTransport();
+            $transport->sendMessage();
+        } catch (LocalizedException $e) {
+            $this->logger->debug($e->getMessage());
+        }
 
         $this->inlineTranslation->resume();
     }

@@ -15,11 +15,9 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
 use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
-use HawkSearch\Datafeed\Helper\Data;
 use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
 use HawkSearch\Datafeed\Model\ConfigProvider;
 use HawkSearch\Datafeed\Model\CsvWriter;
-use HawkSearch\Datafeed\Model\CsvWriterFactory;
 use HawkSearch\Datafeed\Model\Datafeed;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
@@ -77,16 +75,6 @@ class AttributeFeed implements ObserverInterface
     private $config;
 
     /**
-     * @var CsvWriterFactory
-     */
-    private $csvFactory;
-
-    /**
-     * @var Data
-     */
-    private $helper; //TODO helper should be removed as soon as all required updates are done
-
-    /**
      * @var Json
      */
     private $jsonSerializer;
@@ -101,8 +89,6 @@ class AttributeFeed implements ObserverInterface
      * @param ProductCollection $productCollectionFactory
      * @param AttributeCollection $attributeCollectionFactory
      * @param ConfigProvider $config
-     * @param CsvWriterFactory $csvFactory
-     * @param Data $helper
      * @param Json $jsonSerializer
      * @param Review $review
      */
@@ -110,16 +96,12 @@ class AttributeFeed implements ObserverInterface
         ProductCollection $productCollectionFactory,
         AttributeCollection $attributeCollectionFactory,
         ConfigProvider $config,
-        CsvWriterFactory $csvFactory,
-        Data $helper,
         Json $jsonSerializer,
         Review $review
     ) {
         $this->productCollectionFactory = $productCollectionFactory;
         $this->attributeCollectionFactory = $attributeCollectionFactory;
         $this->config = $config;
-        $this->csvFactory = $csvFactory;
-        $this->helper = $helper;
         $this->jsonSerializer = $jsonSerializer;
         $this->review = $review;
     }
@@ -179,12 +161,8 @@ class AttributeFeed implements ObserverInterface
             $collection->addStoreFilter($store);
             $collection->setPageSize($this->config->getBatchLimit());
 
-            //TODO this helper functionality should be moved to the $feedExecutor
-            $output = $this->csvFactory->create()->init(
-                $this->helper->getPathForFile($this->filename),
-                $this->helper->getFieldDelimiter(),
-                $this->helper->getBufferSize()
-            );
+            //init output
+            $output = $feedExecutor->initOutput($this->filename, $store->getCode());
 
             //adding column names
             $feedExecutor->log('- Adding column names');
@@ -234,7 +212,7 @@ class AttributeFeed implements ObserverInterface
             $feedExecutor->log($e->getMessage());
         } finally {
             $feedExecutor->setTimeStampData(
-                [$this->filename . '.' . $this->helper::CONFIG_OUTPUT_EXTENSION, $this->counter]
+                [$this->filename . '.' . $this->config::CONFIG_OUTPUT_EXTENSION, $this->counter]
             );
         }
 
