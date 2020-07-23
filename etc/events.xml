@@ -17,6 +17,8 @@
         <observer name="items_feed" instance="HawkSearch\Datafeed\Observer\Feeds\ItemFeed" />
         <observer name="labels_feed" instance="HawkSearch\Datafeed\Observer\Feeds\LabelFeed" />
         <observer name="attributes_feed" instance="HawkSearch\Datafeed\Observer\Feeds\AttributeFeed" />
+        <observer name="content_feed" instance="HawkSearch\Datafeed\Observer\Feeds\ContentFeed" />
+        <observer name="category_feed" instance="HawkSearch\Datafeed\Observer\Feeds\CategoryFeed" />
     </event>
 
 </config>

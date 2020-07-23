@@ -1,23 +1,23 @@
 <?php
 /**
- * Copyright (c) 2018 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ *  IN THE SOFTWARE.
  */
+declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Cron;
 
-use HawkSearch\Datafeed\Helper\Data;
+use HawkSearch\Datafeed\Model\ConfigProvider;
 use HawkSearch\Datafeed\Model\Datafeed as DatafeedModel;
 use HawkSearch\Datafeed\Model\EmailFactory;
 use HawkSearch\Datafeed\Model\Task\Datafeed\Task;
-use HawkSearch\Datafeed\Model\Task\Datafeed\TaskOptions;
 use HawkSearch\Datafeed\Model\Task\Datafeed\TaskOptionsFactory;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskLockException;
@@ -25,42 +25,53 @@ use HawkSearch\Datafeed\Model\Task\Exception\TaskUnlockException;
 
 class DataFeed
 {
-    public const JOB_CODE = 'hawksearch_datafeed';
+    const JOB_CODE = 'hawksearch_datafeed';
 
-    /** @var EmailFactory */
+    /**
+     * @var EmailFactory
+     */
     private $emailFactory;
 
-    /** @var Data */
-    private $helper;
+    /**
+     * @var ConfigProvider
+     */
+    private $configProvider;
 
-    /** @var Task */
+    /**
+     * @var Task
+     */
     private $task;
 
-    /** @var TaskOptionsFactory */
+    /**
+     * @var TaskOptionsFactory
+     */
     private $taskOptionsFactory;
 
     /**
      * DataFeed constructor.
      * @param EmailFactory $emailFactory
-     * @param Data $helper
+     * @param ConfigProvider $configProvider
      * @param Task $task
      * @param TaskOptionsFactory $taskOptionsFactory
      */
     public function __construct(
         EmailFactory $emailFactory,
-        Data $helper,
+        ConfigProvider $configProvider,
         Task $task,
         TaskOptionsFactory $taskOptionsFactory
     ) {
-        $this->emailFactory       = $emailFactory;
-        $this->helper             = $helper;
-        $this->task               = $task;
+        $this->emailFactory = $emailFactory;
+        $this->configProvider = $configProvider;
+        $this->task = $task;
         $this->taskOptionsFactory = $taskOptionsFactory;
     }
 
+    /**
+     * @return void
+     */
     public function execute()
     {
-        if (! $this->helper->getCronEnabled()) {
+        if (!$this->configProvider->isCronEnabled()) {
             return;
         }
 
@@ -79,7 +90,6 @@ class DataFeed
      */
     private function executeTask() : string
     {
-        /** @var TaskOptions $taskOptions */
         $taskOptions = $this->taskOptionsFactory->create();
 
         try {
