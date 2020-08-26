@@ -138,7 +138,8 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="host" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>SFTP Hostname</label>
+                    <label>SFTP Host[:Port]</label>
+                    <comment>Host name of the server, such as ftp.example.com or IP address and not required port</comment>
                     <depends>
                         <field id="hawksearch_datafeed/hawksearch_sftp/enabled">1</field>
                     </depends>
