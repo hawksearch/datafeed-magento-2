@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
@@ -18,13 +19,13 @@ use HawkSearch\Connector\Gateway\Http\ClientInterface;
 use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Datafeed\Api\Data\FeedSummaryInterface;
 use HawkSearch\Datafeed\Api\Data\FeedSummaryInterfaceFactory;
+use HawkSearch\Datafeed\Logger\DataFeedLogger;
 use Magento\Framework\Event\Manager;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
 use Magento\Store\Model\App\Emulation;
 use Magento\Store\Model\Store;
-use HawkSearch\Datafeed\Logger\DataFeedLogger;
 
 class Datafeed
 {
@@ -60,11 +61,6 @@ class Datafeed
     private $sftpManagement;
 
     /**
-     * @var ConfigProvider
-     */
-    private $configProvider;
-
-    /**
      * @var InstructionManagerPool
      */
     private $instructionManagerPool;
@@ -90,13 +86,18 @@ class Datafeed
     private $timeStampData = [];
 
     /**
+     * @var Config\Feed
+     */
+    private $feedConfigProvider;
+
+    /**
      * Datafeed constructor.
      * @param CsvWriterFactory $csvWriterFactory
      * @param Manager $eventManager
      * @param Emulation $emulation
      * @param DateTimeFactory $dateTimeFactory
      * @param SftpManagement $sftpManagement
-     * @param ConfigProvider $configProvider
+     * @param Config\Feed $feedConfigProvider
      * @param InstructionManagerPool $instructionManagerPool
      * @param Filesystem $fileSystem
      * @param FeedSummaryInterfaceFactory $feedSummaryFactory
@@ -108,7 +109,7 @@ class Datafeed
         Emulation $emulation,
         DateTimeFactory $dateTimeFactory,
         SftpManagement $sftpManagement,
-        ConfigProvider $configProvider,
+        Config\Feed $feedConfigProvider,
         InstructionManagerPool $instructionManagerPool,
         Filesystem $fileSystem,
         FeedSummaryInterfaceFactory $feedSummaryFactory,
@@ -119,7 +120,7 @@ class Datafeed
         $this->emulation = $emulation;
         $this->dateTimeFactory = $dateTimeFactory;
         $this->sftpManagement = $sftpManagement;
-        $this->configProvider = $configProvider;
+        $this->feedConfigProvider = $feedConfigProvider;
         $this->instructionManagerPool = $instructionManagerPool;
         $this->fileSystem = $fileSystem;
         $this->feedSummaryFactory = $feedSummaryFactory;
@@ -128,7 +129,7 @@ class Datafeed
 
     public function generateFeed()
     {
-        $stores = $this->configProvider->getSelectedStores();
+        $stores = $this->feedConfigProvider->getStores();
 
         $storeSummary = [];
 
@@ -156,15 +157,17 @@ class Datafeed
                 $this->generateTimestamp($store->getCode());
 
                 // trigger reindex on HawkSearch side
-                if ($this->configProvider->triggerHawkReindex($store)) {
+                if ($this->feedConfigProvider->isReindex($store)) {
                     $response = $this->instructionManagerPool
                         ->get('hawksearch')->executeByCode('triggerHawkReindex')->get();
 
                     if ($response[ClientInterface::RESPONSE_CODE] === 201) {
                         $this->log('Reindex request has been created successfully');
                     } else {
-                        $this->log('Response code: ' . $response[ClientInterface::RESPONSE_CODE]
-                            . '; Message: ' . $response[ClientInterface::RESPONSE_MESSAGE]);
+                        $this->log(
+                            'Response code: ' . $response[ClientInterface::RESPONSE_CODE]
+                            . '; Message: ' . $response[ClientInterface::RESPONSE_MESSAGE]
+                        );
                     }
                 } else {
                     $this->log('Reindex is disabled.');
@@ -172,9 +175,7 @@ class Datafeed
 
                 $storeSummary[$store->getCode()]['end_time'] = date(DATE_ATOM);
 
-                if ($this->configProvider->isSftpEnabled()) {
-                    $this->sftpManagement->processFilesToSftp();
-                }
+                $this->sftpManagement->processFilesToSftp();
 
                 // end emulation
                 $this->emulation->stopEnvironmentEmulation();
@@ -182,8 +183,8 @@ class Datafeed
                 $this->log(
                     sprintf(
                         'going to write summary file %s',
-                        $this->configProvider->getFeedFilePath() . DIRECTORY_SEPARATOR
-                        . $this->configProvider::CONFIG_SUMMARY_FILENAME
+                        $this->feedConfigProvider->getPath() . DIRECTORY_SEPARATOR
+                        . $this->feedConfigProvider->getSummaryFilename()
                     )
                 );
 
@@ -209,8 +210,8 @@ class Datafeed
     }
 
     /**
-     * @var string $storeCode
      * @return void
+     * @var string $storeCode
      */
     private function generateTimestamp(string $storeCode)
     {
@@ -235,7 +236,7 @@ class Datafeed
     {
         $summaryFile = implode(
             DIRECTORY_SEPARATOR,
-            [$this->configProvider::DEFAULT_FEED_PATH, $this->configProvider::CONFIG_SUMMARY_FILENAME]
+            [$this->feedConfigProvider->getPath(), $this->feedConfigProvider->getSummaryFilename()]
         );
         $writer = $this->fileSystem->getDirectoryWrite('media');
         $writer->writeFile($summaryFile, json_encode($summary->getData(), JSON_PRETTY_PRINT));
@@ -256,12 +257,12 @@ class Datafeed
      * @return CsvWriter
      * @throws FileSystemException
      */
-    public function initOutput(string $filename, string $storeCode) : CsvWriter
+    public function initOutput(string $filename, string $storeCode): CsvWriter
     {
         return $this->csvWriterFactory->create()->init(
             $this->getPathForFile($filename, $storeCode),
-            $this->configProvider->getFieldDelimiter(),
-            $this->configProvider->getBufferSize()
+            $this->feedConfigProvider->getFieldDelimiter(),
+            $this->feedConfigProvider->getBufferSize()
         );
     }
 
@@ -273,10 +274,13 @@ class Datafeed
      */
     public function getPathForFile(string $filename, string $storeCode)
     {
-        $dir = implode(DIRECTORY_SEPARATOR, [
-            $this->configProvider::DEFAULT_FEED_PATH,
-            $storeCode
-        ]);
+        $dir = implode(
+            DIRECTORY_SEPARATOR,
+            [
+                $this->feedConfigProvider->getPath(),
+                $storeCode
+            ]
+        );
 
         $mediaWriter = $this->fileSystem->getDirectoryWrite('media');
         $mediaWriter->create($dir);
@@ -286,7 +290,7 @@ class Datafeed
             $mediaWriter->getAbsolutePath($dir),
             DIRECTORY_SEPARATOR,
             $filename,
-            $this->configProvider::CONFIG_OUTPUT_EXTENSION
+            $this->feedConfigProvider->getOutputFileExtension()
         );
     }
 

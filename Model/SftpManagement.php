@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
@@ -16,10 +17,12 @@ namespace HawkSearch\Datafeed\Model;
 
 use Exception;
 use HawkSearch\Datafeed\Exception\SftpException;
+use HawkSearch\Datafeed\Logger\DataFeedLogger;
+use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
+use HawkSearch\Datafeed\Model\Config\Sftp as ConfigSftp;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
 use Magento\Framework\Filesystem\Io\Sftp;
-use HawkSearch\Datafeed\Logger\DataFeedLogger;
 use Zend_Filter_BaseName;
 
 /**
@@ -39,11 +42,6 @@ class SftpManagement
     private $file;
 
     /**
-     * @var ConfigProvider
-     */
-    private $configProvider;
-
-    /**
      * @var Zend_Filter_BaseName
      */
     private $baseName;
@@ -54,23 +52,36 @@ class SftpManagement
     private $logger;
 
     /**
+     * @var ConfigFeed
+     */
+    private $feedConfigProvider;
+
+    /**
+     * @var ConfigSftp
+     */
+    private $sftpConfigProvider;
+
+    /**
      * SftpManagement constructor.
      * @param Sftp $sftp
      * @param File $file
-     * @param ConfigProvider $configProvider
+     * @param ConfigFeed $feedConfigProvider
+     * @param ConfigSftp $sftpConfigProvider
      * @param Zend_Filter_BaseName $baseName
      * @param DataFeedLogger $logger
      */
     public function __construct(
         Sftp $sftp,
         File $file,
-        ConfigProvider $configProvider,
+        ConfigFeed $feedConfigProvider,
+        ConfigSftp $sftpConfigProvider,
         Zend_Filter_BaseName $baseName,
         DataFeedLogger $logger
     ) {
         $this->sftp = $sftp;
         $this->file = $file;
-        $this->configProvider = $configProvider;
+        $this->feedConfigProvider = $feedConfigProvider;
+        $this->sftpConfigProvider = $sftpConfigProvider;
         $this->baseName = $baseName;
         $this->logger = $logger;
     }
@@ -80,6 +91,10 @@ class SftpManagement
      */
     public function processFilesToSftp()
     {
+        if (!$this->sftpConfigProvider->isEnabled()) {
+            return [];
+        }
+
         try {
             $processedFiles = [
                 'success' => [],
@@ -93,13 +108,13 @@ class SftpManagement
             if ($filesToProcess) {
                 $this->sftp->open(
                     [
-                        'host' => $this->configProvider->getSftpHost(),
-                        'username' => $this->configProvider->getSftpUser(),
-                        'password' => $this->configProvider->getSftpPassword(),
+                        'host' => $this->sftpConfigProvider->getHost(),
+                        'username' => $this->sftpConfigProvider->getUsername(),
+                        'password' => $this->sftpConfigProvider->getPassword(),
                     ]
                 );
 
-                $sftpFolderPath = $this->configProvider->getSftpFolder();
+                $sftpFolderPath = $this->sftpConfigProvider->getFolder();
                 if (!$this->sftp->cd($sftpFolderPath)) {
                     $this->processDirectories($sftpFolderPath);
                 }
@@ -156,8 +171,10 @@ class SftpManagement
             }
         }
 
-        $this->logger->debug('Failed to remove from Magento Feed path:' . PHP_EOL .
-            implode(PHP_EOL, $failedFiles));
+        $this->logger->debug(
+            'Failed to remove from Magento Feed path:' . PHP_EOL .
+            implode(PHP_EOL, $failedFiles)
+        );
 
         return $failedFiles;
     }
@@ -187,7 +204,7 @@ class SftpManagement
     {
         $filesToProcess = [];
 
-        $feedsPath = $this->configProvider->getFeedFilePath();
+        $feedsPath = $this->feedConfigProvider->getPath();
         foreach ($this->file->readDirectory($feedsPath) as $path) {
             if ($this->file->isDirectory($path)) {
                 $storeCode = $this->baseName->filter($path);

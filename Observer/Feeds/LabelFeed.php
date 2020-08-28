@@ -15,16 +15,16 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
 use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
-use HawkSearch\Datafeed\Model\ConfigProvider;
+use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
+use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Datafeed;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Store\Model\Store;
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
 
 class LabelFeed implements ObserverInterface
 {
@@ -48,28 +48,36 @@ class LabelFeed implements ObserverInterface
     private $collectionFactory;
 
     /**
-     * @var ConfigProvider
-     */
-    private $config;
-
-    /**
      * @var Json
      */
     private $jsonSerializer;
 
     /**
+     * @var ConfigFeed
+     */
+    private $feedConfigProvider;
+
+    /**
+     * @var ConfigAttributes
+     */
+    private $attributesConfigProvider;
+
+    /**
      * ItemFeed constructor.
      * @param CollectionFactory $collectionFactory
-     * @param ConfigProvider $config
+     * @param ConfigFeed $feedConfigProvider
+     * @param ConfigAttributes $attributesConfigProvider
      * @param Json $jsonSerializer
      */
     public function __construct(
         CollectionFactory $collectionFactory,
-        ConfigProvider $config,
+        ConfigFeed $feedConfigProvider,
+        ConfigAttributes $attributesConfigProvider,
         Json $jsonSerializer
     ) {
         $this->collectionFactory = $collectionFactory;
-        $this->config = $config;
+        $this->feedConfigProvider = $feedConfigProvider;
+        $this->attributesConfigProvider = $attributesConfigProvider;
         $this->jsonSerializer = $jsonSerializer;
     }
 
@@ -92,7 +100,7 @@ class LabelFeed implements ObserverInterface
         try {
             //prepare attributes to select
             $feedExecutor->log('- Prepare attributes to select');
-            $configurationMap = $this->jsonSerializer->unserialize($this->config->getMapping($store));
+            $configurationMap = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping($store));
 
             $attributesToSelect = [];
             foreach ($configurationMap as $field) {
@@ -106,7 +114,7 @@ class LabelFeed implements ObserverInterface
             $collection = $this->collectionFactory->create();
             $collection->addFieldToFilter('attribute_code', ['in' => $attributesToSelect]);
             $collection->addStoreLabel($store->getId());
-            $collection->setPageSize($this->config->getBatchLimit());
+            $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
 
             //init output
             $output = $feedExecutor->initOutput($this->filename, $store->getCode());
@@ -147,7 +155,9 @@ class LabelFeed implements ObserverInterface
             $feedExecutor->log('- ERROR');
             $feedExecutor->log($e->getMessage());
         } finally {
-            $feedExecutor->setTimeStampData([$this->filename . '.' . $this->config::CONFIG_OUTPUT_EXTENSION, $counter]);
+            $feedExecutor->setTimeStampData(
+                [$this->filename . '.' . $this->feedConfigProvider->getOutputFileExtension(), $counter]
+            );
         }
 
         $feedExecutor->log('END ---- ' . $this->filename . ' ----');

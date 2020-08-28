@@ -1,0 +1,168 @@
+<?php
+/**
+ * Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+
+declare(strict_types=1);
+
+namespace HawkSearch\Datafeed\Model\Config;
+
+use HawkSearch\Connector\Model\ConfigProvider;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Filesystem;
+use Magento\Store\Model\ResourceModel\Store\Collection as StoreCollection;
+use Magento\Store\Model\ResourceModel\Store\CollectionFactory as StoreCollectionFactory;
+
+class Feed extends ConfigProvider
+{
+    /**#@+
+     * Configuration paths
+     */
+    const CONFIG_STORES = 'stores';
+    const CONFIG_BATCH_LIMIT = 'batch_limit';
+    const CONFIG_REINDEX = 'reindex';
+    const CONFIG_CRON_ENABLE = 'cron_enable';
+    const CONFIG_CRON_EMAIL = 'cron_email';
+    const CONFIG_BUFFER_SIZE = 'buffer_size';
+    const CONFIG_OUTPUT_FILE_EXT = 'output_file_ext';
+    const CONFIG_FEED_PATH = 'feed_path';
+    const CONFIG_SUMMARY_FILENAME = 'summary_filename';
+    /**#@-*/
+
+    const CSV_DELIMITER = "\t";
+
+    /**
+     * @var StoreCollectionFactory
+     */
+    private $storeCollectionFactory;
+
+    /**
+     * @var Filesystem
+     */
+    private $fileSystem;
+
+    /**
+     * Feed constructor.
+     * @param StoreCollectionFactory $storeCollectionFactory
+     * @param ScopeConfigInterface $scopeConfig
+     * @param Filesystem $fileSystem
+     * @param null $configRootPath
+     * @param null $configGroup
+     */
+    public function __construct(
+        StoreCollectionFactory $storeCollectionFactory,
+        ScopeConfigInterface $scopeConfig,
+        Filesystem $fileSystem,
+        $configRootPath = null,
+        $configGroup = null
+
+    ) {
+        parent::__construct($scopeConfig, $configRootPath, $configGroup);
+        $this->storeCollectionFactory = $storeCollectionFactory;
+        $this->fileSystem = $fileSystem;
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return StoreCollection
+     */
+    public function getStores($store = null): StoreCollection
+    {
+        return $this->storeCollectionFactory->create()->addIdFilter(
+            explode(',', $this->getConfig(self::CONFIG_STORES, $store))
+        )->load();
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return int
+     */
+    public function getBatchLimit($store = null): int
+    {
+        return (int)$this->getConfig(self::CONFIG_BATCH_LIMIT, $store);
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return bool
+     */
+    public function isReindex($store = null): bool
+    {
+        return (bool)$this->getConfig(self::CONFIG_REINDEX, $store);
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return bool
+     */
+    public function isCronEnabled($store = null): bool
+    {
+        return (bool)$this->getConfig(self::CONFIG_CRON_ENABLE, $store);
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return string | null
+     */
+    public function getCronEmail($store = null): ?string
+    {
+        return $this->getConfig(self::CONFIG_CRON_EMAIL, $store);
+    }
+
+    /**
+     * @return string | null
+     */
+    public function getFieldDelimiter(): ?string
+    {
+        return self::CSV_DELIMITER;
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return int
+     */
+    public function getBufferSize($store = null): int
+    {
+        return (int)$this->getConfig(self::CONFIG_BUFFER_SIZE, $store);
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return string | null
+     */
+    public function getOutputFileExtension($store = null): ?string
+    {
+        return $this->getConfig(self::CONFIG_OUTPUT_FILE_EXT, $store);
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return string | null
+     * @throws FileSystemException
+     */
+    public function getPath($store = null): ?string
+    {
+        $mediaWriter = $this->fileSystem->getDirectoryWrite('media');
+        $mediaWriter->create($this->getConfig(self::CONFIG_FEED_PATH, $store));
+
+        return $mediaWriter->getAbsolutePath($this->getConfig(self::CONFIG_FEED_PATH, $store));
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return string | null
+     */
+    public function getSummaryFilename($store = null): ?string
+    {
+        return $this->getConfig(self::CONFIG_SUMMARY_FILENAME, $store);
+    }
+}

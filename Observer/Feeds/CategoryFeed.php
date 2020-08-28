@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
-use HawkSearch\Datafeed\Model\ConfigProvider;
+use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Datafeed;
 use Magento\Catalog\Model\Category;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory;
@@ -61,21 +61,21 @@ class CategoryFeed implements ObserverInterface
     private $collectionFactory;
 
     /**
-     * @var ConfigProvider
+     * @var ConfigFeed
      */
-    private $config;
+    private $feedConfigProvider;
 
     /**
      * ItemFeed constructor.
      * @param CollectionFactory $collectionFactory
-     * @param ConfigProvider $config
+     * @param ConfigFeed $feedConfigProvider
      */
     public function __construct(
         CollectionFactory $collectionFactory,
-        ConfigProvider $config
+        ConfigFeed $feedConfigProvider
     ) {
         $this->collectionFactory = $collectionFactory;
-        $this->config = $config;
+        $this->feedConfigProvider = $feedConfigProvider;
     }
 
     /**
@@ -103,7 +103,7 @@ class CategoryFeed implements ObserverInterface
             $collection->addAttributeToSort('entity_id')
                 ->addAttributeToSort('parent_id')
                 ->addAttributeToSort('position');
-            $collection->setPageSize($this->config->getBatchLimit());
+            $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
 
             //init output
             $output = $feedExecutor->initOutput($this->filename, $store->getCode());
@@ -193,7 +193,9 @@ class CategoryFeed implements ObserverInterface
             $feedExecutor->log('- ERROR');
             $feedExecutor->log($e->getMessage());
         } finally {
-            $feedExecutor->setTimeStampData([$this->filename . '.' . $this->config::CONFIG_OUTPUT_EXTENSION, $counter]);
+            $feedExecutor->setTimeStampData(
+                [$this->filename . '.' . $this->feedConfigProvider->getOutputFileExtension(), $counter]
+            );
         }
 
         $feedExecutor->log('END ---- ' . $this->filename . ' ----');

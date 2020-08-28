@@ -14,31 +14,27 @@
     <default>
         <hawksearch_datafeed>
             <general>
-                <enabled>1</enabled>
                 <logging_enabled>1</logging_enabled>
             </general>
             <feed>
+                <stores/>
                 <batch_limit>10000</batch_limit>
                 <reindex>0</reindex>
-                <delimiter>tab</delimiter>
+                <cron_enable>0</cron_enable>
+                <cron_string>0 0 * * *</cron_string>
+                <cron_email/>
+
                 <buffer_size>65536</buffer_size>
                 <output_file_ext>txt</output_file_ext>
                 <feed_path>hawksearch/feeds</feed_path>
-                <image_cache_lock_path>hawksearch/locks</image_cache_lock_path>
-                <lock_filename>hawksearchFeedLock.lock</lock_filename>
                 <summary_filename>hawksearchFeedSummary.json</summary_filename>
-                <cronlog_filename>hawksearchCronLog.log</cronlog_filename>
-                <cron_enable>0</cron_enable>
-                <cron_string>0 0 * * *</cron_string>
             </feed>
-            <hawksearch_api>
-                <api_url_develop>https://dev.hawksearch.net/api/</api_url_develop>
-                <api_url_staging>https://test.hawksearch.net/api/</api_url_staging>
-                <api_url_production>https://manage.hawksearch.com/api/</api_url_production>
-                <api_ver>v4</api_ver>
-            </hawksearch_api>
             <hawksearch_sftp>
                 <enabled>0</enabled>
+                <host/>
+                <username/>
+                <password/>
+                <folder/>
             </hawksearch_sftp>
             <attributes>
                 <mapping>

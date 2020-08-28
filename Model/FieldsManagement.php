@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
@@ -55,11 +56,6 @@ class FieldsManagement implements FieldsManagementInterface
     private $responseFactory;
 
     /**
-     * @var ConfigProvider
-     */
-    private $configProvider;
-
-    /**
      * @var Json
      */
     private $jsonSerializer;
@@ -70,11 +66,16 @@ class FieldsManagement implements FieldsManagementInterface
     private $dataObjectFactory;
 
     /**
+     * @var Config\Attributes
+     */
+    private $attributesConfigProvider;
+
+    /**
      * FieldsManagement constructor.
      * @param InstructionManagerPool $instructionManagerPool
      * @param LoggerInterface $logger
      * @param ResponseFactory $responseFactory
-     * @param ConfigProvider $configProvider
+     * @param Config\Attributes $attributesConfigProvider
      * @param Json $jsonSerializer
      * @param DataObjectFactory $dataObjectFactory
      */
@@ -82,14 +83,14 @@ class FieldsManagement implements FieldsManagementInterface
         InstructionManagerPool $instructionManagerPool,
         LoggerInterface $logger,
         ResponseFactory $responseFactory,
-        ConfigProvider $configProvider,
+        Config\Attributes $attributesConfigProvider,
         Json $jsonSerializer,
         DataObjectFactory $dataObjectFactory
     ) {
         $this->instructionManagerPool = $instructionManagerPool;
         $this->logger = $logger;
         $this->responseFactory = $responseFactory;
-        $this->configProvider = $configProvider;
+        $this->attributesConfigProvider = $attributesConfigProvider;
         $this->jsonSerializer = $jsonSerializer;
         $this->dataObjectFactory = $dataObjectFactory;
     }
@@ -107,10 +108,9 @@ class FieldsManagement implements FieldsManagementInterface
         try {
             $hawkFieldsResponse = $this->instructionManagerPool->get('hawksearch')
                 ->executeByCode('getFields')->get();
-            $currentMapping = $this->jsonSerializer->unserialize($this->configProvider->getMapping());
+            $currentMapping = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping());
 
             if ($hawkFieldsResponse[ClientInterface::RESPONSE_CODE] === 200) {
-
                 //prepare array fields
                 $arrayFields = [];
                 /** @var HawkSearchFieldInterface $field */
@@ -118,9 +118,8 @@ class FieldsManagement implements FieldsManagementInterface
                     $arrayFields[$field[HawkSearchFieldInterface::NAME] . self::FIELD_SUFFIX] = [
                         FieldsMapping::HAWK_ATTRIBUTE_LABEL => $field->getLabel(),
                         FieldsMapping::HAWK_ATTRIBUTE_CODE => $field->getName(),
-                        FieldsMapping::MAGENTO_ATTRIBUTE => $currentMapping[
-                            $field->getName() . self::FIELD_SUFFIX
-                        ][FieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
+                        FieldsMapping::MAGENTO_ATTRIBUTE => $currentMapping[$field->getName(
+                            ) . self::FIELD_SUFFIX][FieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
                     ];
                 }
 

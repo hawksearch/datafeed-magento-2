@@ -76,12 +76,12 @@ class CsvWriter
 
     /**
      * @param  $destFile
-     * @param  $delim
+     * @param  $delimiter
      * @param  null     $buffSize
      * @return $this
      * @throws FileSystemException
      */
-    public function init($destFile, $delim, $buffSize = null)
+    public function init($destFile, $delimiter, $buffSize = null)
     {
         $this->finalDestinationPath = $destFile;
         if ($this->fileDirectory->fileExists($this->finalDestinationPath)) {
@@ -91,7 +91,7 @@ class CsvWriter
                 );
             }
         }
-        $this->delimiter = $delim;
+        $this->delimiter = $delimiter;
         $this->bufferSize = $buffSize;
         return $this;
     }

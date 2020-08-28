@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
@@ -15,8 +16,9 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
 use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
+use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
+use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
-use HawkSearch\Datafeed\Model\ConfigProvider;
 use HawkSearch\Datafeed\Model\Datafeed;
 use HawkSearch\Datafeed\Model\FieldsManagement;
 use Magento\Catalog\Model\Product;
@@ -26,7 +28,6 @@ use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\InventorySalesAdminUi\Model\GetSalableQuantityDataBySku;
 use Magento\Store\Model\Store;
@@ -81,11 +82,6 @@ class ItemFeed implements ObserverInterface
     private $collectionFactory;
 
     /**
-     * @var ConfigProvider
-     */
-    private $config;
-
-    /**
      * @var Json
      */
     private $jsonSerializer;
@@ -101,22 +97,35 @@ class ItemFeed implements ObserverInterface
     private $salableQnt;
 
     /**
+     * @var ConfigFeed
+     */
+    private $feedConfigProvider;
+
+    /**
+     * @var ConfigAttributes
+     */
+    private $attributesConfigProvider;
+
+    /**
      * ItemFeed constructor.
      * @param CollectionFactory $collectionFactory
-     * @param ConfigProvider $config
+     * @param ConfigFeed $feedConfigProvider
+     * @param ConfigAttributes $attributesConfigProvider
      * @param Json $jsonSerializer
      * @param Configurable $configurableType
      * @param GetSalableQuantityDataBySku $salableQnt
      */
     public function __construct(
         CollectionFactory $collectionFactory,
-        ConfigProvider $config,
+        ConfigFeed $feedConfigProvider,
+        ConfigAttributes $attributesConfigProvider,
         Json $jsonSerializer,
         Configurable $configurableType,
         GetSalableQuantityDataBySku $salableQnt
     ) {
         $this->collectionFactory = $collectionFactory;
-        $this->config = $config;
+        $this->feedConfigProvider = $feedConfigProvider;
+        $this->attributesConfigProvider = $attributesConfigProvider;
         $this->jsonSerializer = $jsonSerializer;
         $this->configurableType = $configurableType;
         $this->salableQnt = $salableQnt;
@@ -141,7 +150,7 @@ class ItemFeed implements ObserverInterface
         try {
             //prepare map
             $feedExecutor->log('- Prepare attributes map');
-            $configurationMap = $this->jsonSerializer->unserialize($this->config->getMapping($store));
+            $configurationMap = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping($store));
 
             $map = [];
             foreach (self::FEED_ATTRIBUTES as $field) {
@@ -155,7 +164,7 @@ class ItemFeed implements ObserverInterface
             $collection->addAttributeToSelect('*');
             $collection->addPriceData();
             $collection->addStoreFilter($store);
-            $collection->setPageSize($this->config->getBatchLimit());
+            $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
 
             //init output
             $output = $feedExecutor->initOutput($this->filename, $store->getCode());
@@ -196,7 +205,9 @@ class ItemFeed implements ObserverInterface
             $feedExecutor->log('- ERROR');
             $feedExecutor->log($e->getMessage());
         } finally {
-            $feedExecutor->setTimeStampData([$this->filename . '.' . $this->config::CONFIG_OUTPUT_EXTENSION, $counter]);
+            $feedExecutor->setTimeStampData(
+                [$this->filename . '.' . $this->feedConfigProvider->getOutputFileExtension(), $counter]
+            );
         }
 
         $feedExecutor->log('END ---- ' . $this->filename . ' ----');
