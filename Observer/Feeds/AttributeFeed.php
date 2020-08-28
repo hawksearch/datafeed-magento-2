@@ -148,7 +148,7 @@ class AttributeFeed implements ObserverInterface
             $attributeMapping = [];
             /** @var Attribute $attribute */
             foreach ($attributeCollection->getItems() as $attribute) {
-                if ($attribute->getSource()) {
+                if ($attribute->getSourceModel()) {
                     $attributeMapping[$attribute->getAttributeCode()] = $attribute;
                 }
             }
