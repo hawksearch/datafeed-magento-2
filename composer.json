@@ -2,7 +2,7 @@
   "name": "hawksearch/datafeed",
   "type": "magento2-module",
   "description": "Hawksearch Datafeed module for Magento 2",
-  "version": "2.3.13",
+  "version": "2.4.0",
   "license": [
     "OSL-3.0",
     "AFL-3.0"
