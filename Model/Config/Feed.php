@@ -78,7 +78,10 @@ class Feed extends ConfigProvider
     public function getStores($store = null): StoreCollection
     {
         return $this->storeCollectionFactory->create()->addIdFilter(
-            explode(',', $this->getConfig(self::CONFIG_STORES, $store))
+            explode(
+                ',',
+                $this->getConfig(self::CONFIG_STORES, $store) ?: ''
+            )
         )->load();
     }
 
