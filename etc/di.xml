@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface" type="HawkSearch\Datafeed\Model\HawkSearchField" />
+    <preference for="HawkSearch\Datafeed\Api\Data\ResponseInterface" type="HawkSearch\Datafeed\Model\Response\Response" />
+    <preference for="HawkSearch\Datafeed\Api\FieldsManagementInterface" type="HawkSearch\Datafeed\Model\FieldsManagement" />
+    <preference for="HawkSearch\Datafeed\Api\Data\FeedSummaryInterface" type="HawkSearch\Datafeed\Model\FeedSummary" />
+
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
@@ -17,9 +22,29 @@
         </arguments>
     </type>
 
-    <preference for="HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface" type="HawkSearch\Datafeed\Model\HawkSearchField" />
-    <preference for="HawkSearch\Datafeed\Api\Data\ResponseInterface" type="HawkSearch\Datafeed\Model\Response\Response" />
-    <preference for="HawkSearch\Datafeed\Api\FieldsManagementInterface" type="HawkSearch\Datafeed\Model\FieldsManagement" />
-    <preference for="HawkSearch\Datafeed\Api\Data\FeedSummaryInterface" type="HawkSearch\Datafeed\Model\FeedSummary" />
-
+    <!-- Configs -->
+    <type name="HawkSearch\Datafeed\Model\Config\Feed">
+        <arguments>
+            <argument name="configRootPath" xsi:type="string">hawksearch_datafeed</argument>
+            <argument name="configGroup" xsi:type="string">feed</argument>
+        </arguments>
+    </type>
+    <type name="HawkSearch\Datafeed\Model\Config\General">
+        <arguments>
+            <argument name="configRootPath" xsi:type="string">hawksearch_datafeed</argument>
+        </arguments>
+    </type>
+    <type name="HawkSearch\Datafeed\Model\Config\Sftp">
+        <arguments>
+            <argument name="configRootPath" xsi:type="string">hawksearch_datafeed</argument>
+            <argument name="configGroup" xsi:type="string">hawksearch_sftp</argument>
+        </arguments>
+    </type>
+    <type name="HawkSearch\Datafeed\Model\Config\Attributes">
+        <arguments>
+            <argument name="configRootPath" xsi:type="string">hawksearch_datafeed</argument>
+            <argument name="configGroup" xsi:type="string">attributes</argument>
+        </arguments>
+    </type>
+    <!-- END Configs -->
 </config>

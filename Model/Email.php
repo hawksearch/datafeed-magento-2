@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
@@ -14,12 +15,14 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Model;
 
+use HawkSearch\Datafeed\Logger\DataFeedLogger;
+use HawkSearch\Datafeed\Model\Config\Feed as FeedConfig;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
+use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use HawkSearch\Datafeed\Logger\DataFeedLogger;
 
 class Email
 {
@@ -42,6 +45,7 @@ class Email
      * @var StoreManagerInterface
      */
     protected $storeManager;
+
     /**
      * @var ConfigProvider
      */
@@ -53,12 +57,17 @@ class Email
     private $logger;
 
     /**
+     * @var FeedConfig
+     */
+    private $feedConfigProvider;
+
+    /**
      * Email constructor.
      * @param TransportBuilder $transportBuilder
      * @param StateInterface $inlineTranslation
      * @param ScopeConfigInterface $scopeConfig
      * @param StoreManagerInterface $storeManager
-     * @param ConfigProvider $configProvider
+     * @param FeedConfig $feedConfigProvider
      * @param DataFeedLogger $logger
      */
     public function __construct(
@@ -66,14 +75,14 @@ class Email
         StateInterface $inlineTranslation,
         ScopeConfigInterface $scopeConfig,
         StoreManagerInterface $storeManager,
-        ConfigProvider $configProvider,
+        FeedConfig $feedConfigProvider,
         DataFeedLogger $logger
     ) {
         $this->_transportBuilder = $transportBuilder;
         $this->inlineTranslation = $inlineTranslation;
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
-        $this->configProvider = $configProvider;
+        $this->feedConfigProvider = $feedConfigProvider;
         $this->logger = $logger;
     }
 
@@ -94,12 +103,21 @@ class Email
                     ]
                 )
                 ->setTemplateVars($templateParams)
-                ->setFrom([
-                    'name' => $this->configProvider->getGenName(),
-                    'email' => $this->configProvider->getGenEmail()
-                ])
-                ->addTo($this->configProvider->getCronEmail())
+                ->setFrom(
+                    [
+                        'name' => $this->scopeConfig->getValue(
+                            'trans_email/ident_general/name',
+                            ScopeInterface::SCOPE_STORE
+                        ),
+                        'email' => $this->scopeConfig->getValue(
+                            'trans_email/ident_general/email',
+                            ScopeInterface::SCOPE_STORE
+                        )
+                    ]
+                )
+                ->addTo($this->feedConfigProvider->getCronEmail())
                 ->getTransport();
+
             $transport->sendMessage();
         } catch (LocalizedException $e) {
             $this->logger->debug($e->getMessage());

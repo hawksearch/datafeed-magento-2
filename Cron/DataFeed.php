@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Cron;
 
-use HawkSearch\Datafeed\Model\ConfigProvider;
+use HawkSearch\Datafeed\Model\Config\Feed as FeedConfig;
 use HawkSearch\Datafeed\Model\Datafeed as DatafeedModel;
 use HawkSearch\Datafeed\Model\EmailFactory;
 use HawkSearch\Datafeed\Model\Task\Datafeed\Task;
@@ -33,9 +33,9 @@ class DataFeed
     private $emailFactory;
 
     /**
-     * @var ConfigProvider
+     * @var FeedConfig
      */
-    private $configProvider;
+    private $feedConfigProvider;
 
     /**
      * @var Task
@@ -50,18 +50,18 @@ class DataFeed
     /**
      * DataFeed constructor.
      * @param EmailFactory $emailFactory
-     * @param ConfigProvider $configProvider
+     * @param FeedConfig $feedConfigProvider
      * @param Task $task
      * @param TaskOptionsFactory $taskOptionsFactory
      */
     public function __construct(
         EmailFactory $emailFactory,
-        ConfigProvider $configProvider,
+        FeedConfig $feedConfigProvider,
         Task $task,
         TaskOptionsFactory $taskOptionsFactory
     ) {
         $this->emailFactory = $emailFactory;
-        $this->configProvider = $configProvider;
+        $this->feedConfigProvider = $feedConfigProvider;
         $this->task = $task;
         $this->taskOptionsFactory = $taskOptionsFactory;
     }
@@ -71,7 +71,7 @@ class DataFeed
      */
     public function execute()
     {
-        if (!$this->configProvider->isCronEnabled()) {
+        if (!$this->feedConfigProvider->isCronEnabled()) {
             return;
         }
 

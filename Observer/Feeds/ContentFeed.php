@@ -14,14 +14,13 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
-use HawkSearch\Datafeed\Model\ConfigProvider;
+use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Datafeed;
 use Magento\Cms\Model\Page;
 use Magento\Cms\Model\ResourceModel\Page\CollectionFactory;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\Store;
 
 class ContentFeed implements ObserverInterface
@@ -49,21 +48,21 @@ class ContentFeed implements ObserverInterface
     private $collectionFactory;
 
     /**
-     * @var ConfigProvider
+     * @var ConfigFeed
      */
-    private $config;
+    private $feedConfigProvider;
 
     /**
      * ItemFeed constructor.
      * @param CollectionFactory $collectionFactory
-     * @param ConfigProvider $config
+     * @param ConfigFeed $feedConfigProvider
      */
     public function __construct(
         CollectionFactory $collectionFactory,
-        ConfigProvider $config
+        ConfigFeed $feedConfigProvider
     ) {
         $this->collectionFactory = $collectionFactory;
-        $this->config = $config;
+        $this->feedConfigProvider = $feedConfigProvider;
     }
 
     /**
@@ -89,7 +88,7 @@ class ContentFeed implements ObserverInterface
             $collection->addStoreFilter($store->getId());
             $collection->addFieldToFilter('is_active', ['eq' => 1]);
             $collection->addFieldToFilter('hawk_exclude', ['neq' => 1]);
-            $collection->setPageSize($this->config->getBatchLimit());
+            $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
 
             //init output
             $output = $feedExecutor->initOutput($this->filename, $store->getCode());
@@ -133,7 +132,9 @@ class ContentFeed implements ObserverInterface
             $feedExecutor->log('- ERROR');
             $feedExecutor->log($e->getMessage());
         } finally {
-            $feedExecutor->setTimeStampData([$this->filename . '.' . $this->config::CONFIG_OUTPUT_EXTENSION, $counter]);
+            $feedExecutor->setTimeStampData(
+                [$this->filename . '.' . $this->feedConfigProvider->getOutputFileExtension(), $counter]
+            );
         }
 
         $feedExecutor->log('END ---- ' . $this->filename . ' ----');

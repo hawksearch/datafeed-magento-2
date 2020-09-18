@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
@@ -15,13 +16,15 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
 use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
+use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
+use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
-use HawkSearch\Datafeed\Model\ConfigProvider;
 use HawkSearch\Datafeed\Model\CsvWriter;
 use HawkSearch\Datafeed\Model\Datafeed;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
@@ -30,7 +33,6 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Review\Model\Review;
 use Magento\Store\Model\Store;
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
 
 class AttributeFeed implements ObserverInterface
 {
@@ -70,11 +72,6 @@ class AttributeFeed implements ObserverInterface
     private $attributeCollectionFactory;
 
     /**
-     * @var ConfigProvider
-     */
-    private $config;
-
-    /**
      * @var Json
      */
     private $jsonSerializer;
@@ -85,23 +82,36 @@ class AttributeFeed implements ObserverInterface
     private $review;
 
     /**
+     * @var ConfigFeed
+     */
+    private $feedConfigProvider;
+
+    /**
+     * @var ConfigAttributes
+     */
+    private $attributesConfigProvider;
+
+    /**
      * ItemFeed constructor.
      * @param ProductCollection $productCollectionFactory
      * @param AttributeCollection $attributeCollectionFactory
-     * @param ConfigProvider $config
+     * @param ConfigFeed $feedConfigProvider
+     * @param ConfigAttributes $attributesConfigProvider
      * @param Json $jsonSerializer
      * @param Review $review
      */
     public function __construct(
         ProductCollection $productCollectionFactory,
         AttributeCollection $attributeCollectionFactory,
-        ConfigProvider $config,
+        ConfigFeed $feedConfigProvider,
+        ConfigAttributes $attributesConfigProvider,
         Json $jsonSerializer,
         Review $review
     ) {
         $this->productCollectionFactory = $productCollectionFactory;
         $this->attributeCollectionFactory = $attributeCollectionFactory;
-        $this->config = $config;
+        $this->feedConfigProvider = $feedConfigProvider;
+        $this->attributesConfigProvider = $attributesConfigProvider;
         $this->jsonSerializer = $jsonSerializer;
         $this->review = $review;
     }
@@ -125,7 +135,7 @@ class AttributeFeed implements ObserverInterface
         try {
             //prepare map
             $feedExecutor->log('- Prepare attributes map');
-            $configurationMap = $this->jsonSerializer->unserialize($this->config->getMapping($store));
+            $configurationMap = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping($store));
 
             $map = [];
             $magentoAttributes = [];
@@ -159,7 +169,7 @@ class AttributeFeed implements ObserverInterface
             $collection->addAttributeToSelect('*');
             $collection->addPriceData();
             $collection->addStoreFilter($store);
-            $collection->setPageSize($this->config->getBatchLimit());
+            $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
 
             //init output
             $output = $feedExecutor->initOutput($this->filename, $store->getCode());
@@ -212,7 +222,7 @@ class AttributeFeed implements ObserverInterface
             $feedExecutor->log($e->getMessage());
         } finally {
             $feedExecutor->setTimeStampData(
-                [$this->filename . '.' . $this->config::CONFIG_OUTPUT_EXTENSION, $this->counter]
+                [$this->filename . '.' . $this->feedConfigProvider->getOutputFileExtension(), $this->counter]
             );
         }
 
@@ -240,7 +250,7 @@ class AttributeFeed implements ObserverInterface
         switch ($attribute) {
             case ProductAttributes::SEPARATE_METHOD:
                 if (isset(self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field])
-                && is_callable([$this, self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]])) {
+                    && is_callable([$this, self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]])) {
                     $this->{self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]}($product, $store, $output, $field);
                 }
                 break;
@@ -251,11 +261,13 @@ class AttributeFeed implements ObserverInterface
                     $value = $product->getData($attribute);
                 }
                 if ($product->getData($attribute)) {
-                    $output->appendRow([
-                        $product->getSku(),
-                        $field,
-                        $value
-                    ]);
+                    $output->appendRow(
+                        [
+                            $product->getSku(),
+                            $field,
+                            $value
+                        ]
+                    );
                     $this->counter++;
                 }
         }

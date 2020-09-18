@@ -15,29 +15,29 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Logger;
 
 use Magento\Framework\Logger\Monolog;
-use HawkSearch\Datafeed\Model\ConfigProvider;
+use HawkSearch\Datafeed\Model\Config\General as GeneralConfigProvider;
 
 class DataFeedLogger extends Monolog
 {
     /**
-     * @var ConfigProvider
+     * @var GeneralConfigProvider
      */
-    private $configProvider;
+    private $generalConfigProvider;
 
     /**
      * DataFeedLogger constructor.
-     * @param ConfigProvider $configProvider
+     * @param GeneralConfigProvider $generalConfigProvider
      * @param $name
      * @param array $handlers
      * @param array $processors
      */
     public function __construct(
-        ConfigProvider $configProvider,
+        GeneralConfigProvider $generalConfigProvider,
         $name,
         array $handlers = [],
         array $processors = []
     ) {
-        $this->configProvider = $configProvider;
+        $this->generalConfigProvider = $generalConfigProvider;
         parent::__construct(
             $name,
             $handlers,
@@ -52,7 +52,7 @@ class DataFeedLogger extends Monolog
      */
     public function debug($message, array $context = []) : bool
     {
-        if ($this->configProvider->isLoggingEnabled()) {
+        if ($this->generalConfigProvider->isLoggingEnabled()) {
             return parent::debug($message, $context);
         } else {
             return false;
