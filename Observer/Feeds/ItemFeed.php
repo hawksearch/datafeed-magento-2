@@ -24,12 +24,12 @@ use HawkSearch\Datafeed\Model\FieldsManagement;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
+use Magento\CatalogInventory\Helper\Stock;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Serialize\Serializer\Json;
-use Magento\InventorySalesAdminUi\Model\GetSalableQuantityDataBySku;
 use Magento\Store\Model\Store;
 
 class ItemFeed implements ObserverInterface
@@ -67,7 +67,7 @@ class ItemFeed implements ObserverInterface
         'url_detail' => 'getUrl',
         'group_id' => 'getGroupId',
         'is_on_sale' => 'isOnSale',
-        'metric_inventory' => 'getSalableQuantity',
+        'metric_inventory' => 'getStockStatus',
     ];
     /**#@-*/
 
@@ -92,11 +92,6 @@ class ItemFeed implements ObserverInterface
     private $configurableType;
 
     /**
-     * @var GetSalableQuantityDataBySku
-     */
-    private $salableQnt;
-
-    /**
      * @var ConfigFeed
      */
     private $feedConfigProvider;
@@ -107,13 +102,18 @@ class ItemFeed implements ObserverInterface
     private $attributesConfigProvider;
 
     /**
+     * @var Stock
+     */
+    private $stockHelper;
+
+    /**
      * ItemFeed constructor.
      * @param CollectionFactory $collectionFactory
      * @param ConfigFeed $feedConfigProvider
      * @param ConfigAttributes $attributesConfigProvider
      * @param Json $jsonSerializer
      * @param Configurable $configurableType
-     * @param GetSalableQuantityDataBySku $salableQnt
+     * @param Stock $stockHelper
      */
     public function __construct(
         CollectionFactory $collectionFactory,
@@ -121,14 +121,14 @@ class ItemFeed implements ObserverInterface
         ConfigAttributes $attributesConfigProvider,
         Json $jsonSerializer,
         Configurable $configurableType,
-        GetSalableQuantityDataBySku $salableQnt
+        Stock $stockHelper
     ) {
         $this->collectionFactory = $collectionFactory;
         $this->feedConfigProvider = $feedConfigProvider;
         $this->attributesConfigProvider = $attributesConfigProvider;
         $this->jsonSerializer = $jsonSerializer;
         $this->configurableType = $configurableType;
-        $this->salableQnt = $salableQnt;
+        $this->stockHelper = $stockHelper;
     }
 
     /**
@@ -165,6 +165,7 @@ class ItemFeed implements ObserverInterface
             $collection->addPriceData();
             $collection->addStoreFilter($store);
             $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
+            $this->stockHelper->addIsInStockFilterToCollection($collection);
 
             //init output
             $output = $feedExecutor->initOutput($this->filename, $store->getCode());
@@ -179,10 +180,10 @@ class ItemFeed implements ObserverInterface
             $currentPage = 1;
             do {
                 $feedExecutor->log(sprintf('- Starting product page %d', $currentPage));
+                $start = time();
                 $collection->clear();
                 $collection->setCurPage($currentPage);
                 $collection->load();
-                $start = time();
                 /** @var Product $product */
                 foreach ($collection->getItems() as $product) {
                     $row = [];
@@ -278,15 +279,8 @@ class ItemFeed implements ObserverInterface
      * @param Store $store
      * @return int|mixed
      */
-    private function getSalableQuantity(Product $product, Store $store)
+    private function getStockStatus(Product $product, Store $store)
     {
-        $value = 0;
-        if ($product->getTypeId() === Type::TYPE_SIMPLE) {
-            foreach ($this->salableQnt->execute($product->getSku()) as $source) {
-                $value += $source['qty'] ?? 0;
-            }
-        }
-
-        return $value;
+        return $product->getData('is_salable');
     }
 }
