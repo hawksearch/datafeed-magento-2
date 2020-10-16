@@ -2,7 +2,7 @@
   "name": "hawksearch/datafeed",
   "type": "magento2-module",
   "description": "Hawksearch Datafeed module for Magento 2",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "license": [
     "OSL-3.0",
     "AFL-3.0"
@@ -10,7 +10,8 @@
   "require": {
     "php": "^7.2|^7.3|^7.4",
     "magento/magento2-base": "^2.3.5|2.4.*",
-    "magento/magento-composer-installer": "*"
+    "magento/magento-composer-installer": "*",
+    "hawksearch/connector": "^2.4"
   },
   "autoload": {
     "psr-4": {
