@@ -114,7 +114,7 @@ class SftpManagement
                     ]
                 );
 
-                $sftpFolderPath = $this->sftpConfigProvider->getFolder();
+                $sftpFolderPath = $this->sftpConfigProvider->getFolder() ?: DIRECTORY_SEPARATOR;
                 if (!$this->sftp->cd($sftpFolderPath)) {
                     $this->processDirectories($sftpFolderPath);
                 }
