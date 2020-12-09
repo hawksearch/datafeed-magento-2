@@ -1,5 +1,5 @@
 # HawkSearch 
-## Proxy module for Magento 2
+## Datafeed module for Magento 2
 
 ### Installation Instructions
 #### Steps to install via composer:
