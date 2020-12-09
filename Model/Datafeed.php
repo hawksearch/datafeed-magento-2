@@ -156,6 +156,8 @@ class Datafeed
                 //generate timestamp file
                 $this->generateTimestamp($store->getCode());
 
+                $this->sftpManagement->processFilesToSftp(); 
+
                 // trigger reindex on HawkSearch side
                 if ($this->feedConfigProvider->isReindex($store)) {
                     $response = $this->instructionManagerPool
@@ -174,8 +176,6 @@ class Datafeed
                 }
 
                 $storeSummary[$store->getCode()]['end_time'] = date(DATE_ATOM);
-
-                $this->sftpManagement->processFilesToSftp();
 
                 // end emulation
                 $this->emulation->stopEnvironmentEmulation();
