@@ -257,6 +257,14 @@ class AttributeFeed implements ObserverInterface
             default:
                 if (isset($attributeMapping[$attribute])) {
                     $value = $attributeMapping[$attribute]->getSource()->getOptionText($product->getData($attribute));
+
+                    /**
+                     * Below is a workaround for some attributes of multiple_select type which have
+                     * getOptionText() method overwritten and return array values
+                     */
+                    if (is_array($value)) {
+                        $value = implode(',', $value);
+                    }
                 } else {
                     $value = $product->getData($attribute);
                 }
