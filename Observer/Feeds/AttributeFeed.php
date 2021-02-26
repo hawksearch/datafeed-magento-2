@@ -22,9 +22,11 @@ use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
 use HawkSearch\Datafeed\Model\CsvWriter;
 use HawkSearch\Datafeed\Model\Datafeed;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
-use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollection;
-use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollection;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute as EavAttribute;
+use Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection as AttributeCollection;
+use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
+use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
@@ -33,6 +35,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Review\Model\Review;
 use Magento\Store\Model\Store;
+use Magento\Review\Model\ResourceModel\Review\SummaryFactory;
 
 class AttributeFeed implements ObserverInterface
 {
@@ -62,12 +65,12 @@ class AttributeFeed implements ObserverInterface
     private $filename = 'attributes';
 
     /**
-     * @var ProductCollection
+     * @var ProductCollectionFactory
      */
     private $productCollectionFactory;
 
     /**
-     * @var AttributeCollection
+     * @var AttributeCollectionFactory
      */
     private $attributeCollectionFactory;
 
@@ -75,11 +78,6 @@ class AttributeFeed implements ObserverInterface
      * @var Json
      */
     private $jsonSerializer;
-
-    /**
-     * @var Review
-     */
-    private $review;
 
     /**
      * @var ConfigFeed
@@ -92,28 +90,37 @@ class AttributeFeed implements ObserverInterface
     private $attributesConfigProvider;
 
     /**
+     * @var SummaryFactory
+     */
+    private $sumResourceFactory;
+
+    /**
+     * @var EavAttribute[]
+     */
+    private $attributes;
+
+    /**
      * ItemFeed constructor.
-     * @param ProductCollection $productCollectionFactory
-     * @param AttributeCollection $attributeCollectionFactory
+     * @param ProductCollectionFactory $productCollectionFactory
+     * @param AttributeCollectionFactory $attributeCollectionFactory
      * @param ConfigFeed $feedConfigProvider
      * @param ConfigAttributes $attributesConfigProvider
      * @param Json $jsonSerializer
-     * @param Review $review
      */
     public function __construct(
-        ProductCollection $productCollectionFactory,
-        AttributeCollection $attributeCollectionFactory,
+        ProductCollectionFactory $productCollectionFactory,
+        AttributeCollectionFactory $attributeCollectionFactory,
         ConfigFeed $feedConfigProvider,
         ConfigAttributes $attributesConfigProvider,
         Json $jsonSerializer,
-        Review $review
+        SummaryFactory $sumResourceFactory
     ) {
         $this->productCollectionFactory = $productCollectionFactory;
         $this->attributeCollectionFactory = $attributeCollectionFactory;
         $this->feedConfigProvider = $feedConfigProvider;
         $this->attributesConfigProvider = $attributesConfigProvider;
         $this->jsonSerializer = $jsonSerializer;
-        $this->review = $review;
+        $this->sumResourceFactory = $sumResourceFactory;
     }
 
     /**
@@ -138,38 +145,23 @@ class AttributeFeed implements ObserverInterface
             $configurationMap = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping($store));
 
             $map = [];
-            $magentoAttributes = [];
             foreach ($configurationMap as $field) {
                 if (!empty($field[FieldsMapping::HAWK_ATTRIBUTE_CODE])
                     && !in_array($field[FieldsMapping::HAWK_ATTRIBUTE_CODE], ItemFeed::FEED_ATTRIBUTES)
                     && !empty($field[FieldsMapping::MAGENTO_ATTRIBUTE])) {
                     $map[$field[FieldsMapping::HAWK_ATTRIBUTE_CODE]] = $field[FieldsMapping::MAGENTO_ATTRIBUTE];
-                    $magentoAttributes[] = $field[FieldsMapping::MAGENTO_ATTRIBUTE];
-                }
-            }
-
-            //prepare attributes collection
-            $feedExecutor->log('- Prepare attributes collection');
-            $attributeCollection = $this->attributeCollectionFactory->create();
-            $attributeCollection->addFieldToFilter('attribute_code', ['in' => $magentoAttributes]);
-            $attributeCollection->load();
-
-            //create mapping: attribute_code => attribute entity if attribute has a source model
-            $attributeMapping = [];
-            /** @var Attribute $attribute */
-            foreach ($attributeCollection->getItems() as $attribute) {
-                if ($attribute->getSourceModel()) {
-                    $attributeMapping[$attribute->getAttributeCode()] = $attribute;
                 }
             }
 
             //prepare product collection
             $feedExecutor->log('- Prepare product collection');
+            /** @var ProductCollection $collection */
             $collection = $this->productCollectionFactory->create();
             $collection->addAttributeToSelect('*');
             $collection->addPriceData();
             $collection->addStoreFilter($store);
             $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
+            $this->appendReviewSummaryToCollection($collection);
 
             //init output
             $output = $feedExecutor->initOutput($this->filename, $store->getCode());
@@ -184,21 +176,19 @@ class AttributeFeed implements ObserverInterface
             $currentPage = 1;
             do {
                 $feedExecutor->log(sprintf('- Starting product page %d', $currentPage));
+
                 $collection->clear();
                 $collection->setCurPage($currentPage);
-                $this->review->appendSummary($collection); //TODO find another way to get reviews
-                $collection->load();
+
                 $start = time();
                 /** @var Product $product */
                 foreach ($collection->getItems() as $product) {
                     foreach ($map as $field => $magentoAttribute) {
                         $this->handleProductAttributeValues(
                             $product,
-                            $store,
                             $output,
                             $field,
-                            $magentoAttribute,
-                            $attributeMapping
+                            $magentoAttribute
                         );
                     }
                 }
@@ -231,101 +221,151 @@ class AttributeFeed implements ObserverInterface
 
     /**
      * @param Product $product
-     * @param Store $store
      * @param CsvWriter $output
      * @param string $field
      * @param string $attribute
-     * @param Attribute[] $attributeMapping
      * @return void
      * @throws FileSystemException|LocalizedException
      */
     private function handleProductAttributeValues(
         Product $product,
-        Store $store,
         CsvWriter $output,
         string $field,
-        string $attribute,
-        array $attributeMapping
+        string $attribute
     ) {
+        $value = null;
         switch ($attribute) {
             case ProductAttributes::SEPARATE_METHOD:
                 if (isset(self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field])
                     && is_callable([$this, self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]])) {
-                    $this->{self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]}($product, $store, $output, $field);
+                    $value = $this->{self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]}($product);
                 }
                 break;
             default:
-                if (isset($attributeMapping[$attribute])) {
-                    $value = $attributeMapping[$attribute]->getSource()->getOptionText($product->getData($attribute));
+                $eavAttribute = $this->getAttributeByCode($attribute);
+                $value = $product->getData($attribute);
 
-                    /**
-                     * Below is a workaround for some attributes of multiple_select type which have
-                     * getOptionText() method overwritten and return array values
-                     */
-                    if (is_array($value)) {
-                        $value = implode(',', $value);
+                if ($value !== null) {
+                    if (!is_array($value) && $eavAttribute->usesSource()) {
+                        $value = $product->getAttributeText($attribute);
+                        if (!is_array($value)) {
+                            $value = $this->handleMultipleValues((string)$value);
+                        }
                     }
-                } else {
-                    $value = $product->getData($attribute);
+
+                    if ($value === false) {
+                        $value = $eavAttribute->getFrontend()->getValue($product);
+                    }
                 }
-                if ($product->getData($attribute)) {
-                    $output->appendRow(
-                        [
-                            $product->getSku(),
-                            $field,
-                            $value
-                        ]
-                    );
-                    $this->counter++;
-                }
+        }
+
+        if ($value !== null) {
+            $values = (array)$value;
+
+            foreach ($values as $value) {
+                $output->appendRow(
+                    [
+                        $product->getSku(),
+                        $field,
+                        $value
+                    ]
+                );
+                $this->counter++;
+            }
         }
     }
 
     /**
-     * @param Product $product
-     * @param Store $store
-     * @param CsvWriter $output
-     * @param string $field
-     * @return void
-     * @throws FileSystemException
+     * @return EavAttribute[]
      */
-    private function getCategoryIds(Product $product, Store $store, CsvWriter $output, string $field)
+    private function getAttributeCollection()
     {
+        if ($this->attributes === null) {
+            /** @var AttributeCollection $attributeCollection */
+            $attributeCollection = $this->attributeCollectionFactory->create();
+            /** @var EavAttribute $attribute */
+            foreach ($attributeCollection as $attribute) {
+                $this->attributes[$attribute->getAttributeCode()] = $attribute;
+            }
+        }
+        return $this->attributes;
+    }
+
+    /**
+     * @param $attributeCode
+     * @return EavAttribute|null
+     */
+    private function getAttributeByCode($attributeCode)
+    {
+        return $this->getAttributeCollection()[$attributeCode] ?? null;
+    }
+
+
+    /**
+     * @param ProductCollection $productCollection
+     * @return $this
+     */
+    private function appendReviewSummaryToCollection(ProductCollection $productCollection)
+    {
+        $this->sumResourceFactory->create()->appendSummaryFieldsToCollection(
+            $productCollection,
+            (string)$productCollection->getStoreId(),
+            Review::ENTITY_PRODUCT_CODE
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string $value
+     * @return string[]
+     */
+    private function handleMultipleValues(string $value)
+    {
+        if (strpos($value, ',') !== false) {
+            $value = explode(',', $value);
+        }
+
+        return (array)$value;
+    }
+
+    /**
+     * @param Product $product
+     * @return array
+     */
+    private function getCategoryIds(Product $product)
+    {
+        $values = [];
         foreach ($product->getCategoryIds() as $id) {
-            $output->appendRow([$product->getSku(), $field, $id]);
-            $this->counter++;
+            $values[] = $id;
         }
+        return $values;
     }
 
     /**
      * @param Product $product
-     * @param Store $store
-     * @param CsvWriter $output
-     * @param string $field
-     * @return void
-     * @throws FileSystemException
+     * @return string|null
      */
-    private function getRatingSummary(Product $product, Store $store, CsvWriter $output, string $field)
+    private function getRatingSummary(Product $product)
     {
-        if (($rs = $product->getRatingSummary()) && $rs->getReviewsCount() > 0) {
-            $output->appendRow([$product->getSku(), $field, $rs->getRatingSummary()]);
-            $this->counter++;
+        $value = null;
+        if ($product->getRatingSummary() && $product->getReviewsCount() > 0) {
+            $value = $product->getRatingSummary();
         }
+
+        return $value;
     }
 
     /**
      * @param Product $product
-     * @param Store $store
-     * @param CsvWriter $output
-     * @param string $field
-     * @return void
-     * @throws FileSystemException
+     * @return string|null
      */
-    private function getReviewsCount(Product $product, Store $store, CsvWriter $output, string $field)
+    private function getReviewsCount(Product $product)
     {
-        if (($rs = $product->getRatingSummary()) && $rs->getReviewsCount() > 0) {
-            $output->appendRow([$product->getSku(), $field, $rs->getReviewsCount()]);
-            $this->counter++;
+        $value = null;
+        if ($product->getRatingSummary() && $product->getReviewsCount() > 0) {
+            $value = $product->getReviewsCount();
         }
+        return $value;
     }
 }
