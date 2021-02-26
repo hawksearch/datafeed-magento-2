@@ -243,19 +243,24 @@ class AttributeFeed implements ObserverInterface
                 break;
             default:
                 $eavAttribute = $this->getAttributeByCode($attribute);
-                $value = $eavAttribute->getSource()->getOptionText($product->getData($attribute));
+                $value = $product->getData($attribute);
 
-                if ($value === false) {
-                    $value = $product->getData($attribute);
+                if ($value !== null) {
+                    if (!is_array($value) && $eavAttribute->usesSource()) {
+                        $value = $product->getAttributeText($attribute);
+                        if (!is_array($value)) {
+                            $value = $this->handleMultipleValues((string)$value);
+                        }
+                    }
+
+                    if ($value === false) {
+                        $value = $eavAttribute->getFrontend()->getValue($product);
+                    }
                 }
         }
 
         if ($value !== null) {
-            if (!is_array($value)) {
-                $values = $this->handleMultipleValues((string)$value);
-            } else {
-                $values = $value;
-            }
+            $values = (array)$value;
 
             foreach ($values as $value) {
                 $output->appendRow(
