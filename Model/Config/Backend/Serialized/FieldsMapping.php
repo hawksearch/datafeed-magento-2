@@ -16,7 +16,7 @@ namespace HawkSearch\Datafeed\Model\Config\Backend\Serialized;
 use HawkSearch\Connector\Gateway\Http\ClientInterface;
 use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Connector\Gateway\InstructionException;
-use HawkSearch\Datafeed\Api\Data\HawkSearchFieldInterface;
+use HawkSearch\Connector\Api\Data\HawkSearchFieldInterface;
 use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping as ConfigFieldsMapping;
 use HawkSearch\Datafeed\Model\FieldsManagement;
 use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
