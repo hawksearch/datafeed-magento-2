@@ -11,7 +11,7 @@
     "php": "^7.2|^7.3|^7.4",
     "magento/magento2-base": "^2.3.5|2.4.*",
     "magento/magento-composer-installer": "*",
-    "hawksearch/connector": "^2.4"
+    "hawksearch/connector": "^2.4.2"
   },
   "autoload": {
     "psr-4": {
