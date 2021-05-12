@@ -4,6 +4,10 @@
     <preference for="HawkSearch\Datafeed\Api\Data\ResponseInterface" type="HawkSearch\Datafeed\Model\Response\Response" />
     <preference for="HawkSearch\Datafeed\Api\FieldsManagementInterface" type="HawkSearch\Datafeed\Model\FieldsManagement" />
     <preference for="HawkSearch\Datafeed\Api\Data\FeedSummaryInterface" type="HawkSearch\Datafeed\Model\FeedSummary" />
+    <preference for="HawkSearch\Datafeed\Model\Product\PriceManagementInterface"
+                type="HawkSearch\Datafeed\Model\Product\PriceManagement"/>
+    <preference for="HawkSearch\Datafeed\Model\Product\Price\ProductTypePoolInterface"
+                type="HawkSearch\Datafeed\Model\Product\Price\ProductTypePool"/>
 
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
@@ -17,6 +21,18 @@
         <arguments>
             <argument name="handlers" xsi:type="array">
                 <item name="debug" xsi:type="object">HawkSearch\Datafeed\Logger\Handler\DebugHandler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="HawkSearch\Datafeed\Model\Product\Price\ProductTypePool">
+        <arguments>
+            <argument name="types" xsi:type="array">
+                <item name="simple" xsi:type="string">HawkSearch\Datafeed\Model\Product\Price\ProductType\Simple</item>
+                <item name="virtual" xsi:type="string">HawkSearch\Datafeed\Model\Product\Price\ProductType\Virtual</item>
+                <item name="downloadable" xsi:type="string">HawkSearch\Datafeed\Model\Product\Price\ProductType\Downloadable</item>
+                <item name="configurable" xsi:type="string">HawkSearch\Datafeed\Model\Product\Price\ProductType\Configurable</item>
+                <item name="bundle" xsi:type="string">HawkSearch\Datafeed\Model\Product\Price\ProductType\Bundle</item>
+                <item name="grouped" xsi:type="string">HawkSearch\Datafeed\Model\Product\Price\ProductType\Grouped</item>
             </argument>
         </arguments>
     </type>

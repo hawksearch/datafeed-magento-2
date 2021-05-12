@@ -21,6 +21,7 @@ use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
 use HawkSearch\Datafeed\Model\CsvWriter;
 use HawkSearch\Datafeed\Model\Datafeed;
+use HawkSearch\Datafeed\Model\Product\PriceManagementInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute as EavAttribute;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection as AttributeCollection;
@@ -100,12 +101,19 @@ class AttributeFeed implements ObserverInterface
     private $attributes;
 
     /**
+     * @var PriceManagementInterface
+     */
+    private $priceManagement;
+
+    /**
      * ItemFeed constructor.
      * @param ProductCollectionFactory $productCollectionFactory
      * @param AttributeCollectionFactory $attributeCollectionFactory
      * @param ConfigFeed $feedConfigProvider
      * @param ConfigAttributes $attributesConfigProvider
      * @param Json $jsonSerializer
+     * @param SummaryFactory $sumResourceFactory
+     * @param PriceManagementInterface $priceManagement
      */
     public function __construct(
         ProductCollectionFactory $productCollectionFactory,
@@ -113,7 +121,8 @@ class AttributeFeed implements ObserverInterface
         ConfigFeed $feedConfigProvider,
         ConfigAttributes $attributesConfigProvider,
         Json $jsonSerializer,
-        SummaryFactory $sumResourceFactory
+        SummaryFactory $sumResourceFactory,
+        PriceManagementInterface $priceManagement
     ) {
         $this->productCollectionFactory = $productCollectionFactory;
         $this->attributeCollectionFactory = $attributeCollectionFactory;
@@ -121,6 +130,7 @@ class AttributeFeed implements ObserverInterface
         $this->attributesConfigProvider = $attributesConfigProvider;
         $this->jsonSerializer = $jsonSerializer;
         $this->sumResourceFactory = $sumResourceFactory;
+        $this->priceManagement = $priceManagement;
     }
 
     /**
@@ -191,6 +201,18 @@ class AttributeFeed implements ObserverInterface
                             $magentoAttribute
                         );
                     }
+
+                    $priceInfo = [];
+                    $this->priceManagement->collectPrices($product, $priceInfo);
+                    $product->addData($priceInfo);
+                    foreach ($priceInfo as $priceField => $priceData) {
+                        $this->handleProductAttributeValues(
+                            $product,
+                            $output,
+                            $priceField,
+                            $priceField
+                        );
+                    }
                 }
 
                 $feedExecutor->log(
@@ -236,9 +258,8 @@ class AttributeFeed implements ObserverInterface
         $value = null;
         switch ($attribute) {
             case ProductAttributes::SEPARATE_METHOD:
-                if (isset(self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field])
-                    && is_callable([$this, self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]])) {
-                    $value = $this->{self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]}($product);
+                if ($customHandler = $this->getFieldCustomHandler($field)) {
+                    $value = $this->{$customHandler}($product);
                 }
                 break;
             default:
@@ -246,7 +267,7 @@ class AttributeFeed implements ObserverInterface
                 $value = $product->getData($attribute);
 
                 if ($value !== null) {
-                    if (!is_array($value) && $eavAttribute->usesSource()) {
+                    if (!is_array($value) && $eavAttribute && $eavAttribute->usesSource()) {
                         $value = $product->getAttributeText($attribute);
                         if (!is_array($value)) {
                             $value = $this->handleMultipleValues((string)$value);
@@ -367,5 +388,20 @@ class AttributeFeed implements ObserverInterface
             $value = $product->getReviewsCount();
         }
         return $value;
+    }
+
+    /**
+     * @param string $field
+     * @return string|null
+     */
+    private function getFieldCustomHandler(string $field)
+    {
+        $handler = null;
+        if (isset(self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field])
+            && is_callable([$this, self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]])) {
+            $handler = self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field];
+        }
+
+        return $handler;
     }
 }
