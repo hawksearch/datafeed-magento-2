@@ -44,7 +44,7 @@
                             "hawk_attribute_code": "product_id",
                             "magento_attribute": "entity_id"
                         },
-                            "unique_id_field": {
+                        "unique_id_field": {
                             "hawk_attribute_label": "Unique Id",
                             "hawk_attribute_code": "unique_id",
                             "magento_attribute": "sku"

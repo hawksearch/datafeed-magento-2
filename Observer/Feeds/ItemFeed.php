@@ -15,54 +15,24 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
-use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
 use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
-use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
-use HawkSearch\Datafeed\Model\Datafeed;
-use HawkSearch\Datafeed\Model\FieldsManagement;
+use HawkSearch\Datafeed\Model\Product\AttributeFeedService;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type;
-use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
-use Magento\CatalogInventory\Helper\Stock;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
-use Magento\Framework\Event\Observer;
-use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Exception\FileSystemException;
-use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Store\Model\Store;
+use Magento\CatalogInventory\Helper\Stock;
+use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
+use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
+use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
 
-class ItemFeed implements ObserverInterface
+class ItemFeed extends AbstractProductObserver
 {
     /**#@+
      * Constants
      */
-    const FEED_ATTRIBUTES = [
-        'product_id',
-        'unique_id',
-        'name',
-        'url_detail',
-        'image',
-        'price_retail',
-        'price_sale',
-        'price_special',
-        'price_special_from_date',
-        'price_special_to_date',
-        'group_id',
-        'description_short',
-        'description_long',
-        'brand',
-        'sku',
-        'sort_default',
-        'sort_rating',
-        'is_free_shipping',
-        'is_new',
-        'is_on_sale',
-        'keyword',
-        'metric_inventory',
-        'minimal_price',
-        'type_id'
-    ];
     const ADDITIONAL_ATTRIBUTES_HANDLERS = [
         'url_detail' => 'getUrl',
         'group_id' => 'getGroupId',
@@ -77,167 +47,50 @@ class ItemFeed implements ObserverInterface
     private $filename = 'items';
 
     /**
-     * @var CollectionFactory
-     */
-    private $collectionFactory;
-
-    /**
-     * @var Json
-     */
-    private $jsonSerializer;
-
-    /**
      * @var Configurable
      */
     private $configurableType;
 
     /**
-     * @var ConfigFeed
+     * @var AttributeFeedService
      */
-    private $feedConfigProvider;
-
-    /**
-     * @var ConfigAttributes
-     */
-    private $attributesConfigProvider;
-
-    /**
-     * @var Stock
-     */
-    private $stockHelper;
+    private $attributeFeedService;
 
     /**
      * ItemFeed constructor.
-     * @param CollectionFactory $collectionFactory
-     * @param ConfigFeed $feedConfigProvider
-     * @param ConfigAttributes $attributesConfigProvider
      * @param Json $jsonSerializer
-     * @param Configurable $configurableType
+     * @param ConfigAttributes $attributesConfigProvider
+     * @param ProductCollectionFactory $productCollectionFactory
+     * @param ReviewSummaryFactory $reviewSummaryFactory
      * @param Stock $stockHelper
+     * @param AttributeCollectionFactory $attributeCollectionFactory
+     * @param ConfigFeed $feedConfigProvider
+     * @param Configurable $configurableType
+     * @param AttributeFeedService $attributeFeedService
      */
     public function __construct(
-        CollectionFactory $collectionFactory,
-        ConfigFeed $feedConfigProvider,
-        ConfigAttributes $attributesConfigProvider,
         Json $jsonSerializer,
+        ConfigAttributes $attributesConfigProvider,
+        ProductCollectionFactory $productCollectionFactory,
+        ReviewSummaryFactory $reviewSummaryFactory,
+        Stock $stockHelper,
+        AttributeCollectionFactory $attributeCollectionFactory,
+        ConfigFeed $feedConfigProvider,
         Configurable $configurableType,
-        Stock $stockHelper
+        AttributeFeedService $attributeFeedService
     ) {
-        $this->collectionFactory = $collectionFactory;
-        $this->feedConfigProvider = $feedConfigProvider;
-        $this->attributesConfigProvider = $attributesConfigProvider;
-        $this->jsonSerializer = $jsonSerializer;
+        parent::__construct(
+            $jsonSerializer,
+            $attributesConfigProvider,
+            $productCollectionFactory,
+            $reviewSummaryFactory,
+            $stockHelper,
+            $attributeCollectionFactory,
+            $feedConfigProvider
+        );
+
         $this->configurableType = $configurableType;
-        $this->stockHelper = $stockHelper;
-    }
-
-    /**
-     * @param Observer $observer
-     * @return void
-     */
-    public function execute(Observer $observer)
-    {
-        /** @var Datafeed $feedExecutor */
-        $feedExecutor = $observer->getData('model');
-
-        /** @var Store $store */
-        $store = $observer->getData('store');
-
-        $counter = 0;
-
-        $feedExecutor->log('START ---- ' . $this->filename . ' ----');
-
-        try {
-            //prepare map
-            $feedExecutor->log('- Prepare attributes map');
-            $configurationMap = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping($store));
-
-            $map = [];
-            foreach (self::FEED_ATTRIBUTES as $field) {
-                $map[$field] = $configurationMap[$field . FieldsManagement::FIELD_SUFFIX]
-                    [FieldsMapping::MAGENTO_ATTRIBUTE] ?? '';
-            }
-
-            //prepare product collection
-            $feedExecutor->log('- Prepare product collection');
-            $collection = $this->collectionFactory->create();
-            $collection->addAttributeToSelect('*');
-            $collection->addPriceData();
-            $collection->addStoreFilter($store);
-            $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
-            $this->stockHelper->addIsInStockFilterToCollection($collection);
-
-            //init output
-            $output = $feedExecutor->initOutput($this->filename, $store->getCode());
-
-            //adding column names
-            $feedExecutor->log('- Adding column names');
-            $output->appendRow(self::FEED_ATTRIBUTES);
-
-            //adding product data
-            $feedExecutor->log('- Adding product data');
-
-            $currentPage = 1;
-            do {
-                $feedExecutor->log(sprintf('- Starting product page %d', $currentPage));
-                $start = time();
-                $collection->clear();
-                $collection->setCurPage($currentPage);
-                $collection->load();
-                /** @var Product $product */
-                foreach ($collection->getItems() as $product) {
-                    $row = [];
-                    foreach ($map as $field => $magentoAttribute) {
-                        $row[] = $this->handleProductAttributeValues($product, $store, $field, $magentoAttribute);
-                    }
-                    $output->appendRow($row);
-                    $counter++;
-                }
-
-                $feedExecutor->log(
-                    sprintf('- It took %d seconds to export page %d', time() - $start, $currentPage)
-                );
-
-                $currentPage++;
-            } while ($currentPage <= $collection->getLastPageNumber());
-
-            $output->closeOutput();
-        } catch (FileSystemException $e) {
-            $feedExecutor->log('- ERROR');
-            $feedExecutor->log($e->getMessage());
-        } finally {
-            $feedExecutor->setTimeStampData(
-                [$this->filename . '.' . $this->feedConfigProvider->getOutputFileExtension(), $counter]
-            );
-        }
-
-        $feedExecutor->log('END ---- ' . $this->filename . ' ----');
-    }
-
-    /**
-     * @param Product $product
-     * @param Store $store
-     * @param string $field
-     * @param string $attribute
-     * @return mixed|string|null
-     */
-    private function handleProductAttributeValues(Product $product, Store $store, string $field, string $attribute)
-    {
-        $value = '';
-
-        switch ($attribute) {
-            case ProductAttributes::SEPARATE_METHOD:
-                $value = isset(self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field])
-                && is_callable([$this, self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]]) ?
-                    $this->{self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]}($product, $store) : '';
-                break;
-            case '':
-                break;
-            default:
-                $value = $product->getData($attribute);
-        }
-
-        return $value;
+        $this->attributeFeedService = $attributeFeedService;
     }
 
     /**
@@ -282,5 +135,45 @@ class ItemFeed implements ObserverInterface
     private function getStockStatus(Product $product, Store $store)
     {
         return $product->getData('is_salable');
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getCustomHandlers(): array
+    {
+        return self::ADDITIONAL_ATTRIBUTES_HANDLERS;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFileName()
+    {
+        return $this->filename;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFeedColumns()
+    {
+        return $this->attributeFeedService->getPreconfiguredItemsColumns();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getExcludedFeedFields()
+    {
+        return [];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFilteredFeedFields()
+    {
+        return $this->attributeFeedService->getPreconfiguredItemsColumns();
     }
 }
