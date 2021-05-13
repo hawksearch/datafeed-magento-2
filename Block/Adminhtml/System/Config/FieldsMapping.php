@@ -15,21 +15,14 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Block\Adminhtml\System\Config;
 
 use HawkSearch\Datafeed\Block\Adminhtml\Form\Field\AttributeColumn;
+use HawkSearch\Datafeed\Exception\DataFeedException;
+use HawkSearch\Datafeed\Model\Config\Attributes as AttributesConfig;
 use Magento\Config\Block\System\Config\Form\Field\FieldArray\AbstractFieldArray;
 use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
-use HawkSearch\Datafeed\Exception\DataFeedException;
 
 class FieldsMapping extends AbstractFieldArray
 {
-    /**#@+
-     * Constants
-     */
-    const HAWK_ATTRIBUTE_LABEL = 'hawk_attribute_label';
-    const HAWK_ATTRIBUTE_CODE = 'hawk_attribute_code';
-    const MAGENTO_ATTRIBUTE = 'magento_attribute';
-    /**#@-*/
-
     /**
      * @var string
      */
@@ -47,7 +40,7 @@ class FieldsMapping extends AbstractFieldArray
     protected function _prepareToRender()
     {
         $this->addColumn(
-            self::HAWK_ATTRIBUTE_LABEL,
+            AttributesConfig::HAWK_ATTRIBUTE_LABEL,
             [
                 'label' => __('HawkSearch Label'),
                 'class' => 'required-entry',
@@ -55,7 +48,7 @@ class FieldsMapping extends AbstractFieldArray
             ]
         );
         $this->addColumn(
-            self::HAWK_ATTRIBUTE_CODE,
+            AttributesConfig::HAWK_ATTRIBUTE_CODE,
             [
                 'label' => __('HawkSearch Code'),
                 'class' => 'required-entry validate-code',
@@ -63,7 +56,7 @@ class FieldsMapping extends AbstractFieldArray
             ]
         );
         $this->addColumn(
-            self::MAGENTO_ATTRIBUTE,
+            AttributesConfig::MAGENTO_ATTRIBUTE,
             [
                 'label' => __('Magento Attribute'),
                 'renderer' => $this->getAttributeRenderer()

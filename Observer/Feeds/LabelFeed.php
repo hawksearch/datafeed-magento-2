@@ -100,14 +100,9 @@ class LabelFeed implements ObserverInterface
         try {
             //prepare attributes to select
             $feedExecutor->log('- Prepare attributes to select');
-            $configurationMap = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping($store));
+            $configurationMap = $this->attributesConfigProvider->getMapping($store);
 
-            $attributesToSelect = [];
-            foreach ($configurationMap as $field) {
-                if (!empty($field[FieldsMapping::MAGENTO_ATTRIBUTE])) {
-                    $attributesToSelect[] = $field[FieldsMapping::MAGENTO_ATTRIBUTE];
-                }
-            }
+            $attributesToSelect = array_values($configurationMap);
 
             //prepare attribute collection
             $feedExecutor->log('- Prepare attribute collection');

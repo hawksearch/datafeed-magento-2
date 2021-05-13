@@ -20,7 +20,6 @@ use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Connector\Gateway\InstructionException;
 use HawkSearch\Connector\Api\Data\HawkSearchFieldInterface;
 use HawkSearch\Datafeed\Api\FieldsManagementInterface;
-use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
 use HawkSearch\Datafeed\Model\Response\Response;
 use HawkSearch\Datafeed\Model\Response\ResponseFactory;
 use Magento\Framework\DataObjectFactory;
@@ -108,7 +107,7 @@ class FieldsManagement implements FieldsManagementInterface
         try {
             $hawkFieldsResponse = $this->instructionManagerPool->get('hawksearch')
                 ->executeByCode('getFields')->get();
-            $currentMapping = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping());
+            $currentMapping = $this->attributesConfigProvider->getMapping();
 
             if ($hawkFieldsResponse[ClientInterface::RESPONSE_CODE] === 200) {
                 //prepare array fields
@@ -116,10 +115,9 @@ class FieldsManagement implements FieldsManagementInterface
                 /** @var HawkSearchFieldInterface $field */
                 foreach ($hawkFieldsResponse[ClientInterface::RESPONSE_DATA] as $field) {
                     $arrayFields[$field[HawkSearchFieldInterface::NAME] . self::FIELD_SUFFIX] = [
-                        FieldsMapping::HAWK_ATTRIBUTE_LABEL => $field->getLabel(),
-                        FieldsMapping::HAWK_ATTRIBUTE_CODE => $field->getName(),
-                        FieldsMapping::MAGENTO_ATTRIBUTE => $currentMapping[$field->getName(
-                            ) . self::FIELD_SUFFIX][FieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
+                        Config\Attributes::HAWK_ATTRIBUTE_LABEL => $field->getLabel(),
+                        Config\Attributes::HAWK_ATTRIBUTE_CODE => $field->getName(),
+                        Config\Attributes::MAGENTO_ATTRIBUTE => $currentMapping[$field->getName()] ?? '',
                     ];
                 }
 
@@ -134,7 +132,7 @@ class FieldsManagement implements FieldsManagementInterface
                     $row['_id'] = $rowId;
                     $row['column_values'] = $rowColumnValues;
                     $row['option_extra_attrs']['option_' . $this->calcOptionHash(
-                        $row[FieldsMapping::MAGENTO_ATTRIBUTE]
+                        $row[Config\Attributes::MAGENTO_ATTRIBUTE]
                     )] = 'selected="selected"';
                     $result[$rowId] = $this->dataObjectFactory->create()->addData($row)->toJson();
                 }

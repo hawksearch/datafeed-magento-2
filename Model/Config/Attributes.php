@@ -16,6 +16,9 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Model\Config;
 
 use HawkSearch\Connector\Model\ConfigProvider;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Store\Model\Store;
 
 class Attributes extends ConfigProvider
 {
@@ -23,15 +26,59 @@ class Attributes extends ConfigProvider
      * Configuration paths
      */
     const CONFIG_MAPPING = 'mapping';
+    const HAWK_ATTRIBUTE_LABEL = 'hawk_attribute_label';
+    const HAWK_ATTRIBUTE_CODE = 'hawk_attribute_code';
+    const MAGENTO_ATTRIBUTE = 'magento_attribute';
     /**#@-*/
 
     /**
-     * @param null|int|string $store
-     * @return string | null
+     * @var Json
      */
-    public function getMapping($store = null): ?string
+    private $jsonSerializer;
+
+    public function __construct(
+        ScopeConfigInterface $scopeConfig,
+        Json $jsonSerializer,
+        $configRootPath = null,
+        $configGroup = null
+    ) {
+        parent::__construct(
+            $scopeConfig,
+            $configRootPath,
+            $configGroup
+        );
+        $this->jsonSerializer = $jsonSerializer;
+    }
+
+    /**
+     * @param null|int|string $store
+     * @param array $filteredFields
+     * @param array $excludedFields
+     * @return array
+     */
+    public function getMapping($store = null, array $filteredFields = [], array $excludedFields = []): array
     {
-        return $this->getConfig(self::CONFIG_MAPPING, $store);
+        $attributeFieldMap = [];
+        foreach ($filteredFields as $field) {
+            $attributeFieldMap[$field] = '';
+        }
+
+        /** @var Store $store */
+        $configurationMap = $this->jsonSerializer->unserialize(
+            $this->getConfig(self::CONFIG_MAPPING, $store)
+        );
+        foreach ($configurationMap as $map) {
+            if ($filteredFields && !in_array($map[self::HAWK_ATTRIBUTE_CODE], $filteredFields)) {
+                continue;
+            }
+            if (!empty($map[self::HAWK_ATTRIBUTE_CODE])
+                && !in_array($map[self::HAWK_ATTRIBUTE_CODE], $excludedFields)
+                && !empty($map[self::MAGENTO_ATTRIBUTE])) {
+                $attributeFieldMap[$map[self::HAWK_ATTRIBUTE_CODE]] = $map[self::MAGENTO_ATTRIBUTE];
+            }
+        }
+
+        return $attributeFieldMap;
     }
 
 }

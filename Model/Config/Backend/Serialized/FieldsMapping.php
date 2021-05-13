@@ -13,11 +13,11 @@
 
 namespace HawkSearch\Datafeed\Model\Config\Backend\Serialized;
 
+use HawkSearch\Connector\Api\Data\HawkSearchFieldInterface;
 use HawkSearch\Connector\Gateway\Http\ClientInterface;
 use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Connector\Gateway\InstructionException;
-use HawkSearch\Connector\Api\Data\HawkSearchFieldInterface;
-use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping as ConfigFieldsMapping;
+use HawkSearch\Datafeed\Model\Config\Attributes as AttributesConfig;
 use HawkSearch\Datafeed\Model\FieldsManagement;
 use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
 use Magento\Config\Model\Config\Backend\Serialized\ArraySerialized;
@@ -31,6 +31,7 @@ use Magento\Framework\Model\Context;
 use Magento\Framework\Model\ResourceModel\AbstractResource;
 use Magento\Framework\Registry;
 use Magento\Framework\Serialize\Serializer\Json;
+
 
 class FieldsMapping extends ArraySerialized
 {
@@ -127,13 +128,13 @@ class FieldsMapping extends ArraySerialized
 
             foreach ($newFields as $newField) {
                 $data = [
-                    HawkSearchFieldInterface::LABEL => $newField[ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL] ?? '',
-                    HawkSearchFieldInterface::NAME => $newField[ConfigFieldsMapping::HAWK_ATTRIBUTE_CODE] ?? '',
+                    HawkSearchFieldInterface::LABEL => $newField[AttributesConfig::HAWK_ATTRIBUTE_LABEL] ?? '',
+                    HawkSearchFieldInterface::NAME => $newField[AttributesConfig::HAWK_ATTRIBUTE_CODE] ?? '',
                 ];
-                if (!empty($newField[ConfigFieldsMapping::MAGENTO_ATTRIBUTE])) {
+                if (!empty($newField[AttributesConfig::MAGENTO_ATTRIBUTE])) {
                     try {
                         $attribute = $this->productAttributeRepository
-                            ->get($newField[ConfigFieldsMapping::MAGENTO_ATTRIBUTE]);
+                            ->get($newField[AttributesConfig::MAGENTO_ATTRIBUTE]);
 
                         $data[HawkSearchFieldInterface::IS_SORT] = $attribute->getUsedForSortBy() ? true : false;
                         $data[HawkSearchFieldInterface::IS_COMPARE] = $attribute->getIsComparable() ? true : false;
@@ -150,12 +151,12 @@ class FieldsMapping extends ArraySerialized
 
                     if ($response[ClientInterface::RESPONSE_CODE] === 201) {
                         $valueToSave[$data[HawkSearchFieldInterface::NAME] . FieldsManagement::FIELD_SUFFIX] = [
-                            ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL => $newField[
-                                ConfigFieldsMapping::HAWK_ATTRIBUTE_LABEL] ?? '',
-                            ConfigFieldsMapping::HAWK_ATTRIBUTE_CODE => $newField[
-                                ConfigFieldsMapping::HAWK_ATTRIBUTE_CODE] ?? '',
-                            ConfigFieldsMapping::MAGENTO_ATTRIBUTE => $newField[
-                                ConfigFieldsMapping::MAGENTO_ATTRIBUTE] ?? '',
+                            AttributesConfig::HAWK_ATTRIBUTE_LABEL => $newField[
+                                AttributesConfig::HAWK_ATTRIBUTE_LABEL] ?? '',
+                            AttributesConfig::HAWK_ATTRIBUTE_CODE => $newField[
+                                AttributesConfig::HAWK_ATTRIBUTE_CODE] ?? '',
+                            AttributesConfig::MAGENTO_ATTRIBUTE => $newField[
+                                AttributesConfig::MAGENTO_ATTRIBUTE] ?? '',
                         ];
                     } else {
                         $errors[] = 'HawkSearch: ' . $response[ClientInterface::RESPONSE_MESSAGE]

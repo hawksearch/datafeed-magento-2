@@ -15,39 +15,26 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
-use HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping;
 use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
-use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
 use HawkSearch\Datafeed\Model\CsvWriter;
-use HawkSearch\Datafeed\Model\Datafeed;
+use HawkSearch\Datafeed\Model\Product\AttributeFeedService;
 use HawkSearch\Datafeed\Model\Product\PriceManagementInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute as EavAttribute;
-use Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection as AttributeCollection;
-use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
-use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
-use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
-use Magento\Framework\Event\Observer;
-use Magento\Framework\Event\ObserverInterface;
+use Magento\CatalogInventory\Helper\Stock;
 use Magento\Framework\Exception\FileSystemException;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
-use Magento\Review\Model\Review;
-use Magento\Store\Model\Store;
-use Magento\Review\Model\ResourceModel\Review\SummaryFactory;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
+use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
+use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
 
-class AttributeFeed implements ObserverInterface
+
+class AttributeFeed extends AbstractProductObserver
 {
     /**#@+
      * Constants
      */
-    const FEED_COLUMNS = [
-        'unique_id',
-        'key',
-        'value'
-    ];
     const ADDITIONAL_ATTRIBUTES_HANDLERS = [
         'category_id' => 'getCategoryIds',
         'rating_summary' => 'getRatingSummary',
@@ -56,9 +43,9 @@ class AttributeFeed implements ObserverInterface
     /**#@-*/
 
     /**
-     * @var int
+     * @var bool
      */
-    private $counter = 0;
+    protected $isMultiRowFeed = true;
 
     /**
      * @var string
@@ -66,288 +53,50 @@ class AttributeFeed implements ObserverInterface
     private $filename = 'attributes';
 
     /**
-     * @var ProductCollectionFactory
-     */
-    private $productCollectionFactory;
-
-    /**
-     * @var AttributeCollectionFactory
-     */
-    private $attributeCollectionFactory;
-
-    /**
-     * @var Json
-     */
-    private $jsonSerializer;
-
-    /**
-     * @var ConfigFeed
-     */
-    private $feedConfigProvider;
-
-    /**
-     * @var ConfigAttributes
-     */
-    private $attributesConfigProvider;
-
-    /**
-     * @var SummaryFactory
-     */
-    private $sumResourceFactory;
-
-    /**
-     * @var EavAttribute[]
-     */
-    private $attributes;
-
-    /**
      * @var PriceManagementInterface
      */
     private $priceManagement;
 
     /**
-     * ItemFeed constructor.
+     * @var AttributeFeedService
+     */
+    private $attributeFeedService;
+
+    /**
+     * AttributeFeed constructor.
+     * @param Json $jsonSerializer
+     * @param ConfigAttributes $attributesConfigProvider
      * @param ProductCollectionFactory $productCollectionFactory
+     * @param ReviewSummaryFactory $reviewSummaryFactory
+     * @param Stock $stockHelper
      * @param AttributeCollectionFactory $attributeCollectionFactory
      * @param ConfigFeed $feedConfigProvider
-     * @param ConfigAttributes $attributesConfigProvider
-     * @param Json $jsonSerializer
-     * @param SummaryFactory $sumResourceFactory
      * @param PriceManagementInterface $priceManagement
+     * @param AttributeFeedService $attributeFeedService
      */
     public function __construct(
+        Json $jsonSerializer,
+        ConfigAttributes $attributesConfigProvider,
         ProductCollectionFactory $productCollectionFactory,
+        ReviewSummaryFactory $reviewSummaryFactory,
+        Stock $stockHelper,
         AttributeCollectionFactory $attributeCollectionFactory,
         ConfigFeed $feedConfigProvider,
-        ConfigAttributes $attributesConfigProvider,
-        Json $jsonSerializer,
-        SummaryFactory $sumResourceFactory,
-        PriceManagementInterface $priceManagement
+        PriceManagementInterface $priceManagement,
+        AttributeFeedService $attributeFeedService
     ) {
-        $this->productCollectionFactory = $productCollectionFactory;
-        $this->attributeCollectionFactory = $attributeCollectionFactory;
-        $this->feedConfigProvider = $feedConfigProvider;
-        $this->attributesConfigProvider = $attributesConfigProvider;
-        $this->jsonSerializer = $jsonSerializer;
-        $this->sumResourceFactory = $sumResourceFactory;
-        $this->priceManagement = $priceManagement;
-    }
-
-    /**
-     * @param Observer $observer
-     * @return void
-     */
-    public function execute(Observer $observer)
-    {
-        /** @var Datafeed $feedExecutor */
-        $feedExecutor = $observer->getData('model');
-
-        /** @var Store $store */
-        $store = $observer->getData('store');
-
-        $this->counter = 0;
-
-        $feedExecutor->log('START ---- ' . $this->filename . ' ----');
-
-        try {
-            //prepare map
-            $feedExecutor->log('- Prepare attributes map');
-            $configurationMap = $this->jsonSerializer->unserialize($this->attributesConfigProvider->getMapping($store));
-
-            $map = [];
-            foreach ($configurationMap as $field) {
-                if (!empty($field[FieldsMapping::HAWK_ATTRIBUTE_CODE])
-                    && !in_array($field[FieldsMapping::HAWK_ATTRIBUTE_CODE], ItemFeed::FEED_ATTRIBUTES)
-                    && !empty($field[FieldsMapping::MAGENTO_ATTRIBUTE])) {
-                    $map[$field[FieldsMapping::HAWK_ATTRIBUTE_CODE]] = $field[FieldsMapping::MAGENTO_ATTRIBUTE];
-                }
-            }
-
-            //prepare product collection
-            $feedExecutor->log('- Prepare product collection');
-            /** @var ProductCollection $collection */
-            $collection = $this->productCollectionFactory->create();
-            $collection->addAttributeToSelect('*');
-            $collection->addPriceData();
-            $collection->addStoreFilter($store);
-            $collection->setPageSize($this->feedConfigProvider->getBatchLimit());
-            $this->appendReviewSummaryToCollection($collection);
-
-            //init output
-            $output = $feedExecutor->initOutput($this->filename, $store->getCode());
-
-            //adding column names
-            $feedExecutor->log('- Adding column names');
-            $output->appendRow(self::FEED_COLUMNS);
-
-            //adding product data
-            $feedExecutor->log('- Adding product data');
-
-            $currentPage = 1;
-            do {
-                $feedExecutor->log(sprintf('- Starting product page %d', $currentPage));
-
-                $collection->clear();
-                $collection->setCurPage($currentPage);
-
-                $start = time();
-                /** @var Product $product */
-                foreach ($collection->getItems() as $product) {
-                    foreach ($map as $field => $magentoAttribute) {
-                        $this->handleProductAttributeValues(
-                            $product,
-                            $output,
-                            $field,
-                            $magentoAttribute
-                        );
-                    }
-
-                    $priceInfo = [];
-                    $this->priceManagement->collectPrices($product, $priceInfo);
-                    $product->addData($priceInfo);
-                    foreach ($priceInfo as $priceField => $priceData) {
-                        $this->handleProductAttributeValues(
-                            $product,
-                            $output,
-                            $priceField,
-                            $priceField
-                        );
-                    }
-                }
-
-                $feedExecutor->log(
-                    sprintf('- It took %d seconds to export page %d', time() - $start, $currentPage)
-                );
-
-                $currentPage++;
-            } while ($currentPage <= $collection->getLastPageNumber());
-
-            $output->closeOutput();
-        } catch (FileSystemException $e) {
-            $feedExecutor->log('- ERROR');
-            $feedExecutor->log($e->getMessage());
-        } catch (NoSuchEntityException $e) {
-            $feedExecutor->log('- ERROR');
-            $feedExecutor->log($e->getMessage());
-        } catch (LocalizedException $e) {
-            $feedExecutor->log('- ERROR');
-            $feedExecutor->log($e->getMessage());
-        } finally {
-            $feedExecutor->setTimeStampData(
-                [$this->filename . '.' . $this->feedConfigProvider->getOutputFileExtension(), $this->counter]
-            );
-        }
-
-        $feedExecutor->log('END ---- ' . $this->filename . ' ----');
-    }
-
-    /**
-     * @param Product $product
-     * @param CsvWriter $output
-     * @param string $field
-     * @param string $attribute
-     * @return void
-     * @throws FileSystemException|LocalizedException
-     */
-    private function handleProductAttributeValues(
-        Product $product,
-        CsvWriter $output,
-        string $field,
-        string $attribute
-    ) {
-        $value = null;
-        switch ($attribute) {
-            case ProductAttributes::SEPARATE_METHOD:
-                if ($customHandler = $this->getFieldCustomHandler($field)) {
-                    $value = $this->{$customHandler}($product);
-                }
-                break;
-            default:
-                $eavAttribute = $this->getAttributeByCode($attribute);
-                $value = $product->getData($attribute);
-
-                if ($value !== null) {
-                    if (!is_array($value) && $eavAttribute && $eavAttribute->usesSource()) {
-                        $value = $product->getAttributeText($attribute);
-                        if (!is_array($value)) {
-                            $value = $this->handleMultipleValues((string)$value);
-                        }
-                    }
-
-                    if ($value === false) {
-                        $value = $eavAttribute->getFrontend()->getValue($product);
-                    }
-                }
-        }
-
-        if ($value !== null) {
-            $values = (array)$value;
-
-            foreach ($values as $value) {
-                $output->appendRow(
-                    [
-                        $product->getSku(),
-                        $field,
-                        $value
-                    ]
-                );
-                $this->counter++;
-            }
-        }
-    }
-
-    /**
-     * @return EavAttribute[]
-     */
-    private function getAttributeCollection()
-    {
-        if ($this->attributes === null) {
-            /** @var AttributeCollection $attributeCollection */
-            $attributeCollection = $this->attributeCollectionFactory->create();
-            /** @var EavAttribute $attribute */
-            foreach ($attributeCollection as $attribute) {
-                $this->attributes[$attribute->getAttributeCode()] = $attribute;
-            }
-        }
-        return $this->attributes;
-    }
-
-    /**
-     * @param $attributeCode
-     * @return EavAttribute|null
-     */
-    private function getAttributeByCode($attributeCode)
-    {
-        return $this->getAttributeCollection()[$attributeCode] ?? null;
-    }
-
-
-    /**
-     * @param ProductCollection $productCollection
-     * @return $this
-     */
-    private function appendReviewSummaryToCollection(ProductCollection $productCollection)
-    {
-        $this->sumResourceFactory->create()->appendSummaryFieldsToCollection(
-            $productCollection,
-            (string)$productCollection->getStoreId(),
-            Review::ENTITY_PRODUCT_CODE
+        parent::__construct(
+            $jsonSerializer,
+            $attributesConfigProvider,
+            $productCollectionFactory,
+            $reviewSummaryFactory,
+            $stockHelper,
+            $attributeCollectionFactory,
+            $feedConfigProvider
         );
 
-        return $this;
-    }
-
-    /**
-     * @param string $value
-     * @return string[]
-     */
-    private function handleMultipleValues(string $value)
-    {
-        if (strpos($value, ',') !== false) {
-            $value = explode(',', $value);
-        }
-
-        return (array)$value;
+        $this->priceManagement = $priceManagement;
+        $this->attributeFeedService = $attributeFeedService;
     }
 
     /**
@@ -391,17 +140,86 @@ class AttributeFeed implements ObserverInterface
     }
 
     /**
-     * @param string $field
-     * @return string|null
+     * @inheritdoc
      */
-    private function getFieldCustomHandler(string $field)
+    protected function getCustomHandlers(): array
     {
-        $handler = null;
-        if (isset(self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field])
-            && is_callable([$this, self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field]])) {
-            $handler = self::ADDITIONAL_ATTRIBUTES_HANDLERS[$field];
+        return self::ADDITIONAL_ATTRIBUTES_HANDLERS;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFileName()
+    {
+        return $this->filename;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFeedColumns()
+    {
+        return $this->attributeFeedService->getPreconfiguredAttributesColumns();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getExcludedFeedFields()
+    {
+        return $this->attributeFeedService->getPreconfiguredItemsColumns();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFilteredFeedFields()
+    {
+        return [];
+    }
+
+    /**
+     * @param ProductInterface $product
+     * @return array
+     */
+    protected function getAdditionalProductData(ProductInterface $product)
+    {
+        $priceInfo = [];
+        $this->priceManagement->collectPrices($product, $priceInfo);
+
+        return $priceInfo;
+    }
+
+    /**
+     * @param Product $product
+     * @param CsvWriter $output
+     * @param string $field
+     * @param mixed $value
+     * @return $this
+     * @throws FileSystemException
+     */
+    protected function handleProductAttributeValues(
+        Product $product,
+        CsvWriter $output,
+        string $field,
+        $value
+    ) {
+        if ($value !== null) {
+            $values = (array)$value;
+
+            foreach ($values as $value) {
+                $output->appendRow(
+                    [
+                        $product->getSku(),
+                        $field,
+                        $value
+                    ]
+                );
+                $this->counter++;
+            }
         }
 
-        return $handler;
+        return $this;
     }
 }
