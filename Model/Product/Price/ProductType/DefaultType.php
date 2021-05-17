@@ -123,7 +123,7 @@ abstract class DefaultType implements ProductTypeInterface
     {
         $priceDataCopy = $priceData;
         foreach ($priceDataCopy as $key => $price) {
-            $price = $this->handleTax($product, $price, true);
+            $price = $this->handleTax($product, (float)$price, true);
             $this->addSuffixedValue($key, 'include_tax', $price, $priceData);
         }
     }
@@ -208,7 +208,7 @@ abstract class DefaultType implements ProductTypeInterface
     {
         return $this->handleTax(
             $product,
-            $this->priceCurrency->convert($product->getPrice(), $product->getStore(), $currencyCode)
+            $this->priceCurrency->convert((float)$product->getPrice(), $product->getStore(), $currencyCode)
         );
     }
 
@@ -240,7 +240,7 @@ abstract class DefaultType implements ProductTypeInterface
             $productCopy->setData('website_id', $productCopy->getStore()->getWebsiteId());
             $productCopy->unsetData('tier_price');
 
-            $finalPrice = $productCopy->getPriceModel()->getFinalPrice(1, $productCopy);
+            $finalPrice = (float)$productCopy->getPriceModel()->getFinalPrice(1, $productCopy);
 
             $groupPrices[$groupId] = $this->handleTax($product, $finalPrice);
         }
@@ -297,7 +297,7 @@ abstract class DefaultType implements ProductTypeInterface
             );
 
             if ($groupTierPrices[$groupId] !== null) {
-                $groupTierPrices[$groupId] = $this->handleTax($product, $groupTierPrices[$groupId]);
+                $groupTierPrices[$groupId] = $this->handleTax($product, (float)$groupTierPrices[$groupId]);
             }
         }
 
