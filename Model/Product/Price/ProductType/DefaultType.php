@@ -234,7 +234,10 @@ abstract class DefaultType implements ProductTypeInterface
 
         $groupPrices = [];
         foreach ($this->getCustomerGroups() as $group) {
-            $groupId = $group['value'];
+            $groupId = (string)$group['value'];
+            if ($groupId === '') {
+                continue;
+            }
 
             $productCopy->setData('customer_group_id', $groupId);
             $productCopy->setData('website_id', $productCopy->getStore()->getWebsiteId());
@@ -285,7 +288,10 @@ abstract class DefaultType implements ProductTypeInterface
         $groupTierPrices = [];
         $allGroupsPrice = $productTierPrices[$allGroupsId] ?? null;
         foreach ($this->getCustomerGroups() as $group) {
-            $groupId = $group['value'];
+            $groupId = (string)$group['value'];
+            if ($groupId === '') {
+                continue;
+            }
 
             $groupTierPrices[$groupId] = min(
                 $allGroupsPrice ?? PHP_INT_MAX,

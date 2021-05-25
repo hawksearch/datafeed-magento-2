@@ -52,7 +52,10 @@ abstract class CompositeType extends DefaultType
     {
         $groupPrices = [];
         foreach ($this->getCustomerGroups() as $group) {
-            $groupId = $group['value'];
+            $groupId = (string)$group['value'];
+            if ($groupId === '') {
+                continue;
+            }
             $groupPrices[$groupId] = [];
         }
 
