@@ -221,7 +221,20 @@ abstract class DefaultType implements ProductTypeInterface
             return [];
         }
 
-        return $this->customerGroupSource->toOptionArray();
+        $groups = $this->customerGroupSource->toOptionArray();
+        $resultGroups = [];
+        if ($this->moduleManager->isEnabled('Magento_SharedCatalog')) {
+            $firstElement = current($groups);
+            if (isset($firstElement['value']) && is_array($firstElement['value'])) {
+                $resultGroups = $firstElement['value'];
+            }
+            $sharedCatalogs = next($groups);
+            if ($sharedCatalogs !== false && isset($sharedCatalogs['value']) && is_array($sharedCatalogs['value'])) {
+                $resultGroups = array_merge($resultGroups, $sharedCatalogs['value']);
+            }
+        }
+
+        return $resultGroups;
     }
 
     /**
@@ -234,10 +247,7 @@ abstract class DefaultType implements ProductTypeInterface
 
         $groupPrices = [];
         foreach ($this->getCustomerGroups() as $group) {
-            $groupId = (string)$group['value'];
-            if ($groupId === '') {
-                continue;
-            }
+            $groupId = $group['value'];
 
             $productCopy->setData('customer_group_id', $groupId);
             $productCopy->setData('website_id', $productCopy->getStore()->getWebsiteId());
@@ -288,10 +298,7 @@ abstract class DefaultType implements ProductTypeInterface
         $groupTierPrices = [];
         $allGroupsPrice = $productTierPrices[$allGroupsId] ?? null;
         foreach ($this->getCustomerGroups() as $group) {
-            $groupId = (string)$group['value'];
-            if ($groupId === '') {
-                continue;
-            }
+            $groupId = $group['value'];
 
             $groupTierPrices[$groupId] = min(
                 $allGroupsPrice ?? PHP_INT_MAX,
