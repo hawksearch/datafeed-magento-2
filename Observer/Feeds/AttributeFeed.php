@@ -103,7 +103,7 @@ class AttributeFeed extends AbstractProductObserver
      * @param Product $product
      * @return array
      */
-    private function getCategoryIds(Product $product)
+    protected function getCategoryIds(Product $product)
     {
         $values = [];
         foreach ($product->getCategoryIds() as $id) {
@@ -116,7 +116,7 @@ class AttributeFeed extends AbstractProductObserver
      * @param Product $product
      * @return string|null
      */
-    private function getRatingSummary(Product $product)
+    protected function getRatingSummary(Product $product)
     {
         $value = null;
         if ($product->getRatingSummary() && $product->getReviewsCount() > 0) {
@@ -130,7 +130,7 @@ class AttributeFeed extends AbstractProductObserver
      * @param Product $product
      * @return string|null
      */
-    private function getReviewsCount(Product $product)
+    protected function getReviewsCount(Product $product)
     {
         $value = null;
         if ($product->getRatingSummary() && $product->getReviewsCount() > 0) {

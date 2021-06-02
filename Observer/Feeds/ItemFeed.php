@@ -21,7 +21,6 @@ use HawkSearch\Datafeed\Model\Product\AttributeFeedService;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
-use Magento\Store\Model\Store;
 use Magento\CatalogInventory\Helper\Stock;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
@@ -95,20 +94,19 @@ class ItemFeed extends AbstractProductObserver
 
     /**
      * @param Product $product
-     * @param Store $store
      * @return false|string
      */
-    private function getUrl(Product $product, Store $store)
+    protected function getUrl(Product $product)
     {
+        $store = $product->getStore();
         return substr($product->getProductUrl(1), strlen($store->getBaseUrl()));
     }
 
     /**
      * @param Product $product
-     * @param Store $store
      * @return int|string
      */
-    private function getGroupId(Product $product, Store $store)
+    protected function getGroupId(Product $product)
     {
         if ($product->getTypeId() === Type::TYPE_SIMPLE
             && $ids = implode(",", $this->configurableType->getParentIdsByChild($product->getId()))) {
@@ -119,20 +117,18 @@ class ItemFeed extends AbstractProductObserver
 
     /**
      * @param Product $product
-     * @param Store $store
      * @return int
      */
-    private function isOnSale(Product $product, Store $store)
+    protected function isOnSale(Product $product)
     {
         return $product->getSpecialPrice() ? 1 : 0;
     }
 
     /**
      * @param Product $product
-     * @param Store $store
      * @return int|mixed
      */
-    private function getStockStatus(Product $product, Store $store)
+    protected function getStockStatus(Product $product)
     {
         return $product->getData('is_salable');
     }
