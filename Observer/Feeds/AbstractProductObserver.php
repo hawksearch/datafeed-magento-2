@@ -171,6 +171,7 @@ abstract class AbstractProductObserver implements ObserverInterface
 
                 /** @var Product $product */
                 foreach ($collection->getItems() as $product) {
+                    $product->setStoreId($store->getId());
                     $row = [];
                     foreach ($map as $field => $magentoAttribute) {
                         $value = $this->getProductAttributeValue($product, $field, $magentoAttribute);
@@ -260,7 +261,7 @@ abstract class AbstractProductObserver implements ObserverInterface
         $handler = null;
         $handlers = $this->getCustomHandlers();
         if (isset($handlers[$field])
-            && is_callable([$this, $handlers[$field]])) {
+            && method_exists($this, $handlers[$field])) {
             $handler = $handlers[$field];
         }
 
