@@ -20,6 +20,7 @@ use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Datafeed\Api\Data\FeedSummaryInterface;
 use HawkSearch\Datafeed\Api\Data\FeedSummaryInterfaceFactory;
 use HawkSearch\Datafeed\Logger\DataFeedLogger;
+use Magento\Framework\App\Area;
 use Magento\Framework\Event\Manager;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem;
@@ -138,7 +139,7 @@ class Datafeed
             try {
                 $this->log(sprintf('Starting environment for store %s', $store->getName()));
 
-                $this->emulation->startEnvironmentEmulation($store->getId());
+                $this->emulation->startEnvironmentEmulation($store->getId(), Area::AREA_FRONTEND, true);
 
                 $this->log(sprintf('Setting feed folder for store_code %s', $store->getCode()));
 
@@ -156,7 +157,7 @@ class Datafeed
                 //generate timestamp file
                 $this->generateTimestamp($store->getCode());
 
-                $this->sftpManagement->processFilesToSftp(); 
+                $this->sftpManagement->processFilesToSftp();
 
                 // trigger reindex on HawkSearch side
                 if ($this->feedConfigProvider->isReindex($store)) {
