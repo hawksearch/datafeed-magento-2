@@ -15,9 +15,11 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
+use HawkSearch\Connector\Helper\Url as UrlHelper;
 use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Product\AttributeFeedService;
+use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
@@ -37,6 +39,7 @@ class ItemFeed extends AbstractProductObserver
         'group_id' => 'getGroupId',
         'is_on_sale' => 'isOnSale',
         'metric_inventory' => 'getStockStatus',
+        'image' => 'getImage'
     ];
     /**#@-*/
 
@@ -54,6 +57,16 @@ class ItemFeed extends AbstractProductObserver
      * @var AttributeFeedService
      */
     private $attributeFeedService;
+
+    /**
+     * @var ImageHelper
+     */
+    private $imageHelper;
+
+    /**
+     * @var UrlHelper
+     */
+    private $urlHelper;
 
     /**
      * ItemFeed constructor.
@@ -76,7 +89,9 @@ class ItemFeed extends AbstractProductObserver
         AttributeCollectionFactory $attributeCollectionFactory,
         ConfigFeed $feedConfigProvider,
         Configurable $configurableType,
-        AttributeFeedService $attributeFeedService
+        AttributeFeedService $attributeFeedService,
+        ImageHelper $imageHelper,
+        UrlHelper $urlHelper
     ) {
         parent::__construct(
             $jsonSerializer,
@@ -90,6 +105,8 @@ class ItemFeed extends AbstractProductObserver
 
         $this->configurableType = $configurableType;
         $this->attributeFeedService = $attributeFeedService;
+        $this->imageHelper = $imageHelper;
+        $this->urlHelper = $urlHelper;
     }
 
     /**
@@ -131,6 +148,24 @@ class ItemFeed extends AbstractProductObserver
     protected function getStockStatus(Product $product)
     {
         return $product->getData('is_salable');
+    }
+
+    /**
+     * @param Product $product
+     * @return string
+     */
+    protected function getImage(Product $product)
+    {
+        $imageUrl = $this->imageHelper->init($product, 'product_small_image')->getUrl();
+        $uri = $this->urlHelper->getUriInstance($imageUrl);
+
+        $store = $product->getStore();
+        //if ($this->advancedConfig->isRemovePubFromAssetsUrl($store)) {
+            /** @link  https://github.com/magento/magento2/issues/9111 */
+            $uri = $this->urlHelper->removeFromUriPath($uri, ['pub']);
+        //}
+
+        return (string)$uri->withScheme('');
     }
 
     /**

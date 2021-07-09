@@ -62,7 +62,7 @@
                         "image_field": {
                             "hawk_attribute_label": "Image",
                             "hawk_attribute_code": "image",
-                            "magento_attribute": "small_image"
+                            "magento_attribute": "separate_method_hawk"
                         },
                         "price_retail_field": {
                             "hawk_attribute_label": "Price Retail",
