@@ -58,9 +58,7 @@ abstract class CompositeType extends DefaultType
 
         $childGroupPrices = [];
         foreach ($this->getChildProducts($product) as $subProduct) {
-
             $childGroupPrices[$subProduct->getId()] = parent::getCustomerGroupPrices($subProduct);
-
             foreach ($childGroupPrices[$subProduct->getId()] as $groupId => $price) {
                 if (isset($groupPrices[$groupId])) {
                     $groupPrices[$groupId][] = $price;
@@ -69,7 +67,7 @@ abstract class CompositeType extends DefaultType
         }
 
         foreach ($groupPrices as $groupId => $price) {
-            $groupPrices[$groupId] = min($price);
+            $groupPrices[$groupId] = !empty($price) ? min($price) : null;
         }
 
         return $groupPrices;
