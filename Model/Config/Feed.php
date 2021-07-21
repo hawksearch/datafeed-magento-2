@@ -51,6 +51,11 @@ class Feed extends ConfigProvider
     private $fileSystem;
 
     /**
+     * @var array
+     */
+    private $filterStores = [];
+
+    /**
      * Feed constructor.
      * @param StoreCollectionFactory $storeCollectionFactory
      * @param ScopeConfigInterface $scopeConfig
@@ -64,11 +69,16 @@ class Feed extends ConfigProvider
         Filesystem $fileSystem,
         $configRootPath = null,
         $configGroup = null
-
     ) {
         parent::__construct($scopeConfig, $configRootPath, $configGroup);
         $this->storeCollectionFactory = $storeCollectionFactory;
         $this->fileSystem = $fileSystem;
+    }
+
+    public function setStoresToFilter(array $stores)
+    {
+        $this->filterStores = $stores;
+        return $this;
     }
 
     /**
@@ -77,7 +87,15 @@ class Feed extends ConfigProvider
      */
     public function getStores($store = null): StoreCollection
     {
-        return $this->storeCollectionFactory->create()->addIdFilter(
+        $storesCollection = $this->storeCollectionFactory->create();
+        if (!empty($this->filterStores)) {
+            $storesCollection->addFieldToFilter(
+                'main_table.code',
+                ['in' => $this->filterStores]
+            );
+        }
+
+        return $storesCollection->addIdFilter(
             explode(
                 ',',
                 $this->getConfig(self::CONFIG_STORES, $store) ?: ''

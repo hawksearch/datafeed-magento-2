@@ -19,17 +19,20 @@ use HawkSearch\Datafeed\Model\Task\Datafeed\TaskOptionsFactory;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskLockException;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskUnlockException;
+use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
 use Magento\Framework\Exception\LocalizedException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class DataFeed extends Command
 {
     const FORCE_MODE = 'force';
+    const INPUT_STORES = 'stores';
 
     /**
      * @var Task
@@ -40,6 +43,11 @@ class DataFeed extends Command
      * @var TaskOptionsFactory
      */
     private $taskOptionsFactory;
+
+    /**
+     * @var ConfigFeed
+     */
+    private $configFeed;
 
     /**
      * @var State
@@ -53,15 +61,28 @@ class DataFeed extends Command
     {
         $this->setName('hawksearch:generate-feed')
             ->setDescription('Generate the HawkSearch data feed')
-            ->setDefinition([
-                new InputOption(
-                    self::FORCE_MODE,
-                    [ '-f', '--force' ],
-                    InputOption::VALUE_NONE,
-                    'Force datafeed to run even if lock present.'
-                )
-            ]);
+            ->setDefinition($this->getInputList());
         parent::configure();
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getInputList()
+    {
+        return [
+            new InputArgument(
+                self::INPUT_STORES,
+                InputArgument::OPTIONAL | InputArgument::IS_ARRAY,
+                'Space-separated list of store codes or omit to run datafeed for all stores.'
+            ),
+            new InputOption(
+                self::FORCE_MODE,
+                [ '-f', '--force' ],
+                InputOption::VALUE_NONE,
+                'Force datafeed to run even if lock present.'
+            )
+        ];
     }
 
     /**
@@ -74,11 +95,13 @@ class DataFeed extends Command
         Task $task,
         TaskOptionsFactory $taskOptionsFactory,
         State $state,
+        ConfigFeed $configFeed,
         $name = null
     ) {
         parent::__construct($name);
         $this->task = $task;
         $this->taskOptionsFactory = $taskOptionsFactory;
+        $this->configFeed = $configFeed;
         $this->state  = $state;
     }
 
@@ -93,6 +116,10 @@ class DataFeed extends Command
         $this->state->setAreaCode(Area::AREA_CRONTAB);
 
         $options = $this->taskOptionsFactory->create();
+        $stores = $input->getArgument(self::INPUT_STORES);
+        if (!empty($stores)) {
+            $this->configFeed->setStoresToFilter($stores);
+        }
 
         if ($input->getOption(self::FORCE_MODE) === self::FORCE_MODE) {
             $options->setForceMode(true);
