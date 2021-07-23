@@ -35,6 +35,7 @@ use Magento\Review\Model\Review;
 use Magento\Store\Model\Store;
 use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
+use Magento\Framework\App\ProductMetadataInterface;
 
 abstract class AbstractProductObserver implements ObserverInterface
 {
@@ -102,6 +103,7 @@ abstract class AbstractProductObserver implements ObserverInterface
      * @param Stock $stockHelper
      * @param AttributeCollectionFactory $attributeCollectionFactory
      * @param ConfigFeed $feedConfigProvider
+     * @param ProductMetadataInterface $productMetadata
      */
     public function __construct(
         Json $jsonSerializer,
@@ -110,7 +112,8 @@ abstract class AbstractProductObserver implements ObserverInterface
         ReviewSummaryFactory $reviewSummaryFactory,
         Stock $stockHelper,
         AttributeCollectionFactory $attributeCollectionFactory,
-        ConfigFeed $feedConfigProvider
+        ConfigFeed $feedConfigProvider,
+        ProductMetadataInterface $productMetadata
     ){
         $this->jsonSerializer = $jsonSerializer;
         $this->attributesConfigProvider = $attributesConfigProvider;
@@ -119,6 +122,7 @@ abstract class AbstractProductObserver implements ObserverInterface
         $this->stockHelper = $stockHelper;
         $this->attributeCollectionFactory = $attributeCollectionFactory;
         $this->feedConfigProvider = $feedConfigProvider;
+        $this->productMetadata = $productMetadata;
     }
 
     /**
@@ -294,9 +298,14 @@ abstract class AbstractProductObserver implements ObserverInterface
      */
     private function appendReviewSummaryToCollection(ProductCollection $productCollection)
     {
+        $storeId = $productCollection->getStoreId();
+        if (version_compare($this->productMetadata->getVersion(), '2.4.0', '<')) {
+            $storeId = (string)$storeId;
+        }
+
         $this->reviewSummaryFactory->create()->appendSummaryFieldsToCollection(
             $productCollection,
-            (string)$productCollection->getStoreId(),
+            $storeId,
             Review::ENTITY_PRODUCT_CODE
         );
 
