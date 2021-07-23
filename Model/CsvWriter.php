@@ -10,6 +10,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+declare(strict_types=1); 
 
 namespace HawkSearch\Datafeed\Model;
 
@@ -17,6 +18,7 @@ use Composer\Util\Filesystem as UtilFileSystem;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
 use Magento\Framework\Filesystem\Io\File as ioFile;
+use Magento\Framework\Serialize\Serializer\Json;
 
 /**
  * Class CsvWriter
@@ -56,6 +58,10 @@ class CsvWriter
      * @var File
      */
     private $file;
+    /**
+     * @var Json
+     */
+    private $json;
 
     /**
      * CsvWriter constructor.
@@ -63,15 +69,18 @@ class CsvWriter
      * @param ioFile         $fileDirectory
      * @param UtilFileSystem $utilFileSystem
      * @param File           $file
+     * @param Json           $json
      */
     public function __construct(
         ioFile $fileDirectory,
         UtilFileSystem $utilFileSystem,
-        File $file
+        File $file,
+        Json $json
     ) {
         $this->fileDirectory = $fileDirectory;
         $this->utilFileSystem = $utilFileSystem;
         $this->file = $file;
+        $this->json = $json;
     }
 
     /**
@@ -113,12 +122,27 @@ class CsvWriter
         if (!$this->outputOpen) {
             $this->openOutput();
         }
+
         foreach ($fields as $k => $f) {
-            $fields[$k] = strtr($f, ['\"' => '"']);
+            $fields[$k] = $this->prepareFieldValue($f);
         }
+
         if (false === fputcsv($this->outputFile, $fields, $this->delimiter)) {
             throw new FileSystemException(__("CsvWriter: failed to write row."));
         }
+    }
+    
+    /**
+     * @param mixed $value
+     * @return string
+     */
+    protected function prepareFieldValue($value): string
+    {
+        if (is_array($value)) {
+            $value = $this->json->serialize($value);
+        }
+        
+        return strtr((string)$value, ['\"' => '"']);
     }
 
     /**

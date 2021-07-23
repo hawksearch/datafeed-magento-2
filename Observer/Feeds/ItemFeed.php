@@ -28,6 +28,7 @@ use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
+use Magento\Framework\App\ProductMetadataInterface;
 
 class ItemFeed extends AbstractProductObserver
 {
@@ -79,6 +80,7 @@ class ItemFeed extends AbstractProductObserver
      * @param ConfigFeed $feedConfigProvider
      * @param Configurable $configurableType
      * @param AttributeFeedService $attributeFeedService
+     * @param ProductMetadataInterface $productMetadata
      */
     public function __construct(
         Json $jsonSerializer,
@@ -91,7 +93,8 @@ class ItemFeed extends AbstractProductObserver
         Configurable $configurableType,
         AttributeFeedService $attributeFeedService,
         ImageHelper $imageHelper,
-        UrlHelper $urlHelper
+        UrlHelper $urlHelper,
+        ProductMetadataInterface $productMetadata
     ) {
         parent::__construct(
             $jsonSerializer,
@@ -100,7 +103,8 @@ class ItemFeed extends AbstractProductObserver
             $reviewSummaryFactory,
             $stockHelper,
             $attributeCollectionFactory,
-            $feedConfigProvider
+            $feedConfigProvider,
+            $productMetadata
         );
 
         $this->configurableType = $configurableType;

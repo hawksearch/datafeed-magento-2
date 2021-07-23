@@ -28,7 +28,7 @@ use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
-
+use Magento\Framework\App\ProductMetadataInterface;
 
 class AttributeFeed extends AbstractProductObserver
 {
@@ -73,6 +73,7 @@ class AttributeFeed extends AbstractProductObserver
      * @param ConfigFeed $feedConfigProvider
      * @param PriceManagementInterface $priceManagement
      * @param AttributeFeedService $attributeFeedService
+     * @param ProductMetadataInterface $productMetadata
      */
     public function __construct(
         Json $jsonSerializer,
@@ -83,7 +84,8 @@ class AttributeFeed extends AbstractProductObserver
         AttributeCollectionFactory $attributeCollectionFactory,
         ConfigFeed $feedConfigProvider,
         PriceManagementInterface $priceManagement,
-        AttributeFeedService $attributeFeedService
+        AttributeFeedService $attributeFeedService,
+        ProductMetadataInterface $productMetadata
     ) {
         parent::__construct(
             $jsonSerializer,
@@ -92,7 +94,8 @@ class AttributeFeed extends AbstractProductObserver
             $reviewSummaryFactory,
             $stockHelper,
             $attributeCollectionFactory,
-            $feedConfigProvider
+            $feedConfigProvider,
+            $productMetadata
         );
 
         $this->priceManagement = $priceManagement;
