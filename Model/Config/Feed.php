@@ -36,6 +36,7 @@ class Feed extends ConfigProvider
     const CONFIG_OUTPUT_FILE_EXT = 'output_file_ext';
     const CONFIG_FEED_PATH = 'feed_path';
     const CONFIG_SUMMARY_FILENAME = 'summary_filename';
+    const CONFIG_REMOVE_PUB_IN_ASSETS_URL = 'remove_pub_in_assets_url';
     /**#@-*/
 
     const CSV_DELIMITER = "\t";
@@ -118,7 +119,7 @@ class Feed extends ConfigProvider
      */
     public function isReindex($store = null): bool
     {
-        return (bool)$this->getConfig(self::CONFIG_REINDEX, $store);
+        return !!$this->getConfig(self::CONFIG_REINDEX, $store);
     }
 
     /**
@@ -127,7 +128,7 @@ class Feed extends ConfigProvider
      */
     public function isCronEnabled($store = null): bool
     {
-        return (bool)$this->getConfig(self::CONFIG_CRON_ENABLE, $store);
+        return !!$this->getConfig(self::CONFIG_CRON_ENABLE, $store);
     }
 
     /**
@@ -185,5 +186,14 @@ class Feed extends ConfigProvider
     public function getSummaryFilename($store = null): ?string
     {
         return $this->getConfig(self::CONFIG_SUMMARY_FILENAME, $store);
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return bool
+     */
+    public function isRemovePubInAssetsUrl($store = null)
+    {
+        return !!$this->getConfig(self::CONFIG_REMOVE_PUB_IN_ASSETS_URL, $store);
     }
 }

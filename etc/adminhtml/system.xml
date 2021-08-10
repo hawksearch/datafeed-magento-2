@@ -89,6 +89,20 @@
                     <label>Feed Cron Email</label>
                     <validate>required-entry validate-email</validate>
                 </field>
+                <field id="remove_pub_in_assets_url" translate="label comment" type="select" sortOrder="50" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Remove pub/ folder from assets url</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>
+                        <![CDATA[
+                                Enable this setting if you want to remove pub/ from assets urls which are exporting to
+                                Hawksearch index. It is needed if your server is configured to serve files from
+                                Magento’s pub/ directory.</br>
+                                <strong>Example</strong>: http://example.com/pub/media/catalog/product/image.jpg
+                                is transformed to http://example.com/media/catalog/product/image.jpg
+                            ]]>
+                    </comment>
+                </field>
             </group>
             <group id="hawksearch_sftp" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>SFTP Settings</label>

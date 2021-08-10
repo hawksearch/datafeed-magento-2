@@ -19,6 +19,7 @@ use HawkSearch\Connector\Helper\Url as UrlHelper;
 use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Product\AttributeFeedService;
+use HawkSearch\Datafeed\Model\Product as ProductDataProvider;
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type;
@@ -70,6 +71,16 @@ class ItemFeed extends AbstractProductObserver
     private $urlHelper;
 
     /**
+     * @var ProductDataProvider
+     */
+    private $productDataProvider;
+
+    /**
+     * @var ConfigFeed
+     */
+    private $feedConfigProvider;
+
+    /**
      * ItemFeed constructor.
      * @param Json $jsonSerializer
      * @param ConfigAttributes $attributesConfigProvider
@@ -80,6 +91,9 @@ class ItemFeed extends AbstractProductObserver
      * @param ConfigFeed $feedConfigProvider
      * @param Configurable $configurableType
      * @param AttributeFeedService $attributeFeedService
+     * @param ImageHelper $imageHelper
+     * @param UrlHelper $urlHelper
+     * @param ProductDataProvider $productDataProvider
      * @param ProductMetadataInterface $productMetadata
      */
     public function __construct(
@@ -94,6 +108,7 @@ class ItemFeed extends AbstractProductObserver
         AttributeFeedService $attributeFeedService,
         ImageHelper $imageHelper,
         UrlHelper $urlHelper,
+        ProductDataProvider $productDataProvider,
         ProductMetadataInterface $productMetadata
     ) {
         parent::__construct(
@@ -111,6 +126,8 @@ class ItemFeed extends AbstractProductObserver
         $this->attributeFeedService = $attributeFeedService;
         $this->imageHelper = $imageHelper;
         $this->urlHelper = $urlHelper;
+        $this->productDataProvider = $productDataProvider;
+        $this->feedConfigProvider = $feedConfigProvider;
     }
 
     /**
@@ -129,11 +146,13 @@ class ItemFeed extends AbstractProductObserver
      */
     protected function getGroupId(Product $product)
     {
-        if ($product->getTypeId() === Type::TYPE_SIMPLE
-            && $ids = implode(",", $this->configurableType->getParentIdsByChild($product->getId()))) {
-            return $ids;
+        $ids = $this->productDataProvider->getParentProductIds([$product->getId()]);
+
+        if (!$ids) {
+            $ids = [$product->getId()];
         }
-        return $product->getId();
+
+        return implode(",", $ids);
     }
 
     /**
@@ -164,10 +183,10 @@ class ItemFeed extends AbstractProductObserver
         $uri = $this->urlHelper->getUriInstance($imageUrl);
 
         $store = $product->getStore();
-        //if ($this->advancedConfig->isRemovePubFromAssetsUrl($store)) {
+        if ($this->feedConfigProvider->isRemovePubInAssetsUrl($store)) {
             /** @link  https://github.com/magento/magento2/issues/9111 */
             $uri = $this->urlHelper->removeFromUriPath($uri, ['pub']);
-        //}
+        }
 
         return (string)$uri->withScheme('');
     }

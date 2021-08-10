@@ -36,6 +36,11 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\GroupedProduct\Model\Product\Type\Grouped">
+        <arguments>
+            <argument name="catalogProductLink" xsi:type="object">HawkSearch\Datafeed\Model\ResourceModel\GroupedProduct\Product\Link</argument>
+        </arguments>
+    </type>
 
     <!-- Configs -->
     <type name="HawkSearch\Datafeed\Model\Config\Feed">
