@@ -70,6 +70,11 @@ class ItemFeed extends AbstractProductObserver
     private $urlHelper;
 
     /**
+     * @var ConfigFeed
+     */
+    private $feedConfigProvider;
+
+    /**
      * ItemFeed constructor.
      * @param Json $jsonSerializer
      * @param ConfigAttributes $attributesConfigProvider
@@ -111,6 +116,7 @@ class ItemFeed extends AbstractProductObserver
         $this->attributeFeedService = $attributeFeedService;
         $this->imageHelper = $imageHelper;
         $this->urlHelper = $urlHelper;
+        $this->feedConfigProvider = $feedConfigProvider;
     }
 
     /**
@@ -164,10 +170,10 @@ class ItemFeed extends AbstractProductObserver
         $uri = $this->urlHelper->getUriInstance($imageUrl);
 
         $store = $product->getStore();
-        //if ($this->advancedConfig->isRemovePubFromAssetsUrl($store)) {
+        if ($this->feedConfigProvider->isRemovePubInAssetsUrl($store)) {
             /** @link  https://github.com/magento/magento2/issues/9111 */
             $uri = $this->urlHelper->removeFromUriPath($uri, ['pub']);
-        //}
+        }
 
         return (string)$uri->withScheme('');
     }
