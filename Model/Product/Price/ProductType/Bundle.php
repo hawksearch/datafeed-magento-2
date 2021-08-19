@@ -18,7 +18,6 @@ use Magento\Catalog\Model\Product;
 
 class Bundle extends CompositeType
 {
-
     /**
      * @inheritDoc
      */
@@ -28,5 +27,17 @@ class Bundle extends CompositeType
             $product->getTypeInstance()->getOptionsIds($product),
             $product
         )->getItems();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function getMinMaxPrice(Product $product)
+    {
+        /** @var \Magento\Bundle\Model\Product\Price $priceModel */
+        $priceModel = $product->getPriceModel();
+        list($min, $max) = $priceModel->getTotalPrices($product, null, true, true);
+
+        return [(float)$min, (float)$max];
     }
 }

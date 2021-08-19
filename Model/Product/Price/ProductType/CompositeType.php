@@ -36,10 +36,14 @@ abstract class CompositeType extends DefaultType
         $min      = PHP_INT_MAX;
         $max      = 0;
 
-        foreach ($this->getChildProducts($product) as $subProduct) {
-            $price     = $this->handleTax($product, (float)$subProduct->getFinalPrice());
-            $min = min($min, $price);
-            $max = max($max, $price);
+        if ($this->getChildProducts($product)) {
+            foreach ($this->getChildProducts($product) as $subProduct) {
+                $price     = $this->handleTax($product, (float)$subProduct->getFinalPrice());
+                $min = min($min, $price);
+                $max = max($max, $price);
+            }
+        } else {
+            $min = $max;
         }
 
         return [(float)$min, (float)$max];
