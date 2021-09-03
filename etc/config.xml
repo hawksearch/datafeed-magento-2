@@ -28,6 +28,7 @@
                 <output_file_ext>txt</output_file_ext>
                 <feed_path>hawksearch/feeds</feed_path>
                 <summary_filename>hawksearchFeedSummary.json</summary_filename>
+                <feed_locker>db</feed_locker>
             </feed>
             <hawksearch_sftp>
                 <enabled>0</enabled>

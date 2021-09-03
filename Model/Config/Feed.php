@@ -37,6 +37,7 @@ class Feed extends ConfigProvider
     const CONFIG_FEED_PATH = 'feed_path';
     const CONFIG_SUMMARY_FILENAME = 'summary_filename';
     const CONFIG_REMOVE_PUB_IN_ASSETS_URL = 'remove_pub_in_assets_url';
+    const CONFIG_FEED_LOCKER = 'feed_locker';
     /**#@-*/
 
     const CSV_DELIMITER = "\t";
@@ -195,5 +196,14 @@ class Feed extends ConfigProvider
     public function isRemovePubInAssetsUrl($store = null)
     {
         return !!$this->getConfig(self::CONFIG_REMOVE_PUB_IN_ASSETS_URL, $store);
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return string | null
+     */
+    public function getFeedLocker($store = null): ?string
+    {
+        return $this->getConfig(self::CONFIG_FEED_LOCKER, $store);
     }
 }

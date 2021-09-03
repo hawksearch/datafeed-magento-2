@@ -103,6 +103,16 @@
                             ]]>
                     </comment>
                 </field>
+                <field id="feed_locker" translate="label comment" type="select" sortOrder="60" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Feed generation locker</label>
+                    <source_model>HawkSearch\Datafeed\Model\Config\Source\Locker</source_model>
+                    <comment>
+                        <![CDATA[
+                                Advanced setting. The setting defines the data feed files generation locker source
+                            ]]>
+                    </comment>
+                </field>
             </group>
             <group id="hawksearch_sftp" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>SFTP Settings</label>
