@@ -105,48 +105,38 @@ class FieldsManagement implements FieldsManagementInterface
         $response->setResponseData([]);
 
         try {
-            $hawkFieldsResponse = $this->instructionManagerPool->get('hawksearch')
-                ->executeByCode('getFields')->get();
+            $hawkFields = $this->getHawkSearchFields();
             $currentMapping = $this->attributesConfigProvider->getMapping();
 
-            if ($hawkFieldsResponse[ClientInterface::RESPONSE_CODE] === 200) {
-                //prepare array fields
-                $arrayFields = [];
-                /** @var HawkSearchFieldInterface $field */
-                foreach ($hawkFieldsResponse[ClientInterface::RESPONSE_DATA] as $field) {
-                    $arrayFields[$field[HawkSearchFieldInterface::NAME] . self::FIELD_SUFFIX] = [
-                        Config\Attributes::HAWK_ATTRIBUTE_LABEL => $field->getLabel(),
-                        Config\Attributes::HAWK_ATTRIBUTE_CODE => $field->getName(),
-                        Config\Attributes::MAGENTO_ATTRIBUTE => $currentMapping[$field->getName()] ?? '',
-                    ];
-                }
-
-                //prepare return data
-                $result = [];
-                foreach ($arrayFields as $rowId => $row) {
-                    $rowColumnValues = [];
-                    foreach ($row as $key => $value) {
-                        $row[$key] = $value;
-                        $rowColumnValues[$rowId . '_' . $key] = $row[$key];
-                    }
-                    $row['_id'] = $rowId;
-                    $row['column_values'] = $rowColumnValues;
-                    $row['option_extra_attrs']['option_' . $this->calcOptionHash(
-                        $row[Config\Attributes::MAGENTO_ATTRIBUTE]
-                    )] = 'selected="selected"';
-                    $result[$rowId] = $this->dataObjectFactory->create()->addData($row)->toJson();
-                }
-
-                $response->setResponseData($result);
-            } else {
-                $response->setStatus(self::STATUS_ERROR);
-                $response->setMessage($hawkFieldsResponse[ClientInterface::RESPONSE_MESSAGE]);
+            //prepare array fields
+            $arrayFields = [];
+            /** @var HawkSearchFieldInterface $field */
+            foreach ($hawkFields as $field) {
+                $arrayFields[$field[HawkSearchFieldInterface::NAME] . self::FIELD_SUFFIX] = [
+                    Config\Attributes::HAWK_ATTRIBUTE_LABEL => $field->getLabel(),
+                    Config\Attributes::HAWK_ATTRIBUTE_CODE => $field->getName(),
+                    Config\Attributes::MAGENTO_ATTRIBUTE => $currentMapping[$field->getName()] ?? '',
+                ];
             }
-        } catch (InstructionException $e) {
-            $this->logger->error($e->getMessage());
-            $response->setStatus(self::STATUS_ERROR);
-            $response->setMessage($e->getMessage());
-        } catch (NotFoundException $e) {
+
+            //prepare return data
+            $result = [];
+            foreach ($arrayFields as $rowId => $row) {
+                $rowColumnValues = [];
+                foreach ($row as $key => $value) {
+                    $row[$key] = $value;
+                    $rowColumnValues[$rowId . '_' . $key] = $row[$key];
+                }
+                $row['_id'] = $rowId;
+                $row['column_values'] = $rowColumnValues;
+                $row['option_extra_attrs']['option_' . $this->calcOptionHash(
+                    $row[Config\Attributes::MAGENTO_ATTRIBUTE]
+                )] = 'selected="selected"';
+                $result[$rowId] = $this->dataObjectFactory->create()->addData($row)->toJson();
+            }
+
+            $response->setResponseData($result);
+        } catch (InstructionException | NotFoundException $e) {
             $this->logger->error($e->getMessage());
             $response->setStatus(self::STATUS_ERROR);
             $response->setMessage($e->getMessage());
@@ -164,5 +154,24 @@ class FieldsManagement implements FieldsManagementInterface
     private function calcOptionHash($optionValue)
     {
         return sprintf('%u', crc32(self::CONFIG_NAME . self::OPTION_ID . $optionValue));
+    }
+
+    /**
+     * @inheritDoc
+     * @throws InstructionException
+     * @throws NotFoundException
+     */
+    public function getHawkSearchFields()
+    {
+        $hawkFieldsResponse =  $this->instructionManagerPool->get('hawksearch')
+            ->executeByCode('getFields')->get();
+
+        if ($hawkFieldsResponse[ClientInterface::RESPONSE_CODE] === 200) {
+            return is_array($hawkFieldsResponse[ClientInterface::RESPONSE_DATA])
+                ? $hawkFieldsResponse[ClientInterface::RESPONSE_DATA]
+                : [];
+        } else {
+            throw new InstructionException(__($hawkFieldsResponse[ClientInterface::RESPONSE_MESSAGE]));
+        }
     }
 }
