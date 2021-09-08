@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2021 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Block\Adminhtml\System\Config;
 
 use HawkSearch\Datafeed\Block\Adminhtml\Form\Field\AttributeColumn;
+use HawkSearch\Datafeed\Block\Adminhtml\Form\Field\HawksearchFieldColumn;
 use HawkSearch\Datafeed\Exception\DataFeedException;
 use HawkSearch\Datafeed\Model\Config\Attributes as AttributesConfig;
 use Magento\Config\Block\System\Config\Form\Field\FieldArray\AbstractFieldArray;
@@ -34,25 +35,29 @@ class FieldsMapping extends AbstractFieldArray
     private $attributeRenderer;
 
     /**
+     * @var HawksearchFieldColumn
+     */
+    private $hawksearchFieldRenderer;
+
+    /**
      * Prepare rendering the new field by adding all the needed columns
      * @throws LocalizedException
      */
     protected function _prepareToRender()
     {
         $this->addColumn(
-            AttributesConfig::HAWK_ATTRIBUTE_LABEL,
+            AttributesConfig::HAWK_ATTRIBUTE_CODE,
             [
-                'label' => __('HawkSearch Label'),
+                'label' => __('Hawksearch Field Name'),
                 'class' => 'required-entry',
-                'readonly' => true
+                'renderer' => $this->getHawksearchFieldRenderer()
             ]
         );
         $this->addColumn(
-            AttributesConfig::HAWK_ATTRIBUTE_CODE,
+            AttributesConfig::HAWK_ATTRIBUTE_CODE . '_new',
             [
-                'label' => __('HawkSearch Code'),
-                'class' => 'required-entry validate-code',
-                'readonly' => true
+                'label' => __('Hawksearch Field Name'),
+                'class' => 'required-entry validate-code'
             ]
         );
         $this->addColumn(
@@ -67,28 +72,16 @@ class FieldsMapping extends AbstractFieldArray
     }
 
     /**
-     * Add a column to array-grid
-     *
-     * @param string $name
-     * @param array $params
-     * @return void
+     * @inheritdoc
      */
     public function addColumn($name, $params)
     {
-        $this->_columns[$name] = [
-            'label' => $this->_getParam($params, 'label', 'Column'),
-            'size' => $this->_getParam($params, 'size', false),
-            'style' => $this->_getParam($params, 'style'),
-            'class' => $this->_getParam($params, 'class'),
-            'readonly' => $this->_getParam($params, 'readonly', false),
-            'renderer' => false,
-        ];
-
-        if (!empty($params['renderer'])
-            && $params['renderer'] instanceof \Magento\Framework\View\Element\AbstractBlock
-        ) {
-            $this->_columns[$name]['renderer'] = $params['renderer'];
+        parent::addColumn($name, $params);
+        if (!isset($this->_columns[$name])) {
+            return;
         }
+
+        $this->_columns[$name]['readonly'] = $this->_getParam($params, 'readonly', false);
     }
 
     /**
@@ -123,6 +116,22 @@ class FieldsMapping extends AbstractFieldArray
             );
         }
         return $this->attributeRenderer;
+    }
+
+    /**
+     * @return HawksearchFieldColumn
+     * @throws LocalizedException
+     */
+    private function getHawksearchFieldRenderer()
+    {
+        if (!$this->hawksearchFieldRenderer) {
+            $this->hawksearchFieldRenderer = $this->getLayout()->createBlock(
+                HawksearchFieldColumn::class,
+                '',
+                ['data' => ['is_render_to_js_template' => true]]
+            );
+        }
+        return $this->hawksearchFieldRenderer;
     }
 
     /**
@@ -173,5 +182,30 @@ class FieldsMapping extends AbstractFieldArray
             (isset($column['class'])
                 ? $column['class']
                 : 'input-text') . '"' . (isset($column['style']) ? ' style="' . $column['style'] . '"' : '') . '/>';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getColumns()
+    {
+        $columns = parent::getColumns();
+        $resultColumns = [];
+        foreach ($columns as $columnName => $column) {
+            if (strpos($columnName, '_new', 0 - strlen('_new')) !== false) {
+                continue;
+            }
+            $resultColumns[$columnName] = $column;
+        }
+        return $resultColumns;
+    }
+
+    /**
+     * Get column names which have duplicated element for newly inserted data
+     * @return array
+     */
+    public function getNewColumnNames()
+    {
+        return [AttributesConfig::HAWK_ATTRIBUTE_CODE];
     }
 }
