@@ -30,6 +30,11 @@ use Magento\Tax\Model\Config as TaxConfig;
 abstract class DefaultType implements ProductTypeInterface
 {
     /**
+     * @var
+     */
+    private $customerGroupesCache;
+
+    /**
      * @var PriceCurrencyInterface
      */
     private $priceCurrency;
@@ -221,20 +226,25 @@ abstract class DefaultType implements ProductTypeInterface
             return [];
         }
 
-        $groups = $this->customerGroupSource->toOptionArray();
-        $resultGroups = [];
-        if ($this->moduleManager->isEnabled('Magento_SharedCatalog')) {
-            $firstElement = current($groups);
-            if (isset($firstElement['value']) && is_array($firstElement['value'])) {
-                $resultGroups = $firstElement['value'];
-            }
-            $sharedCatalogs = next($groups);
-            if ($sharedCatalogs !== false && isset($sharedCatalogs['value']) && is_array($sharedCatalogs['value'])) {
-                $resultGroups = array_merge($resultGroups, $sharedCatalogs['value']);
+        if ($this->customerGroupesCache === null) {
+            $groups = $this->customerGroupSource->toOptionArray();
+            $this->customerGroupesCache = [];
+            if ($this->moduleManager->isEnabled('Magento_SharedCatalog')) {
+                $firstElement = current($groups);
+                if (isset($firstElement['value']) && is_array($firstElement['value'])) {
+                    $this->customerGroupesCache = $firstElement['value'];
+                }
+                $sharedCatalogs = next($groups);
+                if ($sharedCatalogs !== false && isset($sharedCatalogs['value']) && is_array($sharedCatalogs['value'])) {
+                    $this->customerGroupesCache = array_merge($this->customerGroupesCache, $sharedCatalogs['value']);
+                }
+            } else {
+                $this->customerGroupesCache = $groups;
             }
         }
 
-        return $resultGroups;
+
+        return $this->customerGroupesCache;
     }
 
     /**
