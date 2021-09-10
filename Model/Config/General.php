@@ -33,6 +33,4 @@ class General extends ConfigProvider
     {
         return (bool)$this->getConfig(self::CONFIG_LOGGING_ENABLED, $store);
     }
-
-
 }
