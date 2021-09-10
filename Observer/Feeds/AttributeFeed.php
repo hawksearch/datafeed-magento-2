@@ -63,6 +63,11 @@ class AttributeFeed extends AbstractProductObserver
     private $attributeFeedService;
 
     /**
+     * @var ConfigAttributes
+     */
+    private $attributesConfigProvider;
+
+    /**
      * AttributeFeed constructor.
      * @param Json $jsonSerializer
      * @param ConfigAttributes $attributesConfigProvider
@@ -83,9 +88,9 @@ class AttributeFeed extends AbstractProductObserver
         Stock $stockHelper,
         AttributeCollectionFactory $attributeCollectionFactory,
         ConfigFeed $feedConfigProvider,
+        ProductMetadataInterface $productMetadata,
         PriceManagementInterface $priceManagement,
-        AttributeFeedService $attributeFeedService,
-        ProductMetadataInterface $productMetadata
+        AttributeFeedService $attributeFeedService
     ) {
         parent::__construct(
             $jsonSerializer,
@@ -98,6 +103,7 @@ class AttributeFeed extends AbstractProductObserver
             $productMetadata
         );
 
+        $this->attributesConfigProvider = $attributesConfigProvider;
         $this->priceManagement = $priceManagement;
         $this->attributeFeedService = $attributeFeedService;
     }
@@ -189,7 +195,9 @@ class AttributeFeed extends AbstractProductObserver
     protected function getAdditionalProductData(ProductInterface $product)
     {
         $priceInfo = [];
-        $this->priceManagement->collectPrices($product, $priceInfo);
+        if ($this->attributesConfigProvider->isGroupPricingEnabled()) {
+            $this->priceManagement->collectPrices($product, $priceInfo);
+        }
 
         return $priceInfo;
     }

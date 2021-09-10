@@ -138,10 +138,15 @@
                 </field>
             </group>
             <group id="attributes" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>Fields Mapping</label>
+                <label>Product Attributes</label>
 
-                <field id="mapping" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Attributes Mapping</label>
+                <field id="group_pricing_enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Enable Group Pricing</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="mapping" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="1">
+                    <label>Fields Mapping</label>
                     <frontend_model>HawkSearch\Datafeed\Block\Adminhtml\System\Config\FieldsMapping</frontend_model>
                     <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Serialized\FieldsMapping</backend_model>
                     <comment>
