@@ -25,6 +25,7 @@ class Attributes extends ConfigProvider
     /**#@+
      * Configuration paths
      */
+    const CONFIG_GROUP_PRICING_ENABLED = 'group_pricing_enabled';
     const CONFIG_MAPPING = 'mapping';
     const HAWK_ATTRIBUTE_LABEL = 'hawk_attribute_label';
     const HAWK_ATTRIBUTE_CODE = 'hawk_attribute_code';
@@ -48,6 +49,15 @@ class Attributes extends ConfigProvider
             $configGroup
         );
         $this->jsonSerializer = $jsonSerializer;
+    }
+
+    /**
+     * @param null|int|string $store
+     * @return bool
+     */
+    public function isGroupPricingEnabled($store = null): bool
+    {
+        return (bool)$this->getConfig(self::CONFIG_GROUP_PRICING_ENABLED, $store);
     }
 
     /**
