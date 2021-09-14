@@ -253,23 +253,7 @@ abstract class DefaultType implements ProductTypeInterface
      */
     protected function getCustomerGroupPrices($product)
     {
-        $productCopy = clone $product;
-
-        $groupPrices = [];
-        foreach ($this->getCustomerGroups() as $group) {
-            $groupId = $group['value'];
-
-            $productCopy->setData('customer_group_id', $groupId);
-            $productCopy->setData('website_id', $productCopy->getStore()->getWebsiteId());
-            $productCopy->unsetData('tier_price');
-
-            $finalPrice = (float)$productCopy->getPriceModel()->getFinalPrice(1, $productCopy);
-
-            $groupPrices[$groupId] = $this->handleTax($product, $finalPrice);
-        }
-        unset($productCopy);
-
-        return $groupPrices;
+        return $this->getTierPrices($product);
     }
 
     /**
@@ -296,6 +280,10 @@ abstract class DefaultType implements ProductTypeInterface
         $productTierPrices = $product->getTierPrices();
         if (!is_null($productTierPrices)) {
             foreach ($productTierPrices as $productTierPrice) {
+                // Group prices are set only for qty=1
+                if ((float)$productTierPrice->getQty() !== 1.0) {
+                    continue;
+                }
                 $pricesByGroup[$productTierPrice->getCustomerGroupId()][] = $productTierPrice->getValue();
             }
         }
@@ -306,13 +294,13 @@ abstract class DefaultType implements ProductTypeInterface
 
         $allGroupsId = $this->getAllCustomerGroupsId();
         $groupTierPrices = [];
-        $allGroupsPrice = $productTierPrices[$allGroupsId] ?? null;
+        $allGroupsPrice = $pricesByGroup[$allGroupsId] ?? null;
         foreach ($this->getCustomerGroups() as $group) {
             $groupId = $group['value'];
 
             $groupTierPrices[$groupId] = min(
                 $allGroupsPrice ?? PHP_INT_MAX,
-                $productTierPrices[$groupId] ?? PHP_INT_MAX
+                $pricesByGroup[$groupId] ?? PHP_INT_MAX
             );
             $groupTierPrices[$groupId] = (($groupTierPrices[$groupId] !== PHP_INT_MAX)
                 ? $groupTierPrices[$groupId]
