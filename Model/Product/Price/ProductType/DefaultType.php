@@ -116,6 +116,9 @@ abstract class DefaultType implements ProductTypeInterface
     protected function addPricesFromArray($priceName, array $prices, array &$priceData)
     {
         foreach ($prices as $key => $price) {
+            if (null === $price) {
+                continue;
+            }
             $this->addSuffixedValue($priceName, $key, $price, $priceData);
         }
     }
@@ -298,14 +301,7 @@ abstract class DefaultType implements ProductTypeInterface
         foreach ($this->getCustomerGroups() as $group) {
             $groupId = $group['value'];
 
-            $groupTierPrices[$groupId] = min(
-                $allGroupsPrice ?? PHP_INT_MAX,
-                $pricesByGroup[$groupId] ?? PHP_INT_MAX
-            );
-            $groupTierPrices[$groupId] = (($groupTierPrices[$groupId] !== PHP_INT_MAX)
-                ? $groupTierPrices[$groupId]
-                : null
-            );
+            $groupTierPrices[$groupId] = $pricesByGroup[$groupId] ?? $allGroupsPrice;
 
             if ($groupTierPrices[$groupId] !== null) {
                 $groupTierPrices[$groupId] = $this->handleTax($product, (float)$groupTierPrices[$groupId]);
