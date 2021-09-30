@@ -38,11 +38,16 @@ abstract class CompositeType extends DefaultType
 
         if ($this->getChildProducts($product)) {
             foreach ($this->getChildProducts($product) as $subProduct) {
+                if ($subProduct->isDisabled()) {
+                    continue;
+                }
                 $price     = $this->handleTax($product, (float)$subProduct->getFinalPrice());
                 $min = min($min, $price);
                 $max = max($max, $price);
             }
-        } else {
+        }
+
+        if ($min === PHP_INT_MAX) {
             $min = $max;
         }
 

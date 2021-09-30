@@ -95,6 +95,11 @@ abstract class AbstractProductObserver implements ObserverInterface
     private $feedConfigProvider;
 
     /**
+     * @var ProductMetadataInterface
+     */
+    private $productMetadata;
+
+    /**
      * AbstractProductObserver constructor.
      * @param Json $jsonSerializer
      * @param ConfigAttributes $attributesConfigProvider
