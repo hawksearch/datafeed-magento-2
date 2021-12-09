@@ -168,7 +168,10 @@ abstract class AbstractProductObserver implements ObserverInterface
 
             //prepare product collection
             $feedExecutor->log('- Prepare product collection');
+            //reset product collection because of the shared observer object for multiple stores
+            $this->productCollection = null;
             $collection = $this->getProductCollection($store);
+            $feedExecutor->log($collection->getSelect()->__toString());
 
             $currentPage = 1;
             do {
@@ -177,6 +180,7 @@ abstract class AbstractProductObserver implements ObserverInterface
 
                 $collection->clear();
                 $collection->setCurPage($currentPage);
+                $feedExecutor->log(sprintf('Items count: %d', count($collection->getItems())));
 
                 /** @var Product $product */
                 foreach ($collection->getItems() as $product) {
