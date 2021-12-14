@@ -55,7 +55,7 @@ class RunImageCacheGeneration
             } else {
 
                 if (strtolower($this->getRequest()->getParam('force')) == 'true') {
-                    $this->helper->removeFeedLocks(true);
+                    $this->helper->removeFeedLocks();
                 }
                 $this->helper->refreshImageCache();
             }

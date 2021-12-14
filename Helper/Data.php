@@ -61,6 +61,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @var \Magento\Store\Model\ResourceModel\Store\CollectionFactory
      */
     private $storeCollectionFactory;
+    private \Magento\Framework\Lock\LockManagerInterface $lockManager;
 
     /**
      * Data constructor.
@@ -71,6 +72,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param Context $context
      */
     public function __construct(
+        \Magento\Framework\Lock\LockManagerInterface $lockManager,
         StoreManagerInterface $storeManager,
         Filesystem $filesystem,
         ZendClient $zendClient,
@@ -83,6 +85,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->filesystem = $filesystem;
         $this->zendClient = $zendClient;
         $this->storeCollectionFactory = $storeCollectionFactory;
+        $this->lockManager = $lockManager;
     }
 
     public function getConfigurationData($data, $store = null) {
@@ -228,38 +231,16 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     }
 
     public function isFeedLocked() {
-        $lockfile = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-        if (file_exists($lockfile)) {
-            return true;
-        }
-        return false;
+
+        return $this->lockManager->isLocked(self::CONFIG_LOCK_FILENAME);
     }
 
-    public function createFeedLocks($scriptName = '') {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-        return file_put_contents($lockfilename, json_encode(['date' => date('Y-m-d H:i:s'), 'script' => $scriptName]));
+    public function createFeedLocks() {
+        return $this->lockManager->lock(self::CONFIG_LOCK_FILENAME);
     }
 
-    public function removeFeedLocks($scriptName = '', $kill = false) {
-        $lockfilename = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getLockFilename()));
-
-        if (file_exists($lockfilename)) {
-            $data = json_decode(file_get_contents($lockfilename));
-            if(!empty($data) && isset($data->script) && $kill){
-                $procs = shell_exec(sprintf('pgrep -af %s', preg_replace('/^(.)/', '[${1}]', $data->script)));
-                if($procs) {
-                    $procs = explode("\n", $procs);
-                    foreach ($procs as $proc) {
-                        $pid = explode(' ', $proc, 2)[0];
-                        if(is_numeric($pid)){
-                            exec(sprintf('kill %s', $pid));
-                        }
-                    }
-                }
-            }
-            return unlink($lockfilename);
-        }
-        return false;
+    public function removeFeedLocks() {
+        return $this->lockManager->unlock(self::CONFIG_LOCK_FILENAME);
     }
 
     public function runDatafeed() {
@@ -280,12 +261,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         fwrite($f, "$phpbin -d memory_limit=6144M $runfile -r $root -t $tmpfile\n");
         fclose($f);
 
-
         $cronlog = implode(DIRECTORY_SEPARATOR, array($this->getFeedFilePath(), $this->getCronLogFilename()));
 
-
         shell_exec("/bin/sh $tmpfile > $cronlog 2>&1 &");
-
     }
 
     public function refreshImageCache() {

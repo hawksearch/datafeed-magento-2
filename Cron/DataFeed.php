@@ -49,9 +49,9 @@ class DataFeed
                 $vars['message'] = "HawkSearch feed is currently locked, not generating feed at this time.";
             } else {
                 try {
-                    if($this->helper->createFeedLocks(Task::SCRIPT_NAME)) {
+                    if($this->helper->createFeedLocks()) {
                         $this->task->generateFeed();
-                        $this->helper->removeFeedLocks(Task::SCRIPT_NAME);
+                        $this->helper->removeFeedLocks();
                         $vars['message'] = "HawkSeach Datafeed Generated!";
                     } else {
                         $vars['message'] = 'Unable to create the lock file. feed not generated';

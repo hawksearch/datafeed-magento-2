@@ -1,15 +1,23 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
-    <virtualType name="hawkSearchVirtualLogHandler" type="Magento\Framework\Logger\Handler\Base">
+    <virtualType name="hawkSearchVirtualLogHandlerReport" type="AmericanEagle\Common\Model\DbLogger">
         <arguments>
-            <argument name="filePath" xsi:type="string">var/log/hawksearch_datafeed.log</argument>
+            <argument name="source" xsi:type="string">HawksearchReport</argument>
+            <argument name="level" xsi:type="const">Monolog\Logger::INFO</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="hawkSearchVirtualLogHandlerDebug" type="AmericanEagle\Common\Model\DbLogger">
+        <arguments>
+            <argument name="source" xsi:type="string">HawksearchDebug</argument>
+            <argument name="level" xsi:type="const">Monolog\Logger::DEBUG</argument>
         </arguments>
     </virtualType>
     <virtualType name="hawkSearchVirtualLogger" type="Magento\Framework\Logger\Monolog">
         <arguments>
             <argument name="handlers" xsi:type="array">
-                <item name="report" xsi:type="object">hawkSearchVirtualLogHandler</item>
+                <item name="debug" xsi:type="object">hawkSearchVirtualLogHandlerDebug</item>
+                <item name="report" xsi:type="object">hawkSearchVirtualLogHandlerReport</item>
             </argument>
         </arguments>
     </virtualType>

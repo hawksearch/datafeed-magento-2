@@ -522,7 +522,6 @@ class Datafeed
             $email = $objectManagerr->create('HawkSearch\Datafeed\Model\Email');
             $msg = array('message' => $message);
             $email->sendEmail($msg);
-
         }
     }
 

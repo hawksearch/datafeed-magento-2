@@ -49,9 +49,9 @@ class ImageCache
                 $vars['message'] = "HawkSearch is currently locked, not generating image cache at this time.";
             } else {
                 try {
-                    if($this->helper->createFeedLocks(Task::SCRIPT_NAME)) {
+                    if($this->helper->createFeedLocks()) {
                         $this->task->refreshImageCache();
-                        $this->helper->removeFeedLocks(Task::SCRIPT_NAME);
+                        $this->helper->removeFeedLocks();
                         $vars['message'] = "HawkSearch Image Cache Generated!";
                     } else {
                         $vars['message'] = 'Unable to create the lock file. Image Cache not generated';
