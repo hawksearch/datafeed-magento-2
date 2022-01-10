@@ -259,6 +259,7 @@ class Datafeed
         /** @var \Magento\Review\Model\Review $review */
         $review = $objectManagerr->get('Magento\Review\Model\Review');
 
+        $productsProcessed = 0;
         do {
             $this->log(sprintf('starting attribute export for page %d', $currentPage));
             $start = time();
@@ -301,6 +302,10 @@ class Datafeed
                 if (($rs = $product->getRatingSummary()) && $rs->getReviewsCount() > 0) {
                     $output->appendRow(array($product->getSku(), 'rating_summary', $rs->getRatingSummary()));
                     $output->appendRow(array($product->getSku(), 'reviews_count', $rs->getReviewsCount()));
+                }
+                $productsProcessed++;
+                if ($productsProcessed % 100 == 0) {
+                    $this->log(sprintf("Processed %d Products (for attribute output)", $productsProcessed));
                 }
             }
 
@@ -548,6 +553,7 @@ class Datafeed
                 $currentPage = 1;
                 /** @var \Magento\Catalog\Helper\Image $imageHelper */
                 $imageHelper = $this->imageHelper->create();
+                $productsProcessed = 0;
                 do {
                     $this->log(sprintf('going to page %d of images', $currentPage));
                     $products->clear();
@@ -559,17 +565,20 @@ class Datafeed
                             $imageHelper->init($product, 'hawksearch_autosuggest_image', ['type' => $this->helper->getImageRole()])
                                 ->resize($this->helper->getImageWidth())
                                 ->getUrl();
-                            $this->log(sprintf('going to resize image for url: %s', $product->getName()));
+                            //$this->log(sprintf('going to resize image for url: %s', $product->getName()));
                         } else {
                             $imageHelper->init($product, 'hawksearch_autosuggest_image', ['type' => $this->helper->getImageRole()])
                                 ->resize($this->helper->getImageWidth(), $this->helper->getImageHeight())
                                 ->getUrl();
-                            $this->log(sprintf('going to resize image for url: %s', $product->getName()));
+                            //$this->log(sprintf('going to resize image for url: %s', $product->getName()));
                         }
                     }
 
                     $currentPage++;
-
+                    $productsProcessed++;
+                    if ($productsProcessed % 100 == 0) {
+                        $this->log(sprintf("Processed %d products (for image generation)", $productsProcessed));
+                    }
                 } while ($currentPage <= $pages);
 
                 // end emulation
