@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Model;
 
-use HawkSearch\Datafeed\Logger\DataFeedLogger;
+use HawkSearch\Datafeed\Logger\LoggerFactory;
 use HawkSearch\Datafeed\Model\Config\Feed as FeedConfig;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -23,13 +23,14 @@ use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Psr\Log\LoggerInterface;
 
 class Email
 {
     /**
      * @var TransportBuilder
      */
-    protected $_transportBuilder;
+    protected $transportBuilder;
 
     /**
      * @var StateInterface
@@ -47,12 +48,7 @@ class Email
     protected $storeManager;
 
     /**
-     * @var ConfigProvider
-     */
-    private $configProvider;
-
-    /**
-     * @var DataFeedLogger
+     * @var LoggerInterface
      */
     private $logger;
 
@@ -68,7 +64,7 @@ class Email
      * @param ScopeConfigInterface $scopeConfig
      * @param StoreManagerInterface $storeManager
      * @param FeedConfig $feedConfigProvider
-     * @param DataFeedLogger $logger
+     * @param LoggerFactory $loggerFactory
      */
     public function __construct(
         TransportBuilder $transportBuilder,
@@ -76,14 +72,14 @@ class Email
         ScopeConfigInterface $scopeConfig,
         StoreManagerInterface $storeManager,
         FeedConfig $feedConfigProvider,
-        DataFeedLogger $logger
+        LoggerFactory $loggerFactory
     ) {
-        $this->_transportBuilder = $transportBuilder;
+        $this->transportBuilder = $transportBuilder;
         $this->inlineTranslation = $inlineTranslation;
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
         $this->feedConfigProvider = $feedConfigProvider;
-        $this->logger = $logger;
+        $this->logger = $loggerFactory->create();
     }
 
     /**
@@ -94,7 +90,7 @@ class Email
     {
         try {
             $this->inlineTranslation->suspend();
-            $transport = $this->_transportBuilder
+            $transport = $this->transportBuilder
                 ->setTemplateIdentifier('hawksearch_datafeed_cronemail')
                 ->setTemplateOptions(
                     [

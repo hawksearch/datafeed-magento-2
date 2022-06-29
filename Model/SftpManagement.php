@@ -17,12 +17,13 @@ namespace HawkSearch\Datafeed\Model;
 
 use Exception;
 use HawkSearch\Datafeed\Exception\SftpException;
-use HawkSearch\Datafeed\Logger\DataFeedLogger;
+use HawkSearch\Datafeed\Logger\LoggerFactory;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Config\Sftp as ConfigSftp;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
 use Magento\Framework\Filesystem\Io\Sftp;
+use Psr\Log\LoggerInterface;
 use Zend_Filter_BaseName;
 
 /**
@@ -47,7 +48,7 @@ class SftpManagement
     private $baseName;
 
     /**
-     * @var DataFeedLogger
+     * @var LoggerInterface
      */
     private $logger;
 
@@ -68,7 +69,7 @@ class SftpManagement
      * @param ConfigFeed $feedConfigProvider
      * @param ConfigSftp $sftpConfigProvider
      * @param Zend_Filter_BaseName $baseName
-     * @param DataFeedLogger $logger
+     * @param LoggerFactory $loggerFactory
      */
     public function __construct(
         Sftp $sftp,
@@ -76,14 +77,14 @@ class SftpManagement
         ConfigFeed $feedConfigProvider,
         ConfigSftp $sftpConfigProvider,
         Zend_Filter_BaseName $baseName,
-        DataFeedLogger $logger
+        LoggerFactory $loggerFactory
     ) {
         $this->sftp = $sftp;
         $this->file = $file;
         $this->feedConfigProvider = $feedConfigProvider;
         $this->sftpConfigProvider = $sftpConfigProvider;
         $this->baseName = $baseName;
-        $this->logger = $logger;
+        $this->logger = $loggerFactory->create();
     }
 
     /**
@@ -134,11 +135,7 @@ class SftpManagement
                     $this->sftp->cd('..');
                 }
             }
-        } catch (FileSystemException $e) {
-            $this->logger->debug($e->getMessage());
-        } catch (SftpException $e) {
-            $this->logger->debug($e->getMessage());
-        } catch (Exception $e) {
+        } catch (FileSystemException|SftpException|Exception $e) {
             $this->logger->debug($e->getMessage());
         } finally {
             $this->sftp->close();

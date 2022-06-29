@@ -19,7 +19,7 @@ use HawkSearch\Connector\Gateway\Http\ClientInterface;
 use HawkSearch\Connector\Gateway\Instruction\InstructionManagerPool;
 use HawkSearch\Datafeed\Api\Data\FeedSummaryInterface;
 use HawkSearch\Datafeed\Api\Data\FeedSummaryInterfaceFactory;
-use HawkSearch\Datafeed\Logger\DataFeedLogger;
+use HawkSearch\Datafeed\Logger\LoggerFactory;
 use Magento\Framework\App\Area;
 use Magento\Framework\Event\Manager;
 use Magento\Framework\Exception\FileSystemException;
@@ -27,6 +27,7 @@ use Magento\Framework\Filesystem;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
 use Magento\Store\Model\App\Emulation;
 use Magento\Store\Model\Store;
+use Psr\Log\LoggerInterface;
 
 class Datafeed
 {
@@ -77,7 +78,7 @@ class Datafeed
     private $feedSummaryFactory;
 
     /**
-     * @var DataFeedLogger
+     * @var LoggerInterface
      */
     private $logger;
 
@@ -102,7 +103,7 @@ class Datafeed
      * @param InstructionManagerPool $instructionManagerPool
      * @param Filesystem $fileSystem
      * @param FeedSummaryInterfaceFactory $feedSummaryFactory
-     * @param DataFeedLogger $logger
+     * @param LoggerFactory $loggerFactory
      */
     public function __construct(
         CsvWriterFactory $csvWriterFactory,
@@ -114,7 +115,7 @@ class Datafeed
         InstructionManagerPool $instructionManagerPool,
         Filesystem $fileSystem,
         FeedSummaryInterfaceFactory $feedSummaryFactory,
-        DataFeedLogger $logger
+        LoggerFactory $loggerFactory
     ) {
         $this->csvWriterFactory = $csvWriterFactory;
         $this->eventManager = $eventManager;
@@ -125,7 +126,7 @@ class Datafeed
         $this->instructionManagerPool = $instructionManagerPool;
         $this->fileSystem = $fileSystem;
         $this->feedSummaryFactory = $feedSummaryFactory;
-        $this->logger = $logger;
+        $this->logger = $loggerFactory->create();
     }
 
     public function generateFeed()
