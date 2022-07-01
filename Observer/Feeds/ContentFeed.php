@@ -114,7 +114,7 @@ class ContentFeed implements ObserverInterface
                         $page->getId(),
                         $page->getTitle(),
                         sprintf('%s%s', $store->getBaseUrl(), $page->getIdentifier()),
-                        $page->getContentHeading(),
+                        $page->getContentHeading() . ' ' . $page->getContent(),
                         $page->getCreationTime()
                     ]);
                     $counter++;

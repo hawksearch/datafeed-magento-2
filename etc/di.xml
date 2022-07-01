@@ -17,11 +17,21 @@
             </argument>
         </arguments>
     </type>
-    <type name="HawkSearch\Datafeed\Logger\DataFeedLogger">
+    <virtualType name="HawkSearch\Datafeed\Logger\Handler\Base" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/hawksearch_datafeed.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="HawkSearch\Datafeed\Logger\Logger" type="Magento\Framework\Logger\Monolog">
         <arguments>
             <argument name="handlers" xsi:type="array">
-                <item name="debug" xsi:type="object">HawkSearch\Datafeed\Logger\Handler\DebugHandler</item>
+                <item name="debug" xsi:type="object">HawkSearch\Datafeed\Logger\Handler\Base</item>
             </argument>
+        </arguments>
+    </virtualType>
+    <type name="HawkSearch\Datafeed\Logger\LoggerFactory">
+        <arguments>
+            <argument name="instanceName" xsi:type="string">HawkSearch\Datafeed\Logger\Logger</argument>
         </arguments>
     </type>
     <type name="HawkSearch\Datafeed\Model\Product\Price\ProductTypePool">
