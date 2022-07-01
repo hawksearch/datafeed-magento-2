@@ -11,7 +11,7 @@
  IN THE SOFTWARE.
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
-  <module name="HawkSearch_Datafeed" setup_version="2.5.5">
+  <module name="HawkSearch_Datafeed" setup_version="2.5.8">
     <sequence>
       <module name="HawkSearch_Proxy"/>
       <module name="HawkSearch_Connector"/>
