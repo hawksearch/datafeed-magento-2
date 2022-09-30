@@ -77,6 +77,12 @@ class Feed extends ConfigProvider
         $this->fileSystem = $fileSystem;
     }
 
+    /**
+     * Set stores filter
+     *
+     * @param array $stores
+     * @return $this
+     */
     public function setStoresToFilter(array $stores)
     {
         $this->filterStores = $stores;
@@ -100,7 +106,7 @@ class Feed extends ConfigProvider
         return $storesCollection->addIdFilter(
             explode(
                 ',',
-                $this->getConfig(self::CONFIG_STORES, $store) ?: ''
+                (string)$this->getConfig(self::CONFIG_STORES, $store) ?: ''
             )
         )->load();
     }
@@ -134,17 +140,17 @@ class Feed extends ConfigProvider
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getCronEmail($store = null): ?string
+    public function getCronEmail($store = null): string
     {
-        return $this->getConfig(self::CONFIG_CRON_EMAIL, $store);
+        return(string)$this->getConfig(self::CONFIG_CRON_EMAIL, $store);
     }
 
     /**
-     * @return string | null
+     * @return string
      */
-    public function getFieldDelimiter(): ?string
+    public function getFieldDelimiter(): string
     {
         return self::CSV_DELIMITER;
     }
@@ -160,11 +166,11 @@ class Feed extends ConfigProvider
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getOutputFileExtension($store = null): ?string
+    public function getOutputFileExtension($store = null): string
     {
-        return $this->getConfig(self::CONFIG_OUTPUT_FILE_EXT, $store);
+        return (string)$this->getConfig(self::CONFIG_OUTPUT_FILE_EXT, $store);
     }
 
     /**
@@ -182,11 +188,11 @@ class Feed extends ConfigProvider
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getSummaryFilename($store = null): ?string
+    public function getSummaryFilename($store = null): string
     {
-        return $this->getConfig(self::CONFIG_SUMMARY_FILENAME, $store);
+        return (string)$this->getConfig(self::CONFIG_SUMMARY_FILENAME, $store);
     }
 
     /**
@@ -200,10 +206,10 @@ class Feed extends ConfigProvider
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getFeedLocker($store = null): ?string
+    public function getFeedLocker($store = null): string
     {
-        return $this->getConfig(self::CONFIG_FEED_LOCKER, $store);
+        return (string)$this->getConfig(self::CONFIG_FEED_LOCKER, $store);
     }
 }

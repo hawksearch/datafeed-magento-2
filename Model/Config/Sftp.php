@@ -40,37 +40,37 @@ class Sftp extends ConfigProvider
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getHost($store = null): ?string
+    public function getHost($store = null): string
     {
-        return $this->getConfig(self::CONFIG_HOST, $store);
+        return (string)$this->getConfig(self::CONFIG_HOST, $store);
     }
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getUsername($store = null): ?string
+    public function getUsername($store = null): string
     {
-        return $this->getConfig(self::CONFIG_USERNAME, $store);
+        return (string)$this->getConfig(self::CONFIG_USERNAME, $store);
     }
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getPassword($store = null): ?string
+    public function getPassword($store = null): string
     {
-        return $this->getConfig(self::CONFIG_PASSWORD, $store);
+        return (string)$this->getConfig(self::CONFIG_PASSWORD, $store);
     }
 
     /**
      * @param null|int|string $store
-     * @return string | null
+     * @return string
      */
-    public function getFolder($store = null): ?string
+    public function getFolder($store = null): string
     {
-        return $this->getConfig(self::CONFIG_FOLDER, $store);
+        return (string)$this->getConfig(self::CONFIG_FOLDER, $store);
     }
 }
