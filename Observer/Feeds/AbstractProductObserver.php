@@ -23,19 +23,19 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute as EavAttribute;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\Collection as AttributeCollection;
+use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\CatalogInventory\Helper\Stock;
+use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
 use Magento\Review\Model\Review;
 use Magento\Store\Model\Store;
-use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
-use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
-use Magento\Framework\App\ProductMetadataInterface;
 
 abstract class AbstractProductObserver implements ObserverInterface
 {
@@ -352,14 +352,18 @@ abstract class AbstractProductObserver implements ObserverInterface
             case '':
                 break;
             default:
-                $eavAttribute = $this->getAttributeByCode($attribute);
                 $value = $product->getData($attribute);
+                $eavAttribute = $this->getAttributeByCode($attribute);
 
-                if ($value !== null) {
-                    if (!is_array($value) && $eavAttribute && $eavAttribute->usesSource()) {
+                if ($value !== null && $eavAttribute) {
+                    if (!is_array($value) && $eavAttribute->usesSource()) {
                         $value = $product->getAttributeText($attribute);
-                        if (!is_array($value) && $this->isMultiRowFeed) {
-                            $value = $this->handleMultipleValues((string)$value);
+                        if (!is_scalar($value) && !is_array($value)) {
+                            $value = (string)$value;
+                        }
+
+                        if ($this->isMultiRowFeed) {
+                            $value = (array)$value;
                         }
                     }
 
@@ -395,19 +399,6 @@ abstract class AbstractProductObserver implements ObserverInterface
             }
         }
         return $this->attributes;
-    }
-
-    /**
-     * @param string $value
-     * @return string[]
-     */
-    protected function handleMultipleValues(string $value)
-    {
-        if (strpos($value, ',') !== false) {
-            $value = explode(',', $value);
-        }
-
-        return (array)$value;
     }
 
     /**
