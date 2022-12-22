@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace HawkSearch\Datafeed\Model\Config\Source;
 
 use HawkSearch\Connector\Api\Data\HawkSearchFieldInterface;
+use HawkSearch\Connector\Gateway\InstructionException;
 use HawkSearch\Datafeed\Api\FieldsManagementInterface;
 use HawkSearch\Datafeed\Model\Config\Admin\StoreViewConfigResolver;
 use Magento\Framework\Data\OptionSourceInterface;
@@ -82,6 +83,8 @@ class HawksearchFields implements OptionSourceInterface
             try {
                 $this->storeViewConfigResolver->resolve(true);
                 $this->fieldsCache = $this->fieldsManagement->getHawkSearchFields();
+            } catch (InstructionException $e) {
+                $this->fieldsCache = [];
             } finally {
                 $this->storeViewConfigResolver->unresolve();
             }
