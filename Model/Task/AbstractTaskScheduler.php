@@ -135,8 +135,8 @@ abstract class AbstractTaskScheduler
         $schedule = $this->scheduleFactory->create()
             ->setJobCode($this->jobCode)
             ->setStatus(Schedule::STATUS_PENDING)
-            ->setCreatedAt(date('Y-m-d H:m:s', $createdAt))
-            ->setScheduledAt(date('Y-m-d H:m', $scheduledAt));
+            ->setCreatedAt(date('Y-m-d H:i:s', $createdAt))
+            ->setScheduledAt(date('Y-m-d H:i:s', $scheduledAt));
 
         return $schedule;
     }
