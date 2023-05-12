@@ -43,7 +43,7 @@ class CronString extends AbstractValidator
     public function isValid($value)
     {
         $this->messages = [];
-        $e = preg_split('#\s+#', $value->getValue(), 0, PREG_SPLIT_NO_EMPTY);
+        $e = preg_split('#\s+#', (string) $value->getValue(), 0, PREG_SPLIT_NO_EMPTY);
         if (count($e) < 5 || count($e) > 6) {
             $this->messages['invalid_length'] = "Cron string should have exactly 5 parts";
         }
@@ -61,7 +61,7 @@ class CronString extends AbstractValidator
     {
         if ($p === 0) {
             // we only accept a single numeric value for the minute and it must be in range
-            if (!ctype_digit($e[$p])) {
+            if (!ctype_digit((string) $e[$p])) {
                 $this->messages['invalid_minute'] = 'Cron String: Minute part must be a single numeric value';
             }
             if ($e[0] < 0 || $e[0] > 59) {
@@ -87,7 +87,7 @@ class CronString extends AbstractValidator
     {
         static $range = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 6]];
         // steps can be used with ranges
-        if (strpos($v, '/') !== false) {
+        if (strpos((string) $v, '/') !== false) {
             $ops = explode('/', (string)$v);
             if (count($ops) !== 2) {
                 $this->messages['invalid_range'] = sprintf('Cron String: Invalid range in part %d', $p + 1);
@@ -98,7 +98,7 @@ class CronString extends AbstractValidator
             }
             $v = $ops[0];
         }
-        if (strpos($v, '-') !== false) {
+        if (strpos((string) $v, '-') !== false) {
             $ops = explode('-', (string)$v);
             if (count($ops) !== 2) {
                 $this->messages['invalid_range'] = sprintf('Cron String: Invalid range in part %d', $p + 1);

@@ -137,7 +137,7 @@ class ItemFeed extends AbstractProductObserver
     protected function getUrl(Product $product)
     {
         $store = $product->getStore();
-        return substr($product->getProductUrl(1), strlen($store->getBaseUrl()));
+        return substr((string) $product->getProductUrl(1), strlen((string) $store->getBaseUrl()));
     }
 
     /**
