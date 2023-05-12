@@ -192,7 +192,7 @@ class FieldsMapping extends AbstractFieldArray
         $columns = parent::getColumns();
         $resultColumns = [];
         foreach ($columns as $columnName => $column) {
-            if (strpos($columnName, '_new', 0 - strlen('_new')) !== false) {
+            if (strpos((string) $columnName, '_new', 0 - strlen('_new')) !== false) {
                 continue;
             }
             $resultColumns[$columnName] = $column;

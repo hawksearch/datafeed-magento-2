@@ -46,11 +46,6 @@ class FieldsMapping extends ArraySerialized
     /**#@-*/
 
     /**
-     * @var Json
-     */
-    private $serializer;
-
-    /**
      * @var InstructionManagerPool
      */
     private $instructionManagerPool;
@@ -109,7 +104,6 @@ class FieldsMapping extends ArraySerialized
             $data,
             $serializer
         );
-        $this->serializer = $serializer;
         $this->instructionManagerPool = $instructionManagerPool;
         $this->productAttributeRepository = $productAttributeRepository;
         $this->message = $message;

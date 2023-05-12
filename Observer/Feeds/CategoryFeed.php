@@ -134,7 +134,7 @@ class CategoryFeed implements ObserverInterface
 
                 /** @var Category $category */
                 foreach ($collection->getItems() as $category) {
-                    $category_url = substr($category->getUrl(), strlen($base));
+                    $category_url = substr((string) $category->getUrl(), strlen((string) $base));
                     if (substr($category_url, 0, 1) != '/') {
                         $category_url = '/' . $category_url;
                     }
