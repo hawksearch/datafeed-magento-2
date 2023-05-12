@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Exception;
 
-class SftpException extends \Exception
+use Magento\Framework\Exception\LocalizedException;
+
+class SftpException extends LocalizedException
 {
 
 }
