@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2023 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -10,7 +10,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-declare(strict_types=1); 
+declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Model;
 
@@ -131,7 +131,7 @@ class CsvWriter
             throw new FileSystemException(__("CsvWriter: failed to write row."));
         }
     }
-    
+
     /**
      * @param mixed $value
      * @return string
@@ -141,7 +141,7 @@ class CsvWriter
         if (is_array($value)) {
             $value = $this->json->serialize($value);
         }
-        
+
         return strtr((string)$value, ['\"' => '"']);
     }
 
