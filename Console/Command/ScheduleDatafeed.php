@@ -16,6 +16,7 @@ use HawkSearch\Datafeed\Model\Task\Exception\AlreadyScheduledException;
 use HawkSearch\Datafeed\Model\Task\Exception\TaskException;
 use HawkSearch\Datafeed\Model\Task\ScheduleDatafeed\Task;
 use HawkSearch\Datafeed\Model\Task\ScheduleDatafeed\TaskResults;
+use Magento\Framework\Console\Cli;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -48,27 +49,28 @@ class ScheduleDatafeed extends Command
     }
 
     /**
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     * @return int|void|null
+     * @inheritDoc
      */
-    protected function execute(
-        InputInterface $input,
-        OutputInterface $output
-    ) {
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
         try {
-            /** @var TaskResults $results */
             $results = $this->task->execute();
             $this->reportSuccess($output, $results);
+            return Cli::RETURN_SUCCESS;
         } catch (AlreadyScheduledException $exception) {
             $output->writeln('Failed to schedule datafeed generation: a pending job already exists');
         } catch (TaskException $exception) {
             $output->writeln('Failed to schedule datafeed generation: ' . $exception->getMessage());
+        } catch (\Exception $exception) {
+            $output->writeln(sprintf('There has been an error: %s', $exception->getMessage()));
         }
+
+        return Cli::RETURN_FAILURE;
     }
 
     /**
      * Prints results info to the console.
+     *
      * @param OutputInterface $output
      * @param TaskResults $results
      */

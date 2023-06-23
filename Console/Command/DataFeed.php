@@ -22,7 +22,7 @@ use HawkSearch\Datafeed\Model\Task\Exception\TaskUnlockException;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
-use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Console\Cli;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -55,37 +55,6 @@ class DataFeed extends Command
     private $state;
 
     /**
-     * @return void
-     */
-    protected function configure()
-    {
-        $this->setName('hawksearch:generate-feed')
-            ->setDescription('Generate the HawkSearch data feed')
-            ->setDefinition($this->getInputList());
-        parent::configure();
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getInputList()
-    {
-        return [
-            new InputArgument(
-                self::INPUT_STORES,
-                InputArgument::OPTIONAL | InputArgument::IS_ARRAY,
-                'Space-separated list of store codes or omit to run datafeed for all stores.'
-            ),
-            new InputOption(
-                self::FORCE_MODE,
-                [ '-f', '--force' ],
-                InputOption::VALUE_NONE,
-                'Force datafeed to run even if lock present.'
-            )
-        ];
-    }
-
-    /**
      * @param Task $task
      * @param TaskOptionsFactory $taskOptionsFactory
      * @param State $state
@@ -106,36 +75,70 @@ class DataFeed extends Command
     }
 
     /**
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     * @return int|void|null
-     * @throws LocalizedException
+     * @inheritDoc
+     */
+    protected function configure()
+    {
+        $this->setName('hawksearch:generate-feed')
+            ->setDescription('Generate the HawkSearch data feed')
+            ->setDefinition($this->getInputList());
+        parent::configure();
+    }
+
+    /**
+     * Get a list of command arguments
+     *
+     * @return array
+     */
+    protected function getInputList()
+    {
+        return [
+            new InputArgument(
+                self::INPUT_STORES,
+                InputArgument::OPTIONAL | InputArgument::IS_ARRAY,
+                'Space-separated list of store codes or omit to run datafeed for all stores.'
+            ),
+            new InputOption(
+                self::FORCE_MODE,
+                [ '-f', '--force' ],
+                InputOption::VALUE_NONE,
+                'Force datafeed to run even if lock present.'
+            )
+        ];
+    }
+
+    /**
+     * @inheritDoc
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->state->setAreaCode(Area::AREA_CRONTAB);
-
-        $options = $this->taskOptionsFactory->create();
-        $stores = $input->getArgument(self::INPUT_STORES);
-        if (!empty($stores)) {
-            $this->configFeed->setStoresToFilter($stores);
-        }
-
-        if ($input->getOption(self::FORCE_MODE) === self::FORCE_MODE) {
-            $options->setForceMode(true);
-        }
-
         try {
+            $this->state->setAreaCode(Area::AREA_CRONTAB);
+
+            $options = $this->taskOptionsFactory->create();
+            $stores = $input->getArgument(self::INPUT_STORES);
+            if (!empty($stores)) {
+                $this->configFeed->setStoresToFilter($stores);
+            }
+
+            if ($input->getOption(self::FORCE_MODE) === self::FORCE_MODE) {
+                $options->setForceMode(true);
+            }
+
             $this->task->execute($options);
             $output->writeln('Done');
-        } catch (TaskException $exception) {
-            $output->writeln(sprintf('There has been an error: %s', $exception->getMessage()));
+
+            return Cli::RETURN_SUCCESS;
         } catch (TaskLockException $exception) {
             $output->writeln('Unable to acquire feed lock, feed not generating.');
         } catch (TaskUnlockException $exception) {
             $output->writeln(
                 'HawkSearch Datafeed lock failed to release. Please verify that the job completed successfully.'
             );
+        } catch (TaskException | \Exception $exception) {
+            $output->writeln(sprintf('There has been an error: %s', $exception->getMessage()));
         }
+
+        return Cli::RETURN_FAILURE;
     }
 }
