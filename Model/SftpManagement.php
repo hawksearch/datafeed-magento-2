@@ -1,15 +1,15 @@
 <?php
 
 /**
- *  Copyright (c) 2020 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2023 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- *  IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
  */
 declare(strict_types=1);
 
@@ -24,7 +24,6 @@ use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
 use Magento\Framework\Filesystem\Io\Sftp;
 use Psr\Log\LoggerInterface;
-use Zend_Filter_BaseName;
 
 /**
  * Class SftpManagement
@@ -41,11 +40,6 @@ class SftpManagement
      * @var File
      */
     private $file;
-
-    /**
-     * @var Zend_Filter_BaseName
-     */
-    private $baseName;
 
     /**
      * @var LoggerInterface
@@ -76,14 +70,12 @@ class SftpManagement
         File $file,
         ConfigFeed $feedConfigProvider,
         ConfigSftp $sftpConfigProvider,
-        Zend_Filter_BaseName $baseName,
         LoggerFactory $loggerFactory
     ) {
         $this->sftp = $sftp;
         $this->file = $file;
         $this->feedConfigProvider = $feedConfigProvider;
         $this->sftpConfigProvider = $sftpConfigProvider;
-        $this->baseName = $baseName;
         $this->logger = $loggerFactory->create();
     }
 
@@ -204,11 +196,11 @@ class SftpManagement
         $feedsPath = $this->feedConfigProvider->getPath();
         foreach ($this->file->readDirectory($feedsPath) as $path) {
             if ($this->file->isDirectory($path)) {
-                $storeCode = $this->baseName->filter($path);
+                $storeCode = basename((string) $path);
                 foreach ($this->file->readDirectory($path) as $file) {
                     if ($this->file->isFile($file)) {
                         $filesToProcess[$storeCode][] = [
-                            'filename' => $this->baseName->filter($file),
+                            'filename' => basename((string) $file),
                             'source' => $file
                         ];
                     }
