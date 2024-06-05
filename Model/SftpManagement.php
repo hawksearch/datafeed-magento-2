@@ -193,7 +193,7 @@ class SftpManagement
     {
         $filesToProcess = [];
 
-        $feedsPath = $this->feedConfigProvider->getPath();
+        $feedsPath = $this->feedConfigProvider->getFeedPath();
         foreach ($this->file->readDirectory($feedsPath) as $path) {
             if ($this->file->isDirectory($path)) {
                 $storeCode = basename((string) $path);

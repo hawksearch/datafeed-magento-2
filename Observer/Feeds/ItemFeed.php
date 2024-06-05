@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (c) 2023 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2024 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace HawkSearch\Datafeed\Observer\Feeds;
 
+use Exception;
 use HawkSearch\Connector\Helper\Url as UrlHelper;
 use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
@@ -22,9 +23,9 @@ use HawkSearch\Datafeed\Model\Product\AttributeFeedService;
 use HawkSearch\Datafeed\Model\Product as ProductDataProvider;
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\Product\Type;
-use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
+use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\CatalogInventory\Helper\Stock;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
@@ -49,11 +50,6 @@ class ItemFeed extends AbstractProductObserver
      * @var string
      */
     private $filename = 'items';
-
-    /**
-     * @var Configurable
-     */
-    private $configurableType;
 
     /**
      * @var AttributeFeedService
@@ -89,7 +85,6 @@ class ItemFeed extends AbstractProductObserver
      * @param Stock $stockHelper
      * @param AttributeCollectionFactory $attributeCollectionFactory
      * @param ConfigFeed $feedConfigProvider
-     * @param Configurable $configurableType
      * @param AttributeFeedService $attributeFeedService
      * @param ImageHelper $imageHelper
      * @param UrlHelper $urlHelper
@@ -100,29 +95,24 @@ class ItemFeed extends AbstractProductObserver
         Json $jsonSerializer,
         ConfigAttributes $attributesConfigProvider,
         ProductCollectionFactory $productCollectionFactory,
-        ReviewSummaryFactory $reviewSummaryFactory,
         Stock $stockHelper,
         AttributeCollectionFactory $attributeCollectionFactory,
         ConfigFeed $feedConfigProvider,
-        Configurable $configurableType,
         AttributeFeedService $attributeFeedService,
         ImageHelper $imageHelper,
         UrlHelper $urlHelper,
-        ProductDataProvider $productDataProvider,
-        ProductMetadataInterface $productMetadata
+        ProductMetadataInterface $productMetadata,
+        ProductDataProvider $productDataProvider
     ) {
         parent::__construct(
             $jsonSerializer,
             $attributesConfigProvider,
             $productCollectionFactory,
-            $reviewSummaryFactory,
             $stockHelper,
             $attributeCollectionFactory,
-            $feedConfigProvider,
-            $productMetadata
+            $feedConfigProvider
         );
 
-        $this->configurableType = $configurableType;
         $this->attributeFeedService = $attributeFeedService;
         $this->imageHelper = $imageHelper;
         $this->urlHelper = $urlHelper;
@@ -136,8 +126,14 @@ class ItemFeed extends AbstractProductObserver
      */
     protected function getUrl(Product $product)
     {
-        $store = $product->getStore();
-        return substr((string) $product->getProductUrl(1), strlen((string) $store->getBaseUrl()));
+        /**
+         * To avoid loading data from url_rewrite table twice set request_path attribute to false
+         */
+        if (!$product->hasData('request_path')) {
+            $product->setData('request_path', false);
+        }
+
+        return substr((string) $product->getProductUrl(1), strlen((string) $product->getStore()->getBaseUrl()));
     }
 
     /**
@@ -146,12 +142,7 @@ class ItemFeed extends AbstractProductObserver
      */
     protected function getGroupId(Product $product)
     {
-        $ids = $this->productDataProvider->getParentProductIds([$product->getId()]);
-
-        if (!$ids) {
-            $ids = [$product->getId()];
-        }
-
+        $ids = $product->hasParentIds() ? $product->getParentIds() : [$product->getId()];
         return implode(",", $ids);
     }
 
@@ -229,5 +220,44 @@ class ItemFeed extends AbstractProductObserver
     protected function getFilteredFeedFields()
     {
         return $this->attributeFeedService->getPreconfiguredItemsColumns();
+    }
+
+    /**
+     * Add parent ids data to loaded items
+     *
+     * @param ProductCollection $collection
+     * @return void
+     * @throws Exception
+     */
+    private function addParentIdsToCollection(ProductCollection $collection)
+    {
+        $parentsMap = $this->productDataProvider->getParentsByChildMap(array_keys($collection->getItems()));
+        /** @var Product $item */
+        foreach ($collection->getItems() as $item) {
+            if (isset($parentsMap[$item->getId()])) {
+                $item->setData('parent_ids', $parentsMap[$item->getId()]);
+            }
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function prepareCollection(ProductCollection $collection): AbstractProductObserver
+    {
+        $collection->addUrlRewrite();
+        return $this;
+    }
+
+    /**
+     * @param ProductCollection $collection
+     * @return ItemFeed
+     * @throws LocalizedException
+     * @throws Exception
+     */
+    protected function afterLoadProductCollection(ProductCollection $collection)
+    {
+        $this->addParentIdsToCollection($collection);
+        return parent::afterLoadProductCollection($collection);
     }
 }

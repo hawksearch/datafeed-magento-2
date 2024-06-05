@@ -185,7 +185,7 @@ class Datafeed
                 $this->log(
                     sprintf(
                         'going to write summary file %s',
-                        $this->feedConfigProvider->getPath() . DIRECTORY_SEPARATOR
+                        $this->feedConfigProvider->getFeedPath() . DIRECTORY_SEPARATOR
                         . $this->feedConfigProvider->getSummaryFilename()
                     )
                 );
@@ -238,7 +238,7 @@ class Datafeed
     {
         $summaryFile = implode(
             DIRECTORY_SEPARATOR,
-            [$this->feedConfigProvider->getPath(), $this->feedConfigProvider->getSummaryFilename()]
+            [$this->feedConfigProvider->getFeedPath(), $this->feedConfigProvider->getSummaryFilename()]
         );
         $writer = $this->fileSystem->getDirectoryWrite('media');
         $writer->writeFile($summaryFile, json_encode($summary->getData(), JSON_PRETTY_PRINT));
@@ -279,7 +279,7 @@ class Datafeed
         $dir = implode(
             DIRECTORY_SEPARATOR,
             [
-                $this->feedConfigProvider->getPath(),
+                $this->feedConfigProvider->getFeedPath(),
                 $storeCode
             ]
         );
