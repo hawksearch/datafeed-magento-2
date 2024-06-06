@@ -178,7 +178,7 @@ class Feed extends ConfigProvider
      * @return string | null
      * @throws FileSystemException
      */
-    public function getPath($store = null): ?string
+    public function getFeedPath($store = null): ?string
     {
         $mediaWriter = $this->fileSystem->getDirectoryWrite('media');
         $mediaWriter->create($this->getConfig(self::CONFIG_FEED_PATH, $store));
