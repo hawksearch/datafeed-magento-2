@@ -378,6 +378,8 @@ abstract class AbstractProductObserver implements ObserverInterface
                 $eavAttribute = $this->getAttributeByCode($attribute);
                 if ($eavAttribute) {
                     $value = $this->getProductAttributeText($product, $eavAttribute);
+                } else {
+                    $value = $product->getData($attribute);
                 }
         }
 
@@ -471,6 +473,10 @@ abstract class AbstractProductObserver implements ObserverInterface
                     $value = $attribute->getFrontend()->getValue($product);
                 }
             }
+        }
+
+        if (!$this->isMultiRowFeed && is_array($value)) {
+            $value = implode(',', $value);
         }
 
         return $value;
