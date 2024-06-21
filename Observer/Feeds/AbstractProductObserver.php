@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2023 Hawksearch (www.hawksearch.com) - All Rights Reserved
+ * Copyright (c) 2024 Hawksearch (www.hawksearch.com) - All Rights Reserved
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -17,6 +17,7 @@ namespace HawkSearch\Datafeed\Observer\Feeds;
 use HawkSearch\Datafeed\Model\Config\Attributes as ConfigAttributes;
 use HawkSearch\Datafeed\Model\Config\Feed as ConfigFeed;
 use HawkSearch\Datafeed\Model\Config\Source\ProductAttributes;
+use HawkSearch\Datafeed\Model\Product as ProductDataProvider;
 use HawkSearch\Datafeed\Model\CsvWriter;
 use HawkSearch\Datafeed\Model\Datafeed;
 use Magento\Catalog\Api\Data\ProductInterface;
@@ -27,14 +28,12 @@ use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as A
 use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\CatalogInventory\Helper\Stock;
-use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Review\Model\ResourceModel\Review\SummaryFactory as ReviewSummaryFactory;
-use Magento\Review\Model\Review;
 use Magento\Store\Model\Store;
 
 abstract class AbstractProductObserver implements ObserverInterface
@@ -48,6 +47,11 @@ abstract class AbstractProductObserver implements ObserverInterface
      * @var EavAttribute[]
      */
     private $attributes;
+
+    /**
+     * @var array
+     */
+    private $attributeValues = [];
 
     /**
      * @var int
@@ -94,40 +98,37 @@ abstract class AbstractProductObserver implements ObserverInterface
      */
     private $feedConfigProvider;
 
+
+
     /**
-     * @var ProductMetadataInterface
+     * @var ProductDataProvider
      */
-    private $productMetadata;
+    private ProductDataProvider $productDataProvider;
 
     /**
      * AbstractProductObserver constructor.
+     *
      * @param Json $jsonSerializer
      * @param ConfigAttributes $attributesConfigProvider
      * @param ProductCollectionFactory $productCollectionFactory
-     * @param ReviewSummaryFactory $reviewSummaryFactory
      * @param Stock $stockHelper
      * @param AttributeCollectionFactory $attributeCollectionFactory
      * @param ConfigFeed $feedConfigProvider
-     * @param ProductMetadataInterface $productMetadata
      */
     public function __construct(
         Json $jsonSerializer,
         ConfigAttributes $attributesConfigProvider,
         ProductCollectionFactory $productCollectionFactory,
-        ReviewSummaryFactory $reviewSummaryFactory,
         Stock $stockHelper,
         AttributeCollectionFactory $attributeCollectionFactory,
-        ConfigFeed $feedConfigProvider,
-        ProductMetadataInterface $productMetadata
+        ConfigFeed $feedConfigProvider
     ){
         $this->jsonSerializer = $jsonSerializer;
         $this->attributesConfigProvider = $attributesConfigProvider;
         $this->productCollectionFactory = $productCollectionFactory;
-        $this->reviewSummaryFactory = $reviewSummaryFactory;
         $this->stockHelper = $stockHelper;
         $this->attributeCollectionFactory = $attributeCollectionFactory;
         $this->feedConfigProvider = $feedConfigProvider;
-        $this->productMetadata = $productMetadata;
     }
 
     /**
@@ -173,13 +174,13 @@ abstract class AbstractProductObserver implements ObserverInterface
             $collection = $this->getProductCollection($store);
             $feedExecutor->log($collection->getSelect()->__toString());
 
-            $currentPage = 1;
+            $startPage = 1;
+            $currentPage = $startPage;
             do {
                 $feedExecutor->log(sprintf('- Starting product page %d', $currentPage));
                 $start = time();
 
-                $collection->clear();
-                $collection->setCurPage($currentPage);
+                $this->loadProductCollection($collection, $currentPage);
                 $feedExecutor->log(sprintf('Items count: %d', count($collection->getItems())));
 
                 /** @var Product $product */
@@ -266,6 +267,12 @@ abstract class AbstractProductObserver implements ObserverInterface
     abstract protected function getFilteredFeedFields();
 
     /**
+     * @param ProductCollection $collection
+     * @return $this
+     */
+    abstract protected function prepareCollection(ProductCollection $collection): self;
+
+    /**
      * @param string $field
      * @return string|null
      */
@@ -291,33 +298,46 @@ abstract class AbstractProductObserver implements ObserverInterface
             /** @var ProductCollection $productCollection */
             $this->productCollection = $this->productCollectionFactory->create();
             $this->productCollection->addAttributeToSelect('*');
+
+            $attributes = array_values($this->attributesConfigProvider->getMapping(
+                $store,
+                $this->getFilteredFeedFields(),
+                $this->getExcludedFeedFields()
+            ));
+            $attributes = array_filter($attributes);
+            $attributes = array_filter($attributes, function ($v) {
+                return $v != ProductAttributes::SEPARATE_METHOD;
+            });
+            $this->productCollection->addAttributeToSelect($attributes);
             $this->productCollection->addPriceData();
             $this->productCollection->addStoreFilter($store);
             $this->productCollection->setPageSize($this->feedConfigProvider->getBatchLimit());
-            $this->appendReviewSummaryToCollection($this->productCollection);
             $this->stockHelper->addIsInStockFilterToCollection($this->productCollection);
+            $this->prepareCollection($this->productCollection);
         }
 
         return $this->productCollection;
     }
 
     /**
-     * @param ProductCollection $productCollection
+     * @param ProductCollection $collection
+     * @param int $pageNumber
+     * @return void
+     */
+    private function loadProductCollection(ProductCollection $collection, int $pageNumber)
+    {
+        $collection->clear();
+        $collection->setCurPage($pageNumber);
+        $collection->load();
+        $this->afterLoadProductCollection($collection);
+    }
+
+    /**
+     * @param ProductCollection $collection
      * @return $this
      */
-    private function appendReviewSummaryToCollection(ProductCollection $productCollection)
+    protected function afterLoadProductCollection(ProductCollection $collection)
     {
-        $storeId = $productCollection->getStoreId();
-        if (version_compare($this->productMetadata->getVersion(), '2.4.0', '<')) {
-            $storeId = (string)$storeId;
-        }
-
-        $this->reviewSummaryFactory->create()->appendSummaryFieldsToCollection(
-            $productCollection,
-            $storeId,
-            Review::ENTITY_PRODUCT_CODE
-        );
-
         return $this;
     }
 
@@ -337,6 +357,9 @@ abstract class AbstractProductObserver implements ObserverInterface
         return $this;
     }
 
+    /**
+     * @throws LocalizedException
+     */
     protected function getProductAttributeValue(
         Product $product,
         string $field,
@@ -352,24 +375,11 @@ abstract class AbstractProductObserver implements ObserverInterface
             case '':
                 break;
             default:
-                $value = $product->getData($attribute);
                 $eavAttribute = $this->getAttributeByCode($attribute);
-
-                if ($value !== null && $eavAttribute) {
-                    if (!is_array($value) && $eavAttribute->usesSource()) {
-                        $value = $product->getAttributeText($attribute);
-                        if (!is_scalar($value) && !is_array($value)) {
-                            $value = (string)$value;
-                        }
-
-                        if ($this->isMultiRowFeed) {
-                            $value = (array)$value;
-                        }
-                    }
-
-                    if ($value === false) {
-                        $value = $eavAttribute->getFrontend()->getValue($product);
-                    }
+                if ($eavAttribute) {
+                    $value = $this->getProductAttributeText($product, $eavAttribute);
+                } else {
+                    $value = $product->getData($attribute);
                 }
         }
 
@@ -399,6 +409,77 @@ abstract class AbstractProductObserver implements ObserverInterface
             }
         }
         return $this->attributes;
+    }
+
+    /**
+     * @param EavAttribute $attribute
+     * @param $storeId
+     * @return array
+     * @throws LocalizedException
+     */
+    private function getAttributeOptionValues($attribute, $storeId)
+    {
+        if (!isset($this->attributeValues[$attribute->getAttributeCode()][$storeId])) {
+            $values = [];
+            if ($attribute->usesSource()) {
+                $options = $attribute->getSource()->getAllOptions();
+                foreach ($options as $option) {
+                    if (isset($option['value'])) {
+                        $values[$option['value']] = $option['label'] ?? $option['value'];
+                    }
+                }
+            }
+
+            $values = array_filter(array_filter($values), 'trim');
+            $this->attributeValues[$attribute->getAttributeCode()][$storeId] = $values;
+        }
+
+        return $this->attributeValues[$attribute->getAttributeCode()][$storeId];
+    }
+
+    /**
+     * @param Product $product
+     * @param EavAttribute $attribute
+     * @return mixed
+     * @throws LocalizedException
+     */
+    private function getProductAttributeText($product, $attribute)
+    {
+        $value = $product->getData($attribute->getAttributeCode());
+
+        if ($value !== null) {
+            if (!is_array($value)) {
+                $attributeValues = $this->getAttributeOptionValues($attribute, $product->getStoreId());
+                if ($attributeValues) {
+                    //work on multiselect values
+                    $valueIds = explode(',', (string)$value);
+                    $oldValue = $value;
+                    $value = [];
+                    foreach ($valueIds as $id) {
+                        if (!isset($attributeValues[$id])) {
+                            continue;
+                        }
+                        $value[] = $attributeValues[$id];
+                    }
+                    $value = count($value) ? $value : $oldValue;
+                }
+
+                if (!is_scalar($value) && !is_array($value)) {
+                    $value = (string)$value;
+                }
+
+                //last resort
+                if ($value === false) {
+                    $value = $attribute->getFrontend()->getValue($product);
+                }
+            }
+        }
+
+        if (!$this->isMultiRowFeed && is_array($value)) {
+            $value = implode(',', $value);
+        }
+
+        return $value;
     }
 
     /**

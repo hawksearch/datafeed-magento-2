@@ -170,7 +170,16 @@
                     <backend_model>HawkSearch\Datafeed\Model\Config\Backend\Serialized\FieldsMapping</backend_model>
                     <comment>
                         <![CDATA[
-                            Specify a product's attributes mapping.
+                            Specify a product's attributes mapping.</br>
+                            Use <strong>Dedicated Method</strong> mapping for the following fields, as this is their default mapping:</br>
+                            <li>url_detail</li>
+                            <li>group_id</li>
+                            <li>is_on_sale</li>
+                            <li>metric_inventory</li>
+                            <li>image</li>
+                            <li>category_id</li>
+                            <li>rating_summary</li>
+                            <li>reviews_count</li>
                         ]]>
                     </comment>
                 </field>
