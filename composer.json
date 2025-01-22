@@ -8,7 +8,7 @@
     "AFL-3.0"
   ],
   "require": {
-    "php": "^7.2|~8.0.0|~8.1.0|~8.2.0",
+    "php": "^7.2|~8.0.0|~8.1.0|~8.2.0|~8.3.0",
     "magento/magento2-base": "^2.3.5|2.4.*",
     "magento/magento-composer-installer": "*",
     "hawksearch/connector": "^2.7"
