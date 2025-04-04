@@ -170,7 +170,7 @@ class ItemFeed extends AbstractProductObserver
      */
     protected function getImage(Product $product)
     {
-        $imageUrl = $this->imageHelper->init($product, 'product_small_image')->getUrl();
+        $imageUrl = (string)$this->imageHelper->init($product, 'product_small_image')->getUrl();
         $uri = $this->urlHelper->getUriInstance($imageUrl);
 
         $store = $product->getStore();
