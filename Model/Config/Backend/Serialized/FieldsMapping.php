@@ -89,10 +89,10 @@ class FieldsMapping extends ArraySerialized
         ProductAttributeRepositoryInterface $productAttributeRepository,
         ManagerInterface $message,
         StoreViewConfigResolver $storeViewConfigResolver,
-        AbstractResource $resource = null,
-        AbstractDb $resourceCollection = null,
+        ?AbstractResource $resource = null,
+        ?AbstractDb $resourceCollection = null,
         array $data = [],
-        Json $serializer = null
+        ?Json $serializer = null
     ) {
         parent::__construct(
             $context,

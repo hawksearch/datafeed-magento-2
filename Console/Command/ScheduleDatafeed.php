@@ -32,7 +32,7 @@ class ScheduleDatafeed extends Command
      */
     public function __construct(
         Task $task,
-        string $name = null
+        ?string $name = null
     ) {
         $this->task = $task;
         parent::__construct($name);
