@@ -43,8 +43,8 @@ class Cron extends \Magento\Framework\App\Config\Value
         TypeListInterface $cacheTypeList,
         Config $resourceConfig,
         CronString $cronString,
-        AbstractResource $resource = null,
-        AbstractDb $resourceCollection = null,
+        ?AbstractResource $resource = null,
+        ?AbstractDb $resourceCollection = null,
         array $data = []
     ) {
         $this->resourceConfig = $resourceConfig;
