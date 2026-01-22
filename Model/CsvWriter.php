@@ -127,7 +127,7 @@ class CsvWriter
             $fields[$k] = $this->prepareFieldValue($f);
         }
 
-        if (false === fputcsv($this->outputFile, $fields, $this->delimiter)) {
+        if (false === fputcsv($this->outputFile, $fields, $this->delimiter, "\"", "")) {
             throw new FileSystemException(__("CsvWriter: failed to write row."));
         }
     }
